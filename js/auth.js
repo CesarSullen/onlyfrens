@@ -24,7 +24,11 @@ async function supabaseAuthFetch(path, body) {
 // Returns { needsConfirmation: true } if the project requires email
 // confirmation before a session is issued.
 export async function signUp(email, password) {
-  const data = await supabaseAuthFetch("/signup", { email, password });
+  // Tells Supabase exactly where to send the confirmation link back to —
+  // the page the person is actually using, local or deployed — instead
+  // of falling back to whatever "Site URL" is set in the dashboard.
+  const redirectTo = encodeURIComponent(location.origin + location.pathname);
+  const data = await supabaseAuthFetch(`/signup?redirect_to=${redirectTo}`, { email, password });
 
   if (!data.access_token) {
     return { needsConfirmation: true, userId: data.id ?? data.user?.id };
