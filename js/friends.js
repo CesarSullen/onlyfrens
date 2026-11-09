@@ -60,7 +60,7 @@ function sectionHTML(title, itemsHTML) {
 
 function handleAddFriend() {
   showPrompt("Ingresa el username de tu amigo", "@usuario", async (value) => {
-    const username = value.trim().replace(/^@/, "");
+    const username = value.trim().replace(/^@/, "").toLowerCase();
     if (!username) return;
 
     try {
@@ -108,7 +108,7 @@ export async function renderFriends(appEl) {
     appEl.innerHTML = `
       <div class="friends-screen fade-in">
         <button class="primary-btn" id="add-friend-btn">${icon("user-plus", "regular")}Agregar amigo</button>
-        ${sections || `<p class="empty-label" style="margin-top: 24px; text-align: center;">Aún no tienes amigos agregados</p>`}
+        ${sections || `<p class="empty-label" style="margin-top: 24px; text-align: center;">Aún no tienes amigos agregados. ¿Necesitas un abrazo?</p>`}
       </div>
     `;
 

@@ -1,6 +1,15 @@
 import { getFeed } from "./api.js";
 import { showToast } from "./utils.js";
 import { postCardHTML, attachPostCardListeners } from "./post-card.js";
+import { icon } from "./icons.js";
+
+const EMPTY_FEED_HTML = `
+  <div class="empty-state">
+    <div class="empty-state-icon">${icon("image", "regular")}</div>
+    <p class="empty-state-title">Ninguno de tus amigos ha dicho nada</p>
+    <p class="empty-state-text">Sal y toca césped.</p>
+  </div>
+`;
 
 let oldestLoadedDate = null;
 let isLoadingMore = false;
@@ -16,6 +25,7 @@ async function loadMorePosts(feedListEl) {
 
     if (posts.length === 0) {
       reachedEnd = true;
+      if (!feedListEl.hasChildNodes()) feedListEl.innerHTML = EMPTY_FEED_HTML;
       return;
     }
 

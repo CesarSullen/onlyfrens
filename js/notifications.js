@@ -65,7 +65,7 @@ export async function renderNotifications(appEl) {
         <div class="empty-state fade-in">
           <div class="empty-state-icon">${icon("bell", "regular")}</div>
           <p class="empty-state-title">Todo tranquilo por aquí</p>
-          <p class="empty-state-text">Aquí verás los me gusta, respuestas y novedades de tus amigos.</p>
+          <p class="empty-state-text">Sal a tomar el aire. Toca césped my fren.</p>
         </div>
       `;
       return;

@@ -39,7 +39,7 @@
   --radius-sm: 12px;
   --radius-md: 10px;
   --radius-full: 999px;
-  --nav-height: 72px;
+  --nav-height: 58px;
   --page-padding: 24px;
 }
 
@@ -293,7 +293,7 @@ button:focus-visible {
 .nav-item {
   position: relative;
   width: 64px;
-  height: 52px;
+  height: var(--nav-height);
   background: none;
   border: none;
   color: var(--muted);
@@ -304,8 +304,8 @@ button:focus-visible {
 
 .nav-item .icon {
   position: absolute;
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
 }
 
 .nav-item:active {
@@ -441,15 +441,12 @@ button:focus-visible {
 
 .post-image {
   width: 100%;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
+  height: auto;
+  max-height: 70vh;
+  object-fit: contain;
   border-radius: var(--radius-sm);
   display: block;
   background: var(--line);
-}
-
-.post-images.two .post-image {
-  aspect-ratio: 1 / 1;
 }
 
 .post-actions {

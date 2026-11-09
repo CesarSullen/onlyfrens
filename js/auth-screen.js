@@ -48,8 +48,26 @@ async function handleSubmit(e, appEl, onAuthenticated) {
     if (mode === "login") {
       await signIn(email, password);
     } else {
-      const username = document.getElementById("auth-username").value.trim().replace(/^@/, "");
+      const username = document.getElementById("auth-username").value
+        .trim()
+        .replace(/^@/, "")
+        .toLowerCase();
       const displayName = document.getElementById("auth-display-name").value.trim();
+
+      // Validate before touching Supabase Auth at all — once a signup
+      // succeeds there, the account exists even if profile creation
+      // fails next, leaving the person stuck until it's deleted by hand.
+      if (!/^[a-z0-9_]{3,20}$/.test(username)) {
+        showToast("El username debe tener 3-20 caracteres: minúsculas, números o guion bajo", "error");
+        submitBtn.disabled = false;
+        return;
+      }
+
+      if (!displayName || displayName.length > 50) {
+        showToast("El nombre a mostrar debe tener entre 1 y 50 caracteres", "error");
+        submitBtn.disabled = false;
+        return;
+      }
 
       const result = await signUp(email, password);
 
