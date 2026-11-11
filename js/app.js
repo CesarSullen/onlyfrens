@@ -1,5 +1,5 @@
 import { showToast, showConfirm, haptic } from "./utils.js";
-import { getToken, getProfile, addFriend } from "./api.js";
+import { getToken, addFriend } from "./api.js";
 import { renderAuthScreen } from "./auth-screen.js";
 import { renderHome } from "./home.js";
 import { renderFriends } from "./friends.js";
@@ -78,30 +78,23 @@ document.addEventListener("keydown", (e) => {
 
 history.pushState({ modal: false }, "");
 
-async function initApp() {
-  const token = getToken();
+function showAuth() {
+  bottomNav.style.display = "none";
+  fab.style.display = "none";
+  renderAuthScreen(appEl, showApp);
+}
 
-  if (!token) {
-    bottomNav.style.display = "none";
-    fab.style.display = "none";
-    renderAuthScreen(appEl, showApp);
-    return;
-  }
+window.addEventListener("onlyfrens:session-expired", showAuth);
 
-  try {
-    await getProfile();
+function initApp() {
+  if (getToken()) {
     showApp();
-  } catch {
-    bottomNav.style.display = "none";
-    fab.style.display = "none";
-    renderAuthScreen(appEl, showApp);
+  } else {
+    showAuth();
   }
 }
 
-Promise.race([
-  initApp(),
-  new Promise((resolve) => setTimeout(resolve, 3000)),
-]);
+initApp();
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {

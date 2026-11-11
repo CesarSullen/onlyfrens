@@ -4,29 +4,46 @@ function generateId(prefix) {
 
 function formatDateShort(isoString) {
   return new Date(isoString).toLocaleDateString("es-ES", {
-    year: "numeric", month: "2-digit", day: "2-digit",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
   });
 }
 
 function formatDateWithTime(isoString) {
   return new Date(isoString).toLocaleDateString("es-ES", {
-    day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
 function formatTimeOnly(isoString) {
   return new Date(isoString).toLocaleTimeString("es-ES", {
-    hour: "2-digit", minute: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
 function formatPostTime(isoString) {
   const date = new Date(isoString);
   const now = new Date();
-  const time = date.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+  const time = date.toLocaleTimeString("es-ES", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  );
+  const startOfDate = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+  );
   const dayDiff = Math.round((startOfToday - startOfDate) / 86400000);
 
   if (dayDiff === 0) return `Hoy a las ${time}`;
@@ -35,7 +52,10 @@ function formatPostTime(isoString) {
 }
 
 function formatRelativeTime(isoString) {
-  const minutes = Math.max(0, Math.floor((Date.now() - new Date(isoString).getTime()) / 60000));
+  const minutes = Math.max(
+    0,
+    Math.floor((Date.now() - new Date(isoString).getTime()) / 60000),
+  );
   if (minutes < 1) return "ahora";
   if (minutes < 60) return `${minutes} min`;
   const hours = Math.floor(minutes / 60);
@@ -67,6 +87,7 @@ function closeModalUI() {
   modalUI.classList.remove("active");
   modalInput.style.display = "none";
   modalActions.innerHTML = "";
+  modalUI.querySelector(".modal-ui-fields")?.remove();
 }
 
 function showAlert(message, onClose) {
@@ -133,6 +154,62 @@ function showPrompt(message, placeholder, onConfirm, defaultValue = "") {
   modalUI.classList.add("active");
 }
 
+function showForm({ title, fields, validate, onConfirm }) {
+  modalMessage.textContent = title;
+  modalActions.innerHTML = "";
+
+  const fieldsEl = document.createElement("div");
+  fieldsEl.className = "modal-ui-fields";
+
+  const inputs = fields.map((field) => {
+    const label = document.createElement("label");
+    label.className = "modal-ui-field";
+    label.textContent = field.label;
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "modal-ui-input";
+    input.placeholder = field.placeholder ?? "";
+    input.value = field.value ?? "";
+    input.autocomplete = "off";
+    if (field.maxLength) input.maxLength = field.maxLength;
+
+    label.appendChild(input);
+    fieldsEl.appendChild(label);
+    return { name: field.name, input };
+  });
+
+  const errorEl = document.createElement("p");
+  errorEl.className = "modal-ui-error";
+  fieldsEl.appendChild(errorEl);
+  modalActions.before(fieldsEl);
+
+  const cancelButton = document.createElement("button");
+  cancelButton.className = "modal-ui-btn";
+  cancelButton.textContent = "Cancelar";
+  cancelButton.addEventListener("click", closeModalUI);
+
+  const confirmButton = document.createElement("button");
+  confirmButton.className = "modal-ui-btn primary";
+  confirmButton.textContent = "Guardar";
+  confirmButton.addEventListener("click", () => {
+    const values = Object.fromEntries(
+      inputs.map(({ name, input }) => [name, input.value]),
+    );
+    const error = validate?.(values);
+    if (error) {
+      errorEl.textContent = error;
+      return;
+    }
+    closeModalUI();
+    onConfirm(values);
+  });
+
+  modalActions.appendChild(cancelButton);
+  modalActions.appendChild(confirmButton);
+  modalUI.classList.add("active");
+}
+
 function haptic() {
   if (navigator.vibrate) {
     navigator.vibrate(8);
@@ -158,6 +235,7 @@ export {
   showAlert,
   showConfirm,
   showPrompt,
+  showForm,
   closeModalUI,
   haptic,
 };

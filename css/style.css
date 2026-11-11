@@ -40,6 +40,7 @@
   --radius-md: 10px;
   --radius-full: 999px;
   --nav-height: 58px;
+  --nav-total: calc(var(--nav-height) + 16px);
   --page-padding: 24px;
 }
 
@@ -128,6 +129,37 @@ button:focus-visible {
   display: none !important;
 }
 
+.loader {
+  display: flex;
+  justify-content: center;
+  padding: 64px 0;
+  color: var(--primary);
+}
+
+.loader svg {
+  width: 72px;
+  height: 72px;
+}
+
+.loader-planet {
+  fill: currentColor;
+}
+
+.loader-ring {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 42 58;
+  animation: loader-orbit 1.6s linear infinite;
+}
+
+@keyframes loader-orbit {
+  to {
+    stroke-dashoffset: -100;
+  }
+}
+
 .post-text,
 .comment-text {
   user-select: text;
@@ -163,6 +195,10 @@ button:focus-visible {
   align-items: center;
   justify-content: center;
   gap: 10px;
+}
+
+.primary-btn {
+  transition: transform 0.12s ease, opacity 0.2s ease;
 }
 
 .primary-btn:active {
@@ -272,7 +308,7 @@ button:focus-visible {
 
 #app {
   padding-top: env(safe-area-inset-top);
-  padding-bottom: calc(var(--nav-height) + 24px + env(safe-area-inset-bottom));
+  padding-bottom: calc(var(--nav-total) + 24px);
   min-height: 100vh;
 }
 
@@ -281,13 +317,22 @@ button:focus-visible {
   bottom: 0;
   left: 0;
   right: 0;
-  height: calc(var(--nav-height) + env(safe-area-inset-bottom));
-  padding-bottom: env(safe-area-inset-bottom);
+  height: var(--nav-total);
   display: flex;
   justify-content: space-around;
-  align-items: center;
+  align-items: flex-start;
   background: var(--surface);
   border-top: 1px solid var(--line);
+}
+
+.bottom-nav::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 200px;
+  background: var(--surface);
 }
 
 .nav-item {
@@ -304,8 +349,8 @@ button:focus-visible {
 
 .nav-item .icon {
   position: absolute;
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
 }
 
 .nav-item:active {
@@ -337,7 +382,7 @@ button:focus-visible {
 .fab {
   position: fixed;
   right: var(--page-padding);
-  bottom: calc(var(--nav-height) + 20px + env(safe-area-inset-bottom));
+  bottom: calc(var(--nav-total) + 20px);
   width: 56px;
   height: 56px;
   border-radius: var(--radius-full);
@@ -384,17 +429,12 @@ button:focus-visible {
 }
 
 .avatar {
-  width: 60px;
-  height: 60px;
+  width: 50px;
+  height: 50px;
   border-radius: var(--radius-full);
   object-fit: cover;
   background: var(--line);
   flex-shrink: 0;
-}
-
-.post-header .avatar {
-  width: 62px;
-  height: 62px;
 }
 
 .post-delete-btn {
@@ -501,6 +541,12 @@ button:focus-visible {
   gap: 8px;
 }
 
+.friends-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .friends-section-title {
   font-size: 0.85rem;
   font-weight: 600;
@@ -579,8 +625,8 @@ button:focus-visible {
 .profile-avatar-btn {
   position: relative;
   flex-shrink: 0;
-  width: 104px;
-  height: 104px;
+  width: 88px;
+  height: 88px;
   padding: 0;
   border: none;
   background: none;
@@ -608,8 +654,8 @@ button:focus-visible {
 }
 
 .profile-avatar {
-  width: 104px;
-  height: 104px;
+  width: 88px;
+  height: 88px;
   border-radius: var(--radius-full);
   object-fit: cover;
   background: var(--line);
@@ -662,7 +708,7 @@ button:focus-visible {
 
 .profile-logout {
   display: block;
-  color: var(--muted);
+  color: var(--danger);
   font-size: 0.95rem;
   margin: 12px auto 24px;
 }
@@ -807,8 +853,84 @@ button:focus-visible {
   background: var(--surface);
 }
 
+.auth-form input {
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
 .auth-form input:focus {
   border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+.auth-form > * {
+  animation: fade-in 260ms ease both;
+}
+
+.auth-form > :nth-child(2) { animation-delay: 40ms; }
+.auth-form > :nth-child(3) { animation-delay: 80ms; }
+.auth-form > :nth-child(4) { animation-delay: 120ms; }
+.auth-form > :nth-child(5) { animation-delay: 160ms; }
+.auth-form > :nth-child(6) { animation-delay: 200ms; }
+
+.password-field {
+  position: relative;
+}
+
+.auth-form .password-field input {
+  width: 100%;
+  padding-right: 52px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--muted);
+  transition: color 0.18s ease, transform 0.12s ease;
+}
+
+.password-toggle:active {
+  transform: scale(0.88);
+}
+
+.password-toggle[aria-pressed="true"] {
+  color: var(--primary);
+}
+
+.password-toggle .icon {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.password-toggle .icon-hide,
+.password-toggle[aria-pressed="true"] .icon-show {
+  opacity: 0;
+  transform: scale(0.7);
+}
+
+.password-toggle[aria-pressed="true"] .icon-hide {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.shake {
+  animation: shake 0.35s ease;
+}
+
+@keyframes shake {
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
 }
 
 .auth-form .primary-btn {
@@ -877,8 +999,8 @@ button:focus-visible {
 }
 
 .comment-row .avatar {
-  width: 44px;
-  height: 44px;
+  width: 38px;
+  height: 38px;
 }
 
 .comment-author {
@@ -1062,7 +1184,7 @@ button:focus-visible {
 
 #toast-container {
   position: fixed;
-  bottom: calc(var(--nav-height) + 24px + env(safe-area-inset-bottom));
+  bottom: calc(var(--nav-total) + 24px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 9999;
@@ -1149,6 +1271,29 @@ button:focus-visible {
 
 .modal-ui-input:focus {
   border-color: var(--primary);
+}
+
+.modal-ui-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.modal-ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--text-soft);
+}
+
+.modal-ui-error {
+  color: var(--danger);
+  font-size: 0.85rem;
+}
+
+.modal-ui-error:empty {
+  display: none;
 }
 
 .modal-ui-actions {

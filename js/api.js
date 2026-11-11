@@ -1,18 +1,83 @@
-import { API_BASE_URL } from "./config.js";
+import { API_BASE_URL, SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
+import { cacheDelete, cacheMarkStale, clearCache } from "./cache.js";
+
+const TOKEN_KEY = "onlyfrens_token";
+const REFRESH_KEY = "onlyfrens_refresh_token";
+const EXPIRES_KEY = "onlyfrens_expires_at";
+const REFRESH_MARGIN_SECONDS = 60;
+const SESSION_EXPIRED_EVENT = "onlyfrens:session-expired";
+
+let sessionExpired = false;
 
 function getToken() {
-  return localStorage.getItem("onlyfrens_token");
+  return localStorage.getItem(TOKEN_KEY);
 }
 
-function setToken(token) {
-  localStorage.setItem("onlyfrens_token", token);
+function setSession({ access_token, refresh_token, expires_at, expires_in }) {
+  sessionExpired = false;
+  localStorage.setItem(TOKEN_KEY, access_token);
+  if (refresh_token) localStorage.setItem(REFRESH_KEY, refresh_token);
+  const expiresAt = expires_at ?? Math.floor(Date.now() / 1000) + expires_in;
+  localStorage.setItem(EXPIRES_KEY, String(expiresAt));
 }
 
 function clearToken() {
-  localStorage.removeItem("onlyfrens_token");
+  [TOKEN_KEY, REFRESH_KEY, EXPIRES_KEY].forEach((key) =>
+    localStorage.removeItem(key),
+  );
+  clearCache();
 }
 
-async function apiFetch(path, options = {}) {
+function expireSession() {
+  clearToken();
+  if (sessionExpired) return;
+  sessionExpired = true;
+  window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+}
+
+function isExpiring() {
+  const expiresAt = Number(localStorage.getItem(EXPIRES_KEY));
+  return (
+    expiresAt > 0 && Date.now() / 1000 >= expiresAt - REFRESH_MARGIN_SECONDS
+  );
+}
+
+let refreshing = null;
+
+function refreshSession() {
+  const refreshToken = localStorage.getItem(REFRESH_KEY);
+  if (!refreshToken) return Promise.resolve(false);
+
+  refreshing ??= fetch(
+    `${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    },
+  )
+    .then(async (response) => {
+      if (response.ok) {
+        setSession(await response.json());
+        return true;
+      }
+      if (response.status >= 400 && response.status < 500) clearToken();
+      return false;
+    })
+    .catch(() => false)
+    .finally(() => {
+      refreshing = null;
+    });
+
+  return refreshing;
+}
+
+async function apiFetch(path, options = {}, isRetry = false) {
+  if (isExpiring()) await refreshSession();
+
   const token = getToken();
 
   const headers = {
@@ -27,11 +92,21 @@ async function apiFetch(path, options = {}) {
       headers,
     });
 
+    if (response.status === 401) {
+      if (!isRetry && (await refreshSession())) {
+        return apiFetch(path, options, true);
+      }
+
+      if (isRetry || !getToken() || !localStorage.getItem(REFRESH_KEY))
+        expireSession();
+    }
+
     const data = await response.json().catch(() => null);
 
     if (!response.ok) {
-      const message = data?.error ?? "Algo salió mal";
-      throw new Error(message);
+      const error = new Error(data?.error ?? "Algo salió mal");
+      error.status = response.status;
+      throw error;
     }
 
     return data;
@@ -43,18 +118,32 @@ async function apiFetch(path, options = {}) {
   }
 }
 
+async function mutate(path, options, { drop = [], stale = [] } = {}) {
+  const result = await apiFetch(path, options);
+  cacheDelete(...drop);
+  cacheMarkStale(...stale);
+  return result;
+}
+
 function getFeed(before) {
   const query = before ? `?before=${encodeURIComponent(before)}` : "";
   return apiFetch(`/posts${query}`, { method: "GET" });
 }
 
 function deletePost(postId) {
-  return apiFetch(`/posts/${postId}`, { method: "DELETE" });
+  return mutate(
+    `/posts/${postId}`,
+    { method: "DELETE" },
+    { drop: ["feed", "ownPosts"] },
+  );
 }
 
-
 function createPost(body) {
-  return apiFetch("/posts", { method: "POST", body: JSON.stringify(body) });
+  return mutate(
+    "/posts",
+    { method: "POST", body: JSON.stringify(body) },
+    { drop: ["feed", "ownPosts"] },
+  );
 }
 
 function getFriends() {
@@ -62,18 +151,27 @@ function getFriends() {
 }
 
 function addFriend(username) {
-  return apiFetch("/friends/add", {
-    method: "POST",
-    body: JSON.stringify({ username }),
-  });
+  return mutate(
+    "/friends/add",
+    { method: "POST", body: JSON.stringify({ username }) },
+    { drop: ["friends"] },
+  );
 }
 
 function acceptFriendRequest(requestId) {
-  return apiFetch(`/friends/${requestId}/accept`, { method: "POST" });
+  return mutate(
+    `/friends/${requestId}/accept`,
+    { method: "POST" },
+    { drop: ["friends", "feed", "notifications"] },
+  );
 }
 
 function removeFriend(requestId) {
-  return apiFetch(`/friends/${requestId}`, { method: "DELETE" });
+  return mutate(
+    `/friends/${requestId}`,
+    { method: "DELETE" },
+    { drop: ["friends", "feed"] },
+  );
 }
 
 function createProfile(body) {
@@ -89,15 +187,27 @@ function getOwnPosts() {
 }
 
 function updateProfile(body) {
-  return apiFetch("/profile", { method: "PUT", body: JSON.stringify(body) });
+  return mutate(
+    "/profile",
+    { method: "PUT", body: JSON.stringify(body) },
+    { drop: ["profile"], stale: ["feed", "ownPosts"] },
+  );
 }
 
 function likePost(postId) {
-  return apiFetch(`/posts/${postId}/like`, { method: "POST" });
+  return mutate(
+    `/posts/${postId}/like`,
+    { method: "POST" },
+    { stale: ["feed", "ownPosts"] },
+  );
 }
 
 function unlikePost(postId) {
-  return apiFetch(`/posts/${postId}/like`, { method: "DELETE" });
+  return mutate(
+    `/posts/${postId}/like`,
+    { method: "DELETE" },
+    { stale: ["feed", "ownPosts"] },
+  );
 }
 
 function getLikes(postId) {
@@ -109,18 +219,27 @@ function getComments(postId) {
 }
 
 function createComment(postId, textContent) {
-  return apiFetch(`/posts/${postId}/comments`, {
-    method: "POST",
-    body: JSON.stringify({ text_content: textContent }),
-  });
+  return mutate(
+    `/posts/${postId}/comments`,
+    { method: "POST", body: JSON.stringify({ text_content: textContent }) },
+    { stale: ["feed", "ownPosts"] },
+  );
 }
 
 function repost(postId) {
-  return apiFetch(`/posts/${postId}/repost`, { method: "POST" });
+  return mutate(
+    `/posts/${postId}/repost`,
+    { method: "POST" },
+    { drop: ["feed", "ownPosts"] },
+  );
 }
 
 function undoRepost(postId) {
-  return apiFetch(`/posts/${postId}/repost`, { method: "DELETE" });
+  return mutate(
+    `/posts/${postId}/repost`,
+    { method: "DELETE" },
+    { drop: ["feed", "ownPosts"] },
+  );
 }
 
 function getRepostCount(postId) {
@@ -138,7 +257,8 @@ function uploadImage(file) {
     body: formData,
   }).then(async (response) => {
     const data = await response.json().catch(() => null);
-    if (!response.ok) throw new Error(data?.error ?? "No se pudo subir la imagen");
+    if (!response.ok)
+      throw new Error(data?.error ?? "No se pudo subir la imagen");
     return data;
   });
 }
@@ -148,12 +268,16 @@ function getNotifications() {
 }
 
 function markNotificationRead(notificationId) {
-  return apiFetch(`/notifications/${notificationId}/read`, { method: "POST" });
+  return mutate(
+    `/notifications/${notificationId}/read`,
+    { method: "POST" },
+    { stale: ["notifications"] },
+  );
 }
 
 export {
   getToken,
-  setToken,
+  setSession,
   clearToken,
   getFeed,
   createPost,

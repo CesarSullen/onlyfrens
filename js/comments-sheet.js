@@ -1,6 +1,7 @@
 import { getComments, createComment } from "./api.js";
 import { showToast, formatRelativeTime, haptic } from "./utils.js";
 import { icon } from "./icons.js";
+import { loaderHTML, removeLoader } from "./loader.js";
 
 const PLACEHOLDER_AVATAR = "./assets/icons/avatar-placeholder.svg";
 
@@ -34,7 +35,7 @@ export function openComments(postId, onCountChange) {
       </div>
       <div class="sheet-body" id="comments-body">
         <p class="sheet-note">Solo ves las respuestas de tus amigos.</p>
-        <div id="comments-list"></div>
+        <div id="comments-list">${loaderHTML()}</div>
       </div>
       <div class="sheet-footer">
         <input type="text" id="comment-input" placeholder="Escribe una respuesta" maxlength="500" autocomplete="off" />
@@ -55,6 +56,7 @@ export function openComments(postId, onCountChange) {
         ? comments.map(commentRowHTML).join("")
         : `<p class="empty-label" style="padding: 18px 0;">Aún no hay respuestas visibles</p>`;
     } catch (err) {
+      removeLoader(listEl);
       showToast(err.message, "error");
     }
   }

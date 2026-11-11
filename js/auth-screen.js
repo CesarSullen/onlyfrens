@@ -1,6 +1,7 @@
 import { signUp, signIn } from "./auth.js";
 import { createProfile } from "./api.js";
 import { showToast, haptic } from "./utils.js";
+import { icon } from "./icons.js";
 
 let mode = "login";
 
@@ -14,11 +15,19 @@ function authScreenHTML() {
 
       <form id="auth-form" class="auth-form">
         <input type="email" id="auth-email" placeholder="Email" required autocomplete="email" />
-        <input type="password" id="auth-password" placeholder="Contraseña" required autocomplete="${isLogin ? "current-password" : "new-password"}" minlength="6" />
+        <div class="password-field">
+          <input type="password" id="auth-password" placeholder="Contraseña" required autocomplete="${isLogin ? "current-password" : "new-password"}" minlength="6" />
+          <button type="button" class="password-toggle" id="password-toggle" aria-label="Mostrar contraseña" aria-pressed="false">
+            ${icon("eye", "regular", "icon-show")}${icon("eye-slash", "regular", "icon-hide")}
+          </button>
+        </div>
         ${
           isLogin
             ? ""
             : `
+          <div class="password-field">
+            <input type="password" id="auth-password-confirm" placeholder="Repite la contraseña" required autocomplete="new-password" />
+          </div>
           <input type="text" id="auth-username" placeholder="Username (sin @)" required />
           <input type="text" id="auth-display-name" placeholder="Nombre a mostrar" required />
         `
@@ -35,6 +44,34 @@ function authScreenHTML() {
   `;
 }
 
+function shake(el) {
+  el.classList.remove("shake");
+  void el.offsetWidth;
+  el.classList.add("shake");
+  el.addEventListener("animationend", () => el.classList.remove("shake"), {
+    once: true,
+  });
+}
+
+function setupPasswordToggle() {
+  const toggle = document.getElementById("password-toggle");
+
+  toggle.addEventListener("pointerdown", (e) => e.preventDefault());
+
+  toggle.addEventListener("click", () => {
+    haptic();
+    const show = toggle.getAttribute("aria-pressed") !== "true";
+    toggle.setAttribute("aria-pressed", String(show));
+    toggle.setAttribute(
+      "aria-label",
+      show ? "Ocultar contraseña" : "Mostrar contraseña",
+    );
+    document
+      .querySelectorAll("#auth-form input[id^='auth-password']")
+      .forEach((input) => (input.type = show ? "text" : "password"));
+  });
+}
+
 async function handleSubmit(e, appEl, onAuthenticated) {
   e.preventDefault();
 
@@ -48,23 +85,38 @@ async function handleSubmit(e, appEl, onAuthenticated) {
     if (mode === "login") {
       await signIn(email, password);
     } else {
-      const username = document.getElementById("auth-username").value
-        .trim()
+      const confirmInput = document.getElementById("auth-password-confirm");
+      if (password !== confirmInput.value) {
+        showToast("Las contraseñas no coinciden", "error");
+        shake(confirmInput);
+        confirmInput.focus();
+        submitBtn.disabled = false;
+        return;
+      }
+
+      const username = document
+        .getElementById("auth-username")
+        .value.trim()
         .replace(/^@/, "")
         .toLowerCase();
-      const displayName = document.getElementById("auth-display-name").value.trim();
+      const displayName = document
+        .getElementById("auth-display-name")
+        .value.trim();
 
-      // Validate before touching Supabase Auth at all — once a signup
-      // succeeds there, the account exists even if profile creation
-      // fails next, leaving the person stuck until it's deleted by hand.
       if (!/^[a-z0-9_]{3,20}$/.test(username)) {
-        showToast("El username debe tener 3-20 caracteres: minúsculas, números o guion bajo", "error");
+        showToast(
+          "El username debe tener 3-20 caracteres: minúsculas, números o guion bajo",
+          "error",
+        );
         submitBtn.disabled = false;
         return;
       }
 
       if (!displayName || displayName.length > 50) {
-        showToast("El nombre a mostrar debe tener entre 1 y 50 caracteres", "error");
+        showToast(
+          "El nombre a mostrar debe tener entre 1 y 50 caracteres",
+          "error",
+        );
         submitBtn.disabled = false;
         return;
       }
@@ -90,9 +142,11 @@ async function handleSubmit(e, appEl, onAuthenticated) {
 export function renderAuthScreen(appEl, onAuthenticated) {
   appEl.innerHTML = authScreenHTML();
 
-  document.getElementById("auth-form").addEventListener("submit", (e) =>
-    handleSubmit(e, appEl, onAuthenticated)
-  );
+  document
+    .getElementById("auth-form")
+    .addEventListener("submit", (e) => handleSubmit(e, appEl, onAuthenticated));
+
+  setupPasswordToggle();
 
   document.getElementById("auth-toggle-mode").addEventListener("click", () => {
     haptic();

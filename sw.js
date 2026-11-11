@@ -1,4 +1,6 @@
-const CACHE_NAME = "onlyfrens-v0.0.4";
+const CACHE_NAME = "onlyfrens-v0.0.5";
+const IMAGE_CACHE = "onlyfrens-images";
+const MAX_IMAGES = 150;
 const ASSETS = [
   "./",
   "./index.html",
@@ -8,6 +10,7 @@ const ASSETS = [
   "./js/api.js",
   "./js/auth.js",
   "./js/auth-screen.js",
+  "./js/cache.js",
   "./js/comments-sheet.js",
   "./js/compress.js",
   "./js/composer.js",
@@ -15,6 +18,7 @@ const ASSETS = [
   "./js/friends.js",
   "./js/home.js",
   "./js/icons.js",
+  "./js/loader.js",
   "./js/notifications.js",
   "./js/post-card.js",
   "./js/profile.js",
@@ -38,15 +42,40 @@ self.addEventListener("install", (e) => {
 self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+      Promise.all(keys.filter((k) => k !== CACHE_NAME && k !== IMAGE_CACHE).map((k) => caches.delete(k)))
     )
   );
   self.clients.claim();
 });
 
+async function cachedImage(request) {
+  const cache = await caches.open(IMAGE_CACHE);
+  const cached = await cache.match(request.url);
+  if (cached) return cached;
+
+  try {
+    const response = await fetch(request.url, { mode: "cors", credentials: "omit" });
+    if (response.ok) {
+      await cache.put(request.url, response.clone());
+      const keys = await cache.keys();
+      await Promise.all(keys.slice(0, Math.max(0, keys.length - MAX_IMAGES)).map((k) => cache.delete(k)));
+    }
+    return response;
+  } catch {
+    return fetch(request);
+  }
+}
+
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
-  if (e.request.method !== "GET" || url.origin !== self.location.origin) return;
+  if (e.request.method !== "GET") return;
+
+  if (e.request.destination === "image" && url.origin !== self.location.origin) {
+    e.respondWith(cachedImage(e.request));
+    return;
+  }
+
+  if (url.origin !== self.location.origin) return;
 
   e.respondWith(
     caches.open(CACHE_NAME).then(async (cache) => {

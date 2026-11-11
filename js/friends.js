@@ -1,6 +1,13 @@
-import { getFriends, addFriend, acceptFriendRequest, removeFriend } from "./api.js";
+import {
+  getFriends,
+  addFriend,
+  acceptFriendRequest,
+  removeFriend,
+} from "./api.js";
 import { showToast, showPrompt, showConfirm, haptic } from "./utils.js";
 import { icon } from "./icons.js";
+import { loaderHTML, removeLoader } from "./loader.js";
+import { loadWithCache } from "./cache.js";
 
 const PLACEHOLDER_AVATAR = "./assets/icons/avatar-placeholder.svg";
 
@@ -10,7 +17,13 @@ function escapeHTML(text) {
   return div.innerHTML;
 }
 
-function rowHTML(profile, actionsHTML, requestId = "", subtitle = "", stacked = false) {
+function rowHTML(
+  profile,
+  actionsHTML,
+  requestId = "",
+  subtitle = "",
+  stacked = false,
+) {
   return `
     <div class="friend-row" data-request-id="${requestId}">
       <img class="avatar" src="${profile.avatar_url || PLACEHOLDER_AVATAR}" alt="" loading="lazy" />
@@ -35,7 +48,7 @@ function incomingRequestHTML(request) {
      <button class="outline-btn reject-btn" data-request-id="${request.requestId}">Eliminar</button>`,
     request.requestId,
     "",
-    true
+    true,
   );
 }
 
@@ -44,7 +57,7 @@ function outgoingRequestHTML(request) {
     request.profile,
     `<button class="outline-btn reject-btn" data-request-id="${request.requestId}">Eliminar</button>`,
     request.requestId,
-    "Solicitud pendiente"
+    "Solicitud pendiente",
   );
 }
 
@@ -84,47 +97,71 @@ async function handleAccept(requestId) {
 }
 
 function handleReject(requestId) {
-  showConfirm("¿Eliminar esta solicitud?", async () => {
-    try {
-      await removeFriend(requestId);
-      renderFriends(document.getElementById("app"));
-    } catch (err) {
-      showToast(err.message, "error");
-    }
-  }, true);
+  showConfirm(
+    "¿Eliminar esta solicitud?",
+    async () => {
+      try {
+        await removeFriend(requestId);
+        renderFriends(document.getElementById("app"));
+      } catch (err) {
+        showToast(err.message, "error");
+      }
+    },
+    true,
+  );
+}
+
+function friendsListHTML({ friends, incomingRequests, outgoingRequests }) {
+  const sections =
+    sectionHTML(
+      "Solicitudes recibidas",
+      incomingRequests.map(incomingRequestHTML).join(""),
+    ) +
+    sectionHTML(
+      "Solicitudes enviadas",
+      outgoingRequests.map(outgoingRequestHTML).join(""),
+    ) +
+    sectionHTML("Amigos", friends.map(friendRowHTML).join(""));
+
+  return (
+    sections ||
+    `<p class="empty-label" style="margin-top: 24px; text-align: center;">Aún no tienes amigos agregados. ¿Necesitas un abrazo?</p>`
+  );
+}
+
+function showFriends(listEl, data) {
+  listEl.innerHTML = friendsListHTML(data);
+
+  listEl.querySelectorAll(".accept-btn").forEach((btn) => {
+    btn.addEventListener("click", () => handleAccept(btn.dataset.requestId));
+  });
+
+  listEl.querySelectorAll(".reject-btn").forEach((btn) => {
+    btn.addEventListener("click", () => handleReject(btn.dataset.requestId));
+  });
 }
 
 export async function renderFriends(appEl) {
-  appEl.innerHTML = `<div class="friends-screen fade-in"></div>`;
+  appEl.innerHTML = `
+    <div class="friends-screen fade-in">
+      <button class="primary-btn" id="add-friend-btn">${icon("user-plus", "regular")}Agregar amigo</button>
+      <div class="friends-list" id="friends-list">${loaderHTML()}</div>
+    </div>
+  `;
+
+  const listEl = document.getElementById("friends-list");
+
+  document.getElementById("add-friend-btn").addEventListener("click", () => {
+    haptic();
+    handleAddFriend();
+  });
 
   try {
-    const { friends, incomingRequests, outgoingRequests } = await getFriends();
-
-    const sections =
-      sectionHTML("Solicitudes recibidas", incomingRequests.map(incomingRequestHTML).join("")) +
-      sectionHTML("Solicitudes enviadas", outgoingRequests.map(outgoingRequestHTML).join("")) +
-      sectionHTML("Amigos", friends.map(friendRowHTML).join(""));
-
-    appEl.innerHTML = `
-      <div class="friends-screen fade-in">
-        <button class="primary-btn" id="add-friend-btn">${icon("user-plus", "regular")}Agregar amigo</button>
-        ${sections || `<p class="empty-label" style="margin-top: 24px; text-align: center;">Aún no tienes amigos agregados. ¿Necesitas un abrazo?</p>`}
-      </div>
-    `;
-
-    document.getElementById("add-friend-btn").addEventListener("click", () => {
-      haptic();
-      handleAddFriend();
-    });
-
-    appEl.querySelectorAll(".accept-btn").forEach((btn) => {
-      btn.addEventListener("click", () => handleAccept(btn.dataset.requestId));
-    });
-
-    appEl.querySelectorAll(".reject-btn").forEach((btn) => {
-      btn.addEventListener("click", () => handleReject(btn.dataset.requestId));
+    await loadWithCache("friends", getFriends, (data) => {
+      if (listEl.isConnected) showFriends(listEl, data);
     });
   } catch (err) {
+    removeLoader(listEl);
     showToast(err.message, "error");
   }
 }

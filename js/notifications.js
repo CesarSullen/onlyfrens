@@ -1,6 +1,8 @@
 import { getNotifications, markNotificationRead } from "./api.js";
 import { showToast, formatRelativeTime } from "./utils.js";
 import { icon } from "./icons.js";
+import { loaderHTML, removeLoader } from "./loader.js";
+import { loadWithCache } from "./cache.js";
 
 function escapeHTML(text) {
   const div = document.createElement("div");
@@ -54,33 +56,37 @@ async function handleRowClick(row) {
   }
 }
 
+const EMPTY_NOTIFICATIONS_HTML = `
+  <div class="empty-state fade-in">
+    <div class="empty-state-icon">${icon("bell", "regular")}</div>
+    <p class="empty-state-title">Todo tranquilo por aquí</p>
+    <p class="empty-state-text">Sal a tomar el aire. Toca césped my fren.</p>
+  </div>
+`;
+
+function showNotifications(screenEl, notifications) {
+  if (notifications.length === 0) {
+    screenEl.innerHTML = EMPTY_NOTIFICATIONS_HTML;
+    return;
+  }
+
+  screenEl.innerHTML = notifications.map(notificationRowHTML).join("");
+
+  screenEl.querySelectorAll(".notification-row").forEach((row) => {
+    row.addEventListener("click", () => handleRowClick(row));
+  });
+}
+
 export async function renderNotifications(appEl) {
-  appEl.innerHTML = `<div class="notifications-screen fade-in"></div>`;
+  appEl.innerHTML = `<div class="notifications-screen fade-in">${loaderHTML()}</div>`;
+  const screenEl = appEl.firstElementChild;
 
   try {
-    const { notifications } = await getNotifications();
-
-    if (notifications.length === 0) {
-      appEl.innerHTML = `
-        <div class="empty-state fade-in">
-          <div class="empty-state-icon">${icon("bell", "regular")}</div>
-          <p class="empty-state-title">Todo tranquilo por aquí</p>
-          <p class="empty-state-text">Sal a tomar el aire. Toca césped my fren.</p>
-        </div>
-      `;
-      return;
-    }
-
-    appEl.innerHTML = `
-      <div class="notifications-screen fade-in">
-        ${notifications.map(notificationRowHTML).join("")}
-      </div>
-    `;
-
-    appEl.querySelectorAll(".notification-row").forEach((row) => {
-      row.addEventListener("click", () => handleRowClick(row));
-    });
+    await loadWithCache("notifications", getNotifications, ({ notifications }) => {
+      if (screenEl.isConnected) showNotifications(screenEl, notifications);
+    }, 30_000);
   } catch (err) {
+    removeLoader(screenEl);
     showToast(err.message, "error");
   }
 }

@@ -1,5 +1,6 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
-import { setToken, clearToken } from "./api.js";
+import { setSession, clearToken } from "./api.js";
+import { clearCache } from "./cache.js";
 
 async function supabaseAuthFetch(path, body) {
   const response = await fetch(`${SUPABASE_URL}/auth/v1${path}`, {
@@ -34,13 +35,15 @@ export async function signUp(email, password) {
     return { needsConfirmation: true, userId: data.id ?? data.user?.id };
   }
 
-  setToken(data.access_token);
+  clearCache();
+  setSession(data);
   return { needsConfirmation: false, userId: data.user.id };
 }
 
 export async function signIn(email, password) {
   const data = await supabaseAuthFetch("/token?grant_type=password", { email, password });
-  setToken(data.access_token);
+  clearCache();
+  setSession(data);
   return { userId: data.user.id };
 }
 
