@@ -1061,26 +1061,26 @@ button:focus-visible {
   opacity: 0.6;
 }
 
-.likers-btn {
-  margin-left: -10px;
-  padding: 6px 10px;
+.metrics-btn {
+  margin-left: auto;
+  padding: 6px 2px 6px 10px;
   color: var(--muted);
   transition: color 0.18s ease, transform 0.12s ease;
 }
 
-.likers-btn .icon {
+.metrics-btn .icon {
   width: 22px;
   height: 22px;
 }
 
-.likers-btn:active {
+.metrics-btn:active {
   color: var(--primary);
   transform: scale(0.88);
 }
 
 .modal-ui-list {
   gap: 0;
-  max-height: 50vh;
+  max-height: 60vh;
   overflow-y: auto;
 }
 
@@ -1090,6 +1090,10 @@ button:focus-visible {
 
 .liker-row:last-child {
   border-bottom: none;
+}
+
+.liker-section-title:first-child {
+  margin-top: 0;
 }
 
 .liker-empty {

@@ -1,4 +1,4 @@
-const CACHE_NAME = "onlyfrens-v0.0.6";
+const CACHE_NAME = "onlyfrens-v0.0.7";
 const IMAGE_CACHE = "onlyfrens-images";
 const MAX_IMAGES = 150;
 const ASSETS = [
@@ -11,7 +11,7 @@ const ASSETS = [
   "./js/auth.js",
   "./js/auth-screen.js",
   "./js/cache.js",
-  "./js/likers.js",
+  "./js/interactions.js",
   "./js/oauth.js",
   "./js/password-field.js",
   "./js/password-reset.js",

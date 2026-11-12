@@ -134,9 +134,12 @@ async function mutate(path, options, { drop = [], stale = [] } = {}) {
   return result;
 }
 
-async function getLikers(postId) {
-  const { likers } = await apiFetch(`/posts/${postId}/like`);
-  return likers ?? [];
+async function getInteractions(postId) {
+  const [likes, reposts] = await Promise.all([
+    apiFetch(`/posts/${postId}/like`),
+    apiFetch(`/posts/${postId}/repost`),
+  ]);
+  return { likers: likes.likers ?? [], reposters: reposts.reposters ?? [] };
 }
 
 function getFeed(before) {
@@ -292,7 +295,7 @@ function markNotificationRead(notificationId) {
 export {
   getToken,
   getUserId,
-  getLikers,
+  getInteractions,
   setSession,
   clearToken,
   getFeed,
