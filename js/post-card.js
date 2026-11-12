@@ -1,7 +1,8 @@
-import { likePost, unlikePost, repost, undoRepost, deletePost } from "./api.js";
-import { showToast, showConfirm, formatPostTime } from "./utils.js";
+import { likePost, unlikePost, repost, undoRepost, deletePost, getUserId } from "./api.js";
+import { showToast, showConfirm, formatPostTime, haptic } from "./utils.js";
 import { icon } from "./icons.js";
 import { openComments } from "./comments-sheet.js";
+import { openLikers } from "./likers.js";
 
 const PLACEHOLDER_AVATAR = "./assets/icons/avatar-placeholder.svg";
 
@@ -63,6 +64,14 @@ export function postCardHTML(post) {
       })
     : "";
 
+  const isContentOwner = content.author_id
+    ? content.author_id === getUserId()
+    : post.is_mine && !post.is_repost;
+
+  const likersButton = isContentOwner
+    ? `<button class="action-btn likers-btn" aria-label="Ver a quién le gustó">${icon("users", "regular")}</button>`
+    : "";
+
   return `
     <article class="post-card fade-in" data-post-id="${post.id}" data-is-repost="${post.is_repost}">
       ${birthdayPill}
@@ -79,6 +88,7 @@ export function postCardHTML(post) {
       ${imagesHTML}
       <div class="post-actions">
         ${actionButtonHTML({ cls: "like-btn", label: "Me gusta", name: "heart", active: post.liked_by_me, count: post.like_count })}
+        ${likersButton}
         ${actionButtonHTML({ cls: "comment-btn", label: "Respuestas", name: "chat-circle", active: false, count: post.comment_count })}
         ${repostButton}
       </div>
@@ -131,6 +141,11 @@ export function attachPostCardListeners(container) {
     card.querySelector(".like-btn").addEventListener("click", (e) =>
       handleToggle(e.currentTarget, postId, { add: likePost, remove: unlikePost })
     );
+
+    card.querySelector(".likers-btn")?.addEventListener("click", () => {
+      haptic();
+      openLikers(postId);
+    });
 
     card.querySelector(".repost-btn")?.addEventListener("click", (e) =>
       handleToggle(e.currentTarget, postId, { add: repost, remove: undoRepost })

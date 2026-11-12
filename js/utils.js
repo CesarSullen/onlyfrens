@@ -210,6 +210,48 @@ function showForm({ title, fields, validate, onConfirm }) {
   modalUI.classList.add("active");
 }
 
+function showList(title, contentHTML) {
+  modalMessage.textContent = title;
+  modalActions.innerHTML = "";
+
+  const listEl = document.createElement("div");
+  listEl.className = "modal-ui-fields modal-ui-list";
+  listEl.innerHTML = contentHTML;
+  modalActions.before(listEl);
+
+  const closeButton = document.createElement("button");
+  closeButton.className = "modal-ui-btn";
+  closeButton.textContent = "Cerrar";
+  closeButton.addEventListener("click", closeModalUI);
+  modalActions.appendChild(closeButton);
+
+  modalUI.classList.add("active");
+  return listEl;
+}
+
+function escapeHTML(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function shake(el) {
+  el.classList.remove("shake");
+  void el.offsetWidth;
+  el.classList.add("shake");
+  el.addEventListener("animationend", () => el.classList.remove("shake"), { once: true });
+}
+
+function profileFieldsError(username, displayName) {
+  if (!/^[a-z0-9_]{3,20}$/.test(username)) {
+    return "El username debe tener 3-20 caracteres: minúsculas, números o guion bajo";
+  }
+  if (!displayName || displayName.length > 50) {
+    return "El nombre a mostrar debe tener entre 1 y 50 caracteres";
+  }
+  return null;
+}
+
 function haptic() {
   if (navigator.vibrate) {
     navigator.vibrate(8);
@@ -236,6 +278,10 @@ export {
   showConfirm,
   showPrompt,
   showForm,
+  showList,
+  escapeHTML,
+  shake,
+  profileFieldsError,
   closeModalUI,
   haptic,
 };

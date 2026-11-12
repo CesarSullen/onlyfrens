@@ -1,7 +1,9 @@
 import { signUp, signIn } from "./auth.js";
 import { createProfile } from "./api.js";
-import { showToast, haptic } from "./utils.js";
-import { icon } from "./icons.js";
+import { showToast, haptic, shake, profileFieldsError } from "./utils.js";
+import { passwordFieldHTML, setupPasswordToggle } from "./password-field.js";
+import { oauthButtonsHTML, setupOAuthButtons } from "./oauth.js";
+import { renderForgotScreen } from "./password-reset.js";
 
 let mode = "login";
 
@@ -15,19 +17,12 @@ function authScreenHTML() {
 
       <form id="auth-form" class="auth-form">
         <input type="email" id="auth-email" placeholder="Email" required autocomplete="email" />
-        <div class="password-field">
-          <input type="password" id="auth-password" placeholder="Contraseña" required autocomplete="${isLogin ? "current-password" : "new-password"}" minlength="6" />
-          <button type="button" class="password-toggle" id="password-toggle" aria-label="Mostrar contraseña" aria-pressed="false">
-            ${icon("eye", "regular", "icon-show")}${icon("eye-slash", "regular", "icon-hide")}
-          </button>
-        </div>
+        ${passwordFieldHTML({ id: "auth-password", placeholder: "Contraseña", autocomplete: isLogin ? "current-password" : "new-password", withToggle: true })}
         ${
           isLogin
-            ? ""
+            ? `<button type="button" class="text-btn forgot-link" id="auth-forgot">¿Olvidaste tu contraseña?</button>`
             : `
-          <div class="password-field">
-            <input type="password" id="auth-password-confirm" placeholder="Repite la contraseña" required autocomplete="new-password" />
-          </div>
+          ${passwordFieldHTML({ id: "auth-password-confirm", placeholder: "Repite la contraseña", autocomplete: "new-password", checkLength: false })}
           <input type="text" id="auth-username" placeholder="Username (sin @)" required />
           <input type="text" id="auth-display-name" placeholder="Nombre a mostrar" required />
         `
@@ -37,6 +32,8 @@ function authScreenHTML() {
         </button>
       </form>
 
+      ${oauthButtonsHTML()}
+
       <button class="text-btn auth-toggle" id="auth-toggle-mode">
         ${isLogin ? "¿No tienes cuenta? Regístrate" : "¿Ya tienes cuenta? Inicia sesión"}
       </button>
@@ -44,35 +41,7 @@ function authScreenHTML() {
   `;
 }
 
-function shake(el) {
-  el.classList.remove("shake");
-  void el.offsetWidth;
-  el.classList.add("shake");
-  el.addEventListener("animationend", () => el.classList.remove("shake"), {
-    once: true,
-  });
-}
-
-function setupPasswordToggle() {
-  const toggle = document.getElementById("password-toggle");
-
-  toggle.addEventListener("pointerdown", (e) => e.preventDefault());
-
-  toggle.addEventListener("click", () => {
-    haptic();
-    const show = toggle.getAttribute("aria-pressed") !== "true";
-    toggle.setAttribute("aria-pressed", String(show));
-    toggle.setAttribute(
-      "aria-label",
-      show ? "Ocultar contraseña" : "Mostrar contraseña",
-    );
-    document
-      .querySelectorAll("#auth-form input[id^='auth-password']")
-      .forEach((input) => (input.type = show ? "text" : "password"));
-  });
-}
-
-async function handleSubmit(e, appEl, onAuthenticated) {
+async function handleSubmit(e, onAuthenticated) {
   e.preventDefault();
 
   const email = document.getElementById("auth-email").value.trim();
@@ -99,24 +68,11 @@ async function handleSubmit(e, appEl, onAuthenticated) {
         .value.trim()
         .replace(/^@/, "")
         .toLowerCase();
-      const displayName = document
-        .getElementById("auth-display-name")
-        .value.trim();
+      const displayName = document.getElementById("auth-display-name").value.trim();
 
-      if (!/^[a-z0-9_]{3,20}$/.test(username)) {
-        showToast(
-          "El username debe tener 3-20 caracteres: minúsculas, números o guion bajo",
-          "error",
-        );
-        submitBtn.disabled = false;
-        return;
-      }
-
-      if (!displayName || displayName.length > 50) {
-        showToast(
-          "El nombre a mostrar debe tener entre 1 y 50 caracteres",
-          "error",
-        );
+      const fieldsError = profileFieldsError(username, displayName);
+      if (fieldsError) {
+        showToast(fieldsError, "error");
         submitBtn.disabled = false;
         return;
       }
@@ -142,11 +98,16 @@ async function handleSubmit(e, appEl, onAuthenticated) {
 export function renderAuthScreen(appEl, onAuthenticated) {
   appEl.innerHTML = authScreenHTML();
 
-  document
-    .getElementById("auth-form")
-    .addEventListener("submit", (e) => handleSubmit(e, appEl, onAuthenticated));
+  const form = document.getElementById("auth-form");
+  form.addEventListener("submit", (e) => handleSubmit(e, onAuthenticated));
 
-  setupPasswordToggle();
+  setupPasswordToggle(form);
+  setupOAuthButtons(appEl);
+
+  document.getElementById("auth-forgot")?.addEventListener("click", () => {
+    haptic();
+    renderForgotScreen(appEl, () => renderAuthScreen(appEl, onAuthenticated));
+  });
 
   document.getElementById("auth-toggle-mode").addEventListener("click", () => {
     haptic();

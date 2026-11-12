@@ -1,6 +1,9 @@
 import { showToast, showConfirm, haptic } from "./utils.js";
-import { getToken, addFriend } from "./api.js";
+import { getToken, getProfile, addFriend } from "./api.js";
+import { readAuthRedirect, startSession, getAuthUser } from "./auth.js";
 import { renderAuthScreen } from "./auth-screen.js";
+import { renderResetScreen } from "./password-reset.js";
+import { renderCompleteProfileScreen } from "./complete-profile.js";
 import { renderHome } from "./home.js";
 import { renderFriends } from "./friends.js";
 import { renderProfile } from "./profile.js";
@@ -78,15 +81,53 @@ document.addEventListener("keydown", (e) => {
 
 history.pushState({ modal: false }, "");
 
-function showAuth() {
+function hideNavigation() {
   bottomNav.style.display = "none";
   fab.style.display = "none";
+}
+
+function showAuth() {
+  hideNavigation();
   renderAuthScreen(appEl, showApp);
 }
 
 window.addEventListener("onlyfrens:session-expired", showAuth);
 
+async function enterApp() {
+  try {
+    await getProfile();
+  } catch (err) {
+    if (err.status === 404) {
+      const user = await getAuthUser(getToken()).catch(() => null);
+      const metadata = user?.user_metadata ?? {};
+      hideNavigation();
+      renderCompleteProfileScreen(appEl, { displayName: metadata.full_name ?? metadata.name ?? "" }, showApp);
+      return;
+    }
+  }
+  showApp();
+}
+
 function initApp() {
+  const redirect = readAuthRedirect();
+
+  if (redirect?.type === "recovery") {
+    hideNavigation();
+    renderResetScreen(appEl, redirect.session, (session) => {
+      startSession(session);
+      enterApp();
+    });
+    return;
+  }
+
+  if (redirect?.type === "session") {
+    startSession(redirect.session);
+    enterApp();
+    return;
+  }
+
+  if (redirect?.type === "error") showToast(redirect.message, "error");
+
   if (getToken()) {
     showApp();
   } else {

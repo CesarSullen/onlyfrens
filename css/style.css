@@ -937,6 +937,166 @@ button:focus-visible {
   margin-top: 8px;
 }
 
+.forgot-link {
+  align-self: flex-end;
+  margin: -4px 0 0;
+  padding: 2px 0;
+  color: var(--primary);
+  font-size: 0.9rem;
+  transition: opacity 0.15s ease;
+}
+
+.forgot-link:active {
+  opacity: 0.6;
+}
+
+.auth-hint {
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.4;
+  text-align: center;
+}
+
+#forgot-body {
+  width: 100%;
+  max-width: 340px;
+}
+
+.auth-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding-top: 8px;
+}
+
+.auth-success-icon {
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  color: var(--primary);
+  animation: pop-in 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+
+.auth-success-icon .icon {
+  width: 34px;
+  height: 34px;
+}
+
+.auth-success-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  animation: fade-in 0.4s ease 0.15s both;
+}
+
+.auth-success .auth-hint {
+  animation: fade-in 0.4s ease 0.25s both;
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+
+.oauth-divider {
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.oauth-divider::before,
+.oauth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.oauth-buttons {
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.oauth-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 52px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 500;
+  transition: transform 0.12s ease, border-color 0.18s ease, opacity 0.2s ease;
+}
+
+.oauth-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.oauth-btn:active {
+  transform: scale(0.98);
+  border-color: var(--primary);
+}
+
+.oauth-btn:disabled {
+  opacity: 0.6;
+}
+
+.likers-btn {
+  margin-left: -10px;
+  padding: 6px 10px;
+  color: var(--muted);
+  transition: color 0.18s ease, transform 0.12s ease;
+}
+
+.likers-btn .icon {
+  width: 22px;
+  height: 22px;
+}
+
+.likers-btn:active {
+  color: var(--primary);
+  transform: scale(0.88);
+}
+
+.modal-ui-list {
+  gap: 0;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.liker-row {
+  animation: fade-in 260ms ease both;
+}
+
+.liker-row:last-child {
+  border-bottom: none;
+}
+
+.liker-empty {
+  padding: 18px 0;
+  text-align: center;
+}
+
 .auth-toggle {
   margin-top: 18px;
   color: var(--primary);

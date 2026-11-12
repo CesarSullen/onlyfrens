@@ -21,6 +21,15 @@ function setSession({ access_token, refresh_token, expires_at, expires_in }) {
   localStorage.setItem(EXPIRES_KEY, String(expiresAt));
 }
 
+function getUserId() {
+  try {
+    const payload = getToken().split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    return JSON.parse(atob(payload)).sub;
+  } catch {
+    return null;
+  }
+}
+
 function clearToken() {
   [TOKEN_KEY, REFRESH_KEY, EXPIRES_KEY].forEach((key) =>
     localStorage.removeItem(key),
@@ -123,6 +132,11 @@ async function mutate(path, options, { drop = [], stale = [] } = {}) {
   cacheDelete(...drop);
   cacheMarkStale(...stale);
   return result;
+}
+
+async function getLikers(postId) {
+  const { likers } = await apiFetch(`/posts/${postId}/like`);
+  return likers ?? [];
 }
 
 function getFeed(before) {
@@ -277,6 +291,8 @@ function markNotificationRead(notificationId) {
 
 export {
   getToken,
+  getUserId,
+  getLikers,
   setSession,
   clearToken,
   getFeed,
