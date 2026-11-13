@@ -2,6 +2,7 @@ import { getComments, createComment } from "./api.js";
 import { showToast, formatRelativeTime, haptic } from "./utils.js";
 import { icon } from "./icons.js";
 import { loaderHTML, removeLoader } from "./loader.js";
+import { verifiedBadgeHTML } from "./verified.js";
 
 const PLACEHOLDER_AVATAR = "./assets/icons/avatar-placeholder.svg";
 
@@ -17,7 +18,7 @@ function commentRowHTML(comment) {
     <div class="comment-row">
       <img class="avatar" src="${author.avatar_url || PLACEHOLDER_AVATAR}" alt="" loading="lazy" />
       <div>
-        <p class="comment-author">${escapeHTML(author.display_name)}<span class="comment-time">${formatRelativeTime(comment.created_at)}</span></p>
+        <p class="comment-author">${escapeHTML(author.display_name)}${verifiedBadgeHTML(author)}<span class="comment-time">${formatRelativeTime(comment.created_at)}</span></p>
         <p class="comment-text">${escapeHTML(comment.text_content)}</p>
       </div>
     </div>

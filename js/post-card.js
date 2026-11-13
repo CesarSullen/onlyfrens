@@ -3,6 +3,8 @@ import { showToast, showConfirm, formatPostTime, haptic } from "./utils.js";
 import { icon } from "./icons.js";
 import { openComments } from "./comments-sheet.js";
 import { openInteractions } from "./interactions.js";
+import { openUserProfile } from "./navigation.js";
+import { verifiedBadgeHTML } from "./verified.js";
 
 const PLACEHOLDER_AVATAR = "./assets/icons/avatar-placeholder.svg";
 
@@ -39,7 +41,7 @@ export function postCardHTML(post) {
     : "";
 
   const repostPill = post.is_repost
-    ? `<div class="pill pill-repost">${icon("repeat", "regular")}Compartido</div>`
+    ? `<div class="pill pill-repost">${icon("arrows-clockwise", "regular")}Compartido</div>`
     : "";
 
   const textHTML = content.text_content
@@ -57,7 +59,7 @@ export function postCardHTML(post) {
     ? actionButtonHTML({
         cls: "repost-btn",
         label: "Compartir",
-        name: "repeat",
+        name: "arrows-clockwise",
         active: post.reposted_by_me,
         count: post.repost_count,
         extra: `data-content-id="${content.id}"`,
@@ -72,14 +74,20 @@ export function postCardHTML(post) {
     ? `<button class="action-btn metrics-btn" aria-label="Ver interacciones">${icon("chart-bar", "regular")}</button>`
     : "";
 
+  const profileAttr = post.is_mine
+    ? 'data-profile=""'
+    : author.username
+      ? `data-profile="${escapeHTML(author.username)}"`
+      : "";
+
   return `
     <article class="post-card fade-in" data-post-id="${post.id}" data-is-repost="${post.is_repost}">
       ${birthdayPill}
       ${repostPill}
       <header class="post-header">
-        <img class="avatar" src="${author.avatar_url || PLACEHOLDER_AVATAR}" alt="" loading="lazy" />
+        <img class="avatar${profileAttr ? " tappable" : ""}" ${profileAttr} src="${author.avatar_url || PLACEHOLDER_AVATAR}" alt="" loading="lazy" />
         <div>
-          <p class="post-author">${escapeHTML(author.display_name)}</p>
+          <p class="post-author${profileAttr ? " tappable" : ""}" ${profileAttr}>${escapeHTML(author.display_name)}${verifiedBadgeHTML(author)}</p>
           <p class="post-time">${formatPostTime(post.created_at)}</p>
         </div>
         ${post.is_mine ? `<button class="post-delete-btn" aria-label="Eliminar publicación">${icon("trash")}</button>` : ""}
@@ -141,6 +149,13 @@ export function attachPostCardListeners(container) {
     card.querySelector(".like-btn").addEventListener("click", (e) =>
       handleToggle(e.currentTarget, postId, { add: likePost, remove: unlikePost })
     );
+
+    card.querySelectorAll("[data-profile]").forEach((el) => {
+      el.addEventListener("click", () => {
+        haptic();
+        openUserProfile(el.dataset.profile);
+      });
+    });
 
     card.querySelector(".metrics-btn")?.addEventListener("click", () => {
       haptic();

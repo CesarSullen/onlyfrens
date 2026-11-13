@@ -71,9 +71,17 @@ button, a, input, select, textarea, [role="button"] {
     border-color 0.15s ease, opacity 0.2s ease, transform 0.15s ease;
 }
 
-html, body {
+html {
   height: 100%;
+  background-color: var(--surface);
+}
+
+body {
+  min-height: 100%;
   background-color: var(--bg);
+}
+
+html, body {
   color: var(--text);
   overflow-x: hidden;
   overscroll-behavior-y: contain;
@@ -234,6 +242,11 @@ button:focus-visible {
   color: var(--primary);
 }
 
+.outline-btn.danger {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
 .solid-btn {
   background: var(--primary);
   color: var(--primary-text);
@@ -244,7 +257,8 @@ button:focus-visible {
   transform: scale(0.96);
 }
 
-.outline-btn.large {
+.outline-btn.large,
+.solid-btn.large {
   height: 40px;
   flex: 1;
   font-size: 0.94rem;
@@ -323,16 +337,6 @@ button:focus-visible {
   align-items: flex-start;
   background: var(--surface);
   border-top: 1px solid var(--line);
-}
-
-.bottom-nav::after {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  height: 200px;
-  background: var(--surface);
 }
 
 .nav-item {
@@ -616,6 +620,10 @@ button:focus-visible {
   gap: 18px;
 }
 
+.user-profile-bar + .profile-screen {
+  padding-top: 8px;
+}
+
 .profile-top {
   display: flex;
   align-items: center;
@@ -681,7 +689,13 @@ button:focus-visible {
   max-width: 240px;
 }
 
-.profile-birthday {
+.profile-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.profile-detail {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -689,7 +703,73 @@ button:focus-visible {
   color: var(--text-soft);
 }
 
-.profile-birthday .icon {
+.profile-link {
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+
+.profile-link:active {
+  opacity: 0.6;
+}
+
+.profile-avatar-btn.static {
+  pointer-events: none;
+}
+
+.profile-error {
+  padding: 40px var(--page-padding);
+  text-align: center;
+}
+
+.user-profile-bar {
+  display: flex;
+  padding: 2px var(--page-padding) 0;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  width: 44px;
+  height: 44px;
+  margin-left: -10px;
+  background: none;
+  border: none;
+  color: var(--text);
+  transition: transform 0.15s ease;
+}
+
+.back-btn .icon {
+  width: 26px;
+  height: 26px;
+}
+
+.back-btn:active {
+  transform: translateX(-3px) scale(0.92);
+}
+
+.verified-badge {
+  display: inline-flex;
+  vertical-align: -0.14em;
+  margin-left: 5px;
+  color: var(--primary);
+}
+
+.verified-badge .icon {
+  width: 1.05em;
+  height: 1.05em;
+}
+
+.tappable {
+  pointer-events: auto;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.tappable:active {
+  opacity: 0.65;
+}
+
+.profile-detail .icon {
   color: var(--primary);
   width: 24px;
   height: 24px;
@@ -707,10 +787,11 @@ button:focus-visible {
 }
 
 .profile-logout {
-  display: block;
-  color: var(--danger);
-  font-size: 0.95rem;
+  display: flex;
+  width: fit-content;
+  flex: none;
   margin: 12px auto 24px;
+  padding: 0 32px;
 }
 
 .empty-state {
@@ -1192,7 +1273,7 @@ button:focus-visible {
   align-items: center;
   gap: 12px;
   padding: 12px var(--page-padding);
-  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  padding-bottom: 12px;
   border-top: 1px solid var(--line);
 }
 
@@ -1230,7 +1311,7 @@ button:focus-visible {
   flex-direction: column;
   gap: 14px;
   flex: 1;
-  padding: 8px var(--page-padding) calc(16px + env(safe-area-inset-bottom));
+  padding: 8px var(--page-padding) 16px;
   min-height: 0;
 }
 

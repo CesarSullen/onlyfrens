@@ -142,6 +142,10 @@ async function getInteractions(postId) {
   return { likers: likes.likers ?? [], reposters: reposts.reposters ?? [] };
 }
 
+function getUserProfile(username) {
+  return apiFetch(`/profile/${encodeURIComponent(username)}`);
+}
+
 function getFeed(before) {
   const query = before ? `?before=${encodeURIComponent(before)}` : "";
   return apiFetch(`/posts${query}`, { method: "GET" });
@@ -179,7 +183,7 @@ function acceptFriendRequest(requestId) {
   return mutate(
     `/friends/${requestId}/accept`,
     { method: "POST" },
-    { drop: ["friends", "feed", "notifications"] },
+    { drop: ["friends", "feed", "notifications", "user:*"] },
   );
 }
 
@@ -187,7 +191,7 @@ function removeFriend(requestId) {
   return mutate(
     `/friends/${requestId}`,
     { method: "DELETE" },
-    { drop: ["friends", "feed"] },
+    { drop: ["friends", "feed", "user:*"] },
   );
 }
 
@@ -296,6 +300,7 @@ export {
   getToken,
   getUserId,
   getInteractions,
+  getUserProfile,
   setSession,
   clearToken,
   getFeed,

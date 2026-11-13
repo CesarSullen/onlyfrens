@@ -1,49 +1,19 @@
 import { getProfile, updateProfile, getOwnPosts, uploadImage } from "./api.js";
-import { showToast, showForm, showConfirm, haptic } from "./utils.js";
+import { showToast, showForm, showConfirm, haptic, profileFieldsError } from "./utils.js";
 import { postCardHTML, attachPostCardListeners } from "./post-card.js";
 import { signOut } from "./auth.js";
 import { icon } from "./icons.js";
 import { compressImage } from "./compress.js";
 import { loaderHTML, removeLoader } from "./loader.js";
 import { loadWithCache, livePosts } from "./cache.js";
-
-const PLACEHOLDER_AVATAR = "./assets/icons/avatar-placeholder.svg";
-const MONTH_NAMES = [
-  "enero",
-  "febrero",
-  "marzo",
-  "abril",
-  "mayo",
-  "junio",
-  "julio",
-  "agosto",
-  "septiembre",
-  "octubre",
-  "noviembre",
-  "diciembre",
-];
-
-function escapeHTML(text) {
-  const div = document.createElement("div");
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-function formatBirthday(day, month) {
-  if (!day || !month) return "Sin definir";
-  return `${day} de ${MONTH_NAMES[month - 1]}`;
-}
-
-function parseBirthday(value) {
-  const match = value.trim().match(/^(\d{1,2})\s*[\/\-]\s*(\d{1,2})$/);
-  if (!match) return null;
-
-  const day = Number(match[1]);
-  const month = Number(match[2]);
-  if (day < 1 || day > 31 || month < 1 || month > 12) return null;
-
-  return { day, month };
-}
+import {
+  profileCardHTML,
+  shareProfile,
+  parseBirthday,
+  cleanUsername,
+  cleanHandle,
+  socialsError,
+} from "./profile-view.js";
 
 function handleEditProfile(profile) {
   const currentBirthday =
@@ -61,6 +31,13 @@ function handleEditProfile(profile) {
         value: profile.display_name,
       },
       {
+        name: "username",
+        label: "Username",
+        placeholder: "tu_username",
+        value: profile.username,
+        maxLength: 20,
+      },
+      {
         name: "bio",
         label: "Bio",
         placeholder: "Cuéntales algo sobre ti",
@@ -73,21 +50,43 @@ function handleEditProfile(profile) {
         placeholder: "15/5",
         value: currentBirthday,
       },
+      {
+        name: "instagram",
+        label: "Instagram (usuario)",
+        placeholder: "tu_usuario",
+        value: profile.instagram ?? "",
+      },
+      {
+        name: "x",
+        label: "X (usuario)",
+        placeholder: "tu_usuario",
+        value: profile.x_username ?? "",
+      },
     ],
-    validate: ({ birthday }) =>
-      birthday.trim() && !parseBirthday(birthday)
+    validate: ({ name, username, birthday, instagram, x }) =>
+      profileFieldsError(cleanUsername(username), name.trim() || profile.display_name) ||
+      (birthday.trim() && !parseBirthday(birthday)
         ? "Usa el formato día/mes, por ejemplo 15/5"
-        : null,
-    onConfirm: async ({ name, bio, birthday }) => {
+        : null) ||
+      socialsError({ instagram: cleanHandle(instagram), x_username: cleanHandle(x) }),
+    onConfirm: async ({ name, username, bio, birthday, instagram, x }) => {
       const updates = { bio: bio.trim() };
 
       if (name.trim()) updates.display_name = name.trim();
+
+      const newUsername = cleanUsername(username);
+      if (newUsername !== profile.username) updates.username = newUsername;
 
       if (birthday.trim()) {
         const { day, month } = parseBirthday(birthday);
         updates.birthday_day = day;
         updates.birthday_month = month;
       }
+
+      const handles = { instagram: cleanHandle(instagram), x_username: cleanHandle(x) };
+      Object.entries(handles).forEach(([field, handle]) => {
+        if (handle !== (profile[field] ?? "")) updates[field] = handle;
+      });
 
       try {
         await updateProfile(updates);
@@ -98,30 +97,6 @@ function handleEditProfile(profile) {
       }
     },
   });
-}
-
-async function handleShareProfile(profile) {
-  const url = `${location.origin}${location.pathname}#add=${profile.username}`;
-
-  if (navigator.share) {
-    try {
-      await navigator.share({
-        title: "OnlyFrens",
-        text: "Agrégame en OnlyFrens",
-        url,
-      });
-    } catch {
-      return;
-    }
-    return;
-  }
-
-  try {
-    await navigator.clipboard.writeText(url);
-    showToast("Enlace copiado");
-  } catch {
-    showToast("No se pudo copiar el enlace", "error");
-  }
 }
 
 async function handleAvatarChange(file) {
@@ -138,31 +113,13 @@ async function handleAvatarChange(file) {
   }
 }
 
-function profileCardHTML(profile) {
-  return `
-    <div class="profile-top">
-          <button class="profile-avatar-btn" id="avatar-btn" aria-label="Cambiar foto de perfil">
-            <img class="profile-avatar" src="${profile.avatar_url || PLACEHOLDER_AVATAR}" alt="" />
-            <span class="avatar-edit-badge">${icon("camera", "fill")}</span>
-          </button>
-          <input type="file" id="avatar-input" accept="image/*" hidden />
-          <div>
-            <h1 class="profile-name">${escapeHTML(profile.display_name)}</h1>
-            <p class="profile-username">@${escapeHTML(profile.username)}</p>
-          </div>
-        </div>
-        ${profile.bio ? `<p class="profile-bio post-text">${escapeHTML(profile.bio)}</p>` : ""}
-        <p class="profile-birthday">${icon("cake", "fill")}Cumpleaños: ${formatBirthday(profile.birthday_day, profile.birthday_month)}</p>
-        <div class="profile-actions">
-          <button class="outline-btn large" id="edit-profile-btn">Editar perfil</button>
-          <button class="outline-btn large" id="share-profile-btn">Compartir perfil</button>
-        </div>
-        <div class="profile-divider"></div>
-  `;
-}
-
 function showProfile(cardEl, profile) {
-  cardEl.innerHTML = profileCardHTML(profile);
+  cardEl.innerHTML = profileCardHTML(profile, {
+    avatarEditable: true,
+    actionsHTML: `
+      <button class="outline-btn large" id="edit-profile-btn">Editar</button>
+      <button class="outline-btn large" id="share-profile-btn">Compartir</button>`,
+  });
 
   const avatarInput = document.getElementById("avatar-input");
   document.getElementById("avatar-btn").addEventListener("click", () => {
@@ -180,7 +137,7 @@ function showProfile(cardEl, profile) {
 
   document.getElementById("share-profile-btn").addEventListener("click", () => {
     haptic();
-    handleShareProfile(profile);
+    shareProfile(profile);
   });
 }
 
@@ -204,7 +161,7 @@ export async function renderProfile(appEl) {
   appEl.innerHTML = `
     <div class="profile-screen fade-in" id="profile-card">${loaderHTML()}</div>
     <div id="own-posts">${loaderHTML()}</div>
-    <button class="text-btn profile-logout" id="logout-btn">Cerrar sesión</button>
+    <button class="outline-btn danger large profile-logout" id="logout-btn">Cerrar sesión</button>
   `;
 
   const cardEl = document.getElementById("profile-card");
@@ -233,8 +190,7 @@ export async function renderProfile(appEl) {
       "ownPosts",
       getOwnPosts,
       ({ posts }, { cached }) => {
-        if (listEl.isConnected)
-          showOwnPosts(listEl, cached ? livePosts(posts) : posts);
+        if (listEl.isConnected) showOwnPosts(listEl, cached ? livePosts(posts) : posts);
       },
       30_000,
     ).catch((err) => {

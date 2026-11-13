@@ -19,7 +19,16 @@ function write(key, data) {
 }
 
 export function cacheDelete(...keys) {
-  keys.forEach((key) => localStorage.removeItem(PREFIX + key));
+  keys.forEach((key) => {
+    if (!key.endsWith("*")) {
+      localStorage.removeItem(PREFIX + key);
+      return;
+    }
+    const prefix = PREFIX + key.slice(0, -1);
+    Object.keys(localStorage)
+      .filter((stored) => stored.startsWith(prefix))
+      .forEach((stored) => localStorage.removeItem(stored));
+  });
 }
 
 export function cacheMarkStale(...keys) {

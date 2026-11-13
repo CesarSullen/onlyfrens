@@ -8,6 +8,8 @@ import { renderHome } from "./home.js";
 import { renderFriends } from "./friends.js";
 import { renderProfile } from "./profile.js";
 import { renderNotifications } from "./notifications.js";
+import { renderUserProfile } from "./user-profile.js";
+import { OPEN_PROFILE_EVENT } from "./navigation.js";
 import { openComposer } from "./composer.js";
 
 const appEl = document.getElementById("app");
@@ -23,7 +25,13 @@ const SCREENS = {
   profile: () => renderProfile(appEl),
 };
 
+let currentScreen = "home";
+let viewingUser = false;
+
 function goToScreen(screenName) {
+  currentScreen = screenName;
+  viewingUser = false;
+
   navButtons.forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.screen === screenName);
   });
@@ -33,6 +41,22 @@ function goToScreen(screenName) {
   const render = SCREENS[screenName];
   if (render) render();
 }
+
+function showUserProfile(username) {
+  viewingUser = true;
+  fab.style.display = "none";
+  history.pushState({ profile: username }, "");
+  window.scrollTo(0, 0);
+  renderUserProfile(appEl, username, { onSelf: () => goToScreen("profile") });
+}
+
+window.addEventListener(OPEN_PROFILE_EVENT, ({ detail }) => {
+  if (detail.username) {
+    showUserProfile(detail.username);
+  } else {
+    goToScreen("profile");
+  }
+});
 
 function handleInviteLink() {
   const match = location.hash.match(/^#add=([a-z0-9_]{3,20})$/);
@@ -71,6 +95,7 @@ fab.addEventListener("click", () => {
 
 window.addEventListener("popstate", () => {
   if (modalUI.classList.contains("active")) modalUI.classList.remove("active");
+  if (viewingUser) goToScreen(currentScreen);
 });
 
 document.addEventListener("keydown", (e) => {

@@ -22,7 +22,7 @@ const MESSAGE_BY_TYPE = {
 const ICON_BY_TYPE = {
   like: ["heart", "fill"],
   comment: ["chat-circle", "fill"],
-  repost: ["repeat", "regular"],
+  repost: ["arrows-clockwise", "regular"],
   friend_request: ["user-plus", "fill"],
   friend_accepted: ["user-check", "fill"],
   birthday: ["cake", "fill"],

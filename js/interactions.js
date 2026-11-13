@@ -1,15 +1,17 @@
 import { getInteractions } from "./api.js";
-import { showList, escapeHTML } from "./utils.js";
+import { showList, escapeHTML, haptic } from "./utils.js";
 import { loaderHTML } from "./loader.js";
+import { openUserProfile } from "./navigation.js";
+import { verifiedBadgeHTML } from "./verified.js";
 
 const PLACEHOLDER_AVATAR = "./assets/icons/avatar-placeholder.svg";
 
 function personRowHTML(profile, index) {
   return `
-    <div class="friend-row liker-row" style="animation-delay: ${Math.min(index, 8) * 40}ms">
+    <div class="friend-row liker-row tappable" data-profile="${escapeHTML(profile?.username ?? "")}" style="animation-delay: ${Math.min(index, 8) * 40}ms">
       <img class="avatar" src="${profile?.avatar_url || PLACEHOLDER_AVATAR}" alt="" loading="lazy" />
       <div class="friend-info">
-        <p class="friend-name">${escapeHTML(profile?.display_name ?? "Desconocido")}</p>
+        <p class="friend-name">${escapeHTML(profile?.display_name ?? "Desconocido")}${verifiedBadgeHTML(profile)}</p>
         <span class="friend-sub">@${escapeHTML(profile?.username ?? "")}</span>
       </div>
     </div>
@@ -39,6 +41,13 @@ export async function openInteractions(postId) {
         ? messageHTML("Aún no hay interacciones")
         : sectionHTML("Les gustó", likers.map((l) => l.profiles), 0) +
           sectionHTML("Lo compartieron", reposters.map((r) => r.profiles), likers.length);
+
+    listEl.querySelectorAll("[data-profile]").forEach((row) => {
+      row.addEventListener("click", () => {
+        haptic();
+        openUserProfile(row.dataset.profile);
+      });
+    });
   } catch (err) {
     listEl.innerHTML = messageHTML(err.message);
   }
