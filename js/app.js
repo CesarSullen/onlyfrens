@@ -15,6 +15,14 @@ import { openComposer } from "./composer.js";
 const appEl = document.getElementById("app");
 const navButtons = document.querySelectorAll(".nav-item");
 const fab = document.getElementById("composer-fab");
+const pageHeader = document.getElementById("page-header");
+
+const SCREEN_TITLES = {
+  home: "Inicio",
+  friends: "Amigos",
+  notifications: "Notificaciones",
+  profile: "Perfil",
+};
 const bottomNav = document.getElementById("bottom-nav");
 const modalUI = document.getElementById("modal-ui");
 
@@ -32,6 +40,7 @@ function goToScreen(screenName) {
   currentScreen = screenName;
   viewingUser = false;
   window.scrollTo(0, 0);
+  pageHeader.textContent = SCREEN_TITLES[screenName];
 
   navButtons.forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.screen === screenName);
@@ -46,6 +55,7 @@ function goToScreen(screenName) {
 function showUserProfile(username) {
   viewingUser = true;
   fab.style.display = "none";
+  pageHeader.textContent = SCREEN_TITLES.profile;
   history.pushState({ profile: username }, "");
   window.scrollTo(0, 0);
   renderUserProfile(appEl, username, { onSelf: () => goToScreen("profile") });
@@ -77,6 +87,7 @@ function handleInviteLink() {
 }
 
 function showApp() {
+  document.body.classList.remove("auth");
   bottomNav.style.display = "flex";
   goToScreen("home");
   handleInviteLink();
@@ -108,6 +119,7 @@ document.addEventListener("keydown", (e) => {
 history.pushState({ modal: false }, "");
 
 function hideNavigation() {
+  document.body.classList.add("auth");
   bottomNav.style.display = "none";
   fab.style.display = "none";
 }

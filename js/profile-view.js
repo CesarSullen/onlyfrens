@@ -123,7 +123,7 @@ export async function shareProfile(profile) {
 
   if (navigator.share) {
     try {
-      await navigator.share({ title: "OnlyFrens", text: "Agrégame en OnlyFrens", url });
+      await navigator.share({ url });
     } catch {
       return;
     }
