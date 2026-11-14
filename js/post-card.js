@@ -5,8 +5,8 @@ import { openComments } from "./comments-sheet.js";
 import { openInteractions } from "./interactions.js";
 import { openUserProfile } from "./navigation.js";
 import { verifiedBadgeHTML } from "./verified.js";
+import { avatarSrc } from "./avatar.js";
 
-const PLACEHOLDER_AVATAR = "./assets/icons/avatar-placeholder.svg";
 
 function escapeHTML(text) {
   const div = document.createElement("div");
@@ -85,7 +85,7 @@ export function postCardHTML(post) {
       ${birthdayPill}
       ${repostPill}
       <header class="post-header">
-        <img class="avatar${profileAttr ? " tappable" : ""}" ${profileAttr} src="${author.avatar_url || PLACEHOLDER_AVATAR}" alt="" loading="lazy" />
+        <img class="avatar${profileAttr ? " tappable" : ""}" ${profileAttr} src="${avatarSrc(author)}" alt="" loading="lazy" />
         <div>
           <p class="post-author${profileAttr ? " tappable" : ""}" ${profileAttr}>${escapeHTML(author.display_name)}${verifiedBadgeHTML(author)}</p>
           <p class="post-time">${formatPostTime(post.created_at)}</p>

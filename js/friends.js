@@ -7,11 +7,11 @@ import {
 import { showToast, showPrompt, showConfirm, haptic } from "./utils.js";
 import { openUserProfile } from "./navigation.js";
 import { verifiedBadgeHTML } from "./verified.js";
+import { avatarSrc } from "./avatar.js";
 import { icon } from "./icons.js";
 import { loaderHTML, removeLoader } from "./loader.js";
 import { loadWithCache } from "./cache.js";
 
-const PLACEHOLDER_AVATAR = "./assets/icons/avatar-placeholder.svg";
 
 function escapeHTML(text) {
   const div = document.createElement("div");
@@ -28,7 +28,7 @@ function rowHTML(
 ) {
   return `
     <div class="friend-row" data-request-id="${requestId}">
-      <img class="avatar tappable" data-profile="${escapeHTML(profile.username)}" src="${profile.avatar_url || PLACEHOLDER_AVATAR}" alt="" loading="lazy" />
+      <img class="avatar tappable" data-profile="${escapeHTML(profile.username)}" src="${avatarSrc(profile)}" alt="" loading="lazy" />
       <div class="friend-info">
         <p class="friend-name tappable" data-profile="${escapeHTML(profile.username)}">${escapeHTML(profile.display_name)}${verifiedBadgeHTML(profile)}</p>
         ${subtitle ? `<span class="friend-sub">${subtitle}</span>` : ""}

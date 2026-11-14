@@ -3,8 +3,8 @@ import { showToast, formatRelativeTime, haptic } from "./utils.js";
 import { icon } from "./icons.js";
 import { loaderHTML, removeLoader } from "./loader.js";
 import { verifiedBadgeHTML } from "./verified.js";
+import { avatarSrc } from "./avatar.js";
 
-const PLACEHOLDER_AVATAR = "./assets/icons/avatar-placeholder.svg";
 
 function escapeHTML(text) {
   const div = document.createElement("div");
@@ -16,7 +16,7 @@ function commentRowHTML(comment) {
   const author = comment.profiles ?? { display_name: "Desconocido" };
   return `
     <div class="comment-row">
-      <img class="avatar" src="${author.avatar_url || PLACEHOLDER_AVATAR}" alt="" loading="lazy" />
+      <img class="avatar" src="${avatarSrc(author)}" alt="" loading="lazy" />
       <div>
         <p class="comment-author">${escapeHTML(author.display_name)}${verifiedBadgeHTML(author)}<span class="comment-time">${formatRelativeTime(comment.created_at)}</span></p>
         <p class="comment-text">${escapeHTML(comment.text_content)}</p>

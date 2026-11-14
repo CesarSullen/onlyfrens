@@ -31,6 +31,7 @@ let viewingUser = false;
 function goToScreen(screenName) {
   currentScreen = screenName;
   viewingUser = false;
+  window.scrollTo(0, 0);
 
   navButtons.forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.screen === screenName);

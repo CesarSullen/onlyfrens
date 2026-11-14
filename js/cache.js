@@ -33,12 +33,20 @@ export function cacheDelete(...keys) {
 
 export function cacheMarkStale(...keys) {
   keys.forEach((key) => {
-    const entry = read(key);
-    if (entry)
-      localStorage.setItem(
-        PREFIX + key,
-        JSON.stringify({ ...entry, savedAt: 0 }),
-      );
+    const names = key.endsWith("*")
+      ? Object.keys(localStorage)
+          .filter((stored) => stored.startsWith(PREFIX + key.slice(0, -1)))
+          .map((stored) => stored.slice(PREFIX.length))
+      : [key];
+
+    names.forEach((name) => {
+      const entry = read(name);
+      if (entry)
+        localStorage.setItem(
+          PREFIX + name,
+          JSON.stringify({ ...entry, savedAt: 0 }),
+        );
+    });
   });
 }
 

@@ -142,6 +142,10 @@ async function getInteractions(postId) {
   return { likers: likes.likers ?? [], reposters: reposts.reposters ?? [] };
 }
 
+function getUserPosts(username) {
+  return apiFetch(`/profile/${encodeURIComponent(username)}/posts`);
+}
+
 function getUserProfile(username) {
   return apiFetch(`/profile/${encodeURIComponent(username)}`);
 }
@@ -155,7 +159,7 @@ function deletePost(postId) {
   return mutate(
     `/posts/${postId}`,
     { method: "DELETE" },
-    { drop: ["feed", "ownPosts"] },
+    { drop: ["feed", "ownPosts"], stale: ["user:*"] },
   );
 }
 
@@ -163,7 +167,7 @@ function createPost(body) {
   return mutate(
     "/posts",
     { method: "POST", body: JSON.stringify(body) },
-    { drop: ["feed", "ownPosts"] },
+    { drop: ["feed", "ownPosts"], stale: ["user:*"] },
   );
 }
 
@@ -211,7 +215,7 @@ function updateProfile(body) {
   return mutate(
     "/profile",
     { method: "PUT", body: JSON.stringify(body) },
-    { drop: ["profile"], stale: ["feed", "ownPosts"] },
+    { drop: ["profile"], stale: ["feed", "ownPosts", "user:*"] },
   );
 }
 
@@ -219,7 +223,7 @@ function likePost(postId) {
   return mutate(
     `/posts/${postId}/like`,
     { method: "POST" },
-    { stale: ["feed", "ownPosts"] },
+    { stale: ["feed", "ownPosts", "user:*"] },
   );
 }
 
@@ -227,7 +231,7 @@ function unlikePost(postId) {
   return mutate(
     `/posts/${postId}/like`,
     { method: "DELETE" },
-    { stale: ["feed", "ownPosts"] },
+    { stale: ["feed", "ownPosts", "user:*"] },
   );
 }
 
@@ -243,7 +247,7 @@ function createComment(postId, textContent) {
   return mutate(
     `/posts/${postId}/comments`,
     { method: "POST", body: JSON.stringify({ text_content: textContent }) },
-    { stale: ["feed", "ownPosts"] },
+    { stale: ["feed", "ownPosts", "user:*"] },
   );
 }
 
@@ -251,7 +255,7 @@ function repost(postId) {
   return mutate(
     `/posts/${postId}/repost`,
     { method: "POST" },
-    { drop: ["feed", "ownPosts"] },
+    { drop: ["feed", "ownPosts"], stale: ["user:*"] },
   );
 }
 
@@ -259,7 +263,7 @@ function undoRepost(postId) {
   return mutate(
     `/posts/${postId}/repost`,
     { method: "DELETE" },
-    { drop: ["feed", "ownPosts"] },
+    { drop: ["feed", "ownPosts"], stale: ["user:*"] },
   );
 }
 
@@ -301,6 +305,7 @@ export {
   getUserId,
   getInteractions,
   getUserProfile,
+  getUserPosts,
   setSession,
   clearToken,
   getFeed,

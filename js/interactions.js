@@ -3,13 +3,13 @@ import { showList, escapeHTML, haptic } from "./utils.js";
 import { loaderHTML } from "./loader.js";
 import { openUserProfile } from "./navigation.js";
 import { verifiedBadgeHTML } from "./verified.js";
+import { avatarSrc } from "./avatar.js";
 
-const PLACEHOLDER_AVATAR = "./assets/icons/avatar-placeholder.svg";
 
 function personRowHTML(profile, index) {
   return `
     <div class="friend-row liker-row tappable" data-profile="${escapeHTML(profile?.username ?? "")}" style="animation-delay: ${Math.min(index, 8) * 40}ms">
-      <img class="avatar" src="${profile?.avatar_url || PLACEHOLDER_AVATAR}" alt="" loading="lazy" />
+      <img class="avatar" src="${avatarSrc(profile)}" alt="" loading="lazy" />
       <div class="friend-info">
         <p class="friend-name">${escapeHTML(profile?.display_name ?? "Desconocido")}${verifiedBadgeHTML(profile)}</p>
         <span class="friend-sub">@${escapeHTML(profile?.username ?? "")}</span>

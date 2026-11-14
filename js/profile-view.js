@@ -1,8 +1,8 @@
 import { icon } from "./icons.js";
 import { escapeHTML, showToast } from "./utils.js";
 import { verifiedBadgeHTML } from "./verified.js";
+import { avatarSrc } from "./avatar.js";
 
-const PLACEHOLDER_AVATAR = "./assets/icons/avatar-placeholder.svg";
 const MONTH_NAMES = [
   "enero",
   "febrero",
@@ -86,18 +86,18 @@ function socialLinksHTML(profile) {
 }
 
 export function profileCardHTML(profile, { actionsHTML, avatarEditable = false, divider = true }) {
-  const avatarSrc = profile.avatar_url || PLACEHOLDER_AVATAR;
+  const avatarUrl = avatarSrc(profile);
 
   const avatarHTML = avatarEditable
     ? `
       <button class="profile-avatar-btn" id="avatar-btn" aria-label="Cambiar foto de perfil">
-        <img class="profile-avatar" src="${avatarSrc}" alt="" />
+        <img class="profile-avatar" src="${avatarUrl}" alt="" />
         <span class="avatar-edit-badge">${icon("camera", "fill")}</span>
       </button>
       <input type="file" id="avatar-input" accept="image/*" hidden />`
     : `
       <div class="profile-avatar-btn static">
-        <img class="profile-avatar" src="${avatarSrc}" alt="" />
+        <img class="profile-avatar" src="${avatarUrl}" alt="" />
       </div>`;
 
   return `

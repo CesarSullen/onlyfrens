@@ -1,4 +1,4 @@
-const CACHE_NAME = "onlyfrens-v0.0.7";
+const CACHE_NAME = "onlyfrens-v0.0.8";
 const IMAGE_CACHE = "onlyfrens-images";
 const MAX_IMAGES = 150;
 const ASSETS = [
@@ -11,6 +11,7 @@ const ASSETS = [
   "./js/auth.js",
   "./js/auth-screen.js",
   "./js/cache.js",
+  "./js/avatar.js",
   "./js/verified.js",
   "./js/navigation.js",
   "./js/profile-view.js",
@@ -36,7 +37,6 @@ const ASSETS = [
   "./typography/jost-500.woff2",
   "./typography/jost-600.woff2",
   "./typography/jost-700.woff2",
-  "./assets/icons/avatar-placeholder.svg",
 ];
 
 self.addEventListener("install", (e) => {

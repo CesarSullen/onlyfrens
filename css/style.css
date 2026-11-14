@@ -83,10 +83,13 @@ body {
 
 html, body {
   color: var(--text);
-  overflow-x: hidden;
-  overscroll-behavior-y: contain;
   touch-action: pan-y;
   -webkit-font-smoothing: antialiased;
+}
+
+html {
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
 }
 
 * {
@@ -1463,6 +1466,15 @@ button:focus-visible {
 .toast.toast-error {
   background: var(--danger);
   color: #ffffff;
+}
+
+html:has(.sheet-overlay, #modal-ui.active) {
+  overflow: hidden;
+}
+
+.sheet-overlay,
+#modal-ui.active {
+  overscroll-behavior: contain;
 }
 
 #modal-ui {
