@@ -2,6 +2,7 @@ import { getProfile, updateProfile, getOwnPosts, uploadImage } from "./api.js";
 import { showToast, showForm, showConfirm, haptic, profileFieldsError } from "./utils.js";
 import { postCardHTML, attachPostCardListeners } from "./post-card.js";
 import { signOut } from "./auth.js";
+import { disablePush } from "./push.js";
 import { icon } from "./icons.js";
 import { compressImage } from "./compress.js";
 import { loaderHTML, removeLoader } from "./loader.js";
@@ -171,7 +172,8 @@ export async function renderProfile(appEl) {
     haptic();
     showConfirm(
       "¿Cerrar sesión?",
-      () => {
+      async () => {
+        await disablePush();
         signOut();
         window.location.reload();
       },

@@ -1,8 +1,9 @@
 import { getNotifications, markNotificationRead } from "./api.js";
-import { showToast, formatRelativeTime } from "./utils.js";
+import { showToast, formatRelativeTime, haptic } from "./utils.js";
 import { icon } from "./icons.js";
 import { loaderHTML, removeLoader } from "./loader.js";
 import { loadWithCache } from "./cache.js";
+import { canAskForPush, needsInstallForPush, enablePush } from "./push.js";
 
 function escapeHTML(text) {
   const div = document.createElement("div");
@@ -64,13 +65,58 @@ const EMPTY_NOTIFICATIONS_HTML = `
   </div>
 `;
 
+function pushBannerHTML() {
+  if (canAskForPush()) {
+    return `
+      <div class="push-banner">
+        ${icon("bell", "fill")}
+        <p>Activa las notificaciones para enterarte al instante.</p>
+        <button class="solid-btn" id="enable-push">Activar</button>
+      </div>`;
+  }
+  if (needsInstallForPush()) {
+    return `
+      <div class="push-banner">
+        ${icon("bell", "fill")}
+        <p>Para recibir notificaciones, agrega la app a tu pantalla de inicio.</p>
+      </div>`;
+  }
+  return "";
+}
+
+function setupPushBanner(screenEl) {
+  const button = screenEl.querySelector("#enable-push");
+  if (!button) return;
+
+  button.addEventListener("click", async () => {
+    haptic();
+    button.disabled = true;
+    try {
+      const enabled = await enablePush();
+      if (enabled) {
+        screenEl.querySelector(".push-banner").remove();
+        showToast("Notificaciones activadas");
+      } else {
+        button.disabled = false;
+      }
+    } catch (err) {
+      showToast(err.message, "error");
+      button.disabled = false;
+    }
+  });
+}
+
 function showNotifications(screenEl, notifications) {
+  const banner = pushBannerHTML();
+
   if (notifications.length === 0) {
-    screenEl.innerHTML = EMPTY_NOTIFICATIONS_HTML;
+    screenEl.innerHTML = banner + EMPTY_NOTIFICATIONS_HTML;
+    setupPushBanner(screenEl);
     return;
   }
 
-  screenEl.innerHTML = notifications.map(notificationRowHTML).join("");
+  screenEl.innerHTML = banner + notifications.map(notificationRowHTML).join("");
+  setupPushBanner(screenEl);
 
   screenEl.querySelectorAll(".notification-row").forEach((row) => {
     row.addEventListener("click", () => handleRowClick(row));

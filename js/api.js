@@ -131,7 +131,28 @@ async function mutate(path, options, { drop = [], stale = [] } = {}) {
   const result = await apiFetch(path, options);
   cacheDelete(...drop);
   cacheMarkStale(...stale);
+  window.dispatchEvent(new Event("onlyfrens:mutated"));
   return result;
+}
+
+function getBadges() {
+  return apiFetch("/badges");
+}
+
+function markAllNotificationsRead(options = {}) {
+  return mutate("/notifications/read-all", { method: "POST", ...options }, { drop: ["notifications"] });
+}
+
+function getPushKey() {
+  return apiFetch("/push/key");
+}
+
+function savePushSubscription(subscription) {
+  return apiFetch("/push/subscribe", { method: "POST", body: JSON.stringify(subscription) });
+}
+
+function deletePushSubscription(endpoint) {
+  return apiFetch("/push/subscribe", { method: "DELETE", body: JSON.stringify({ endpoint }) });
 }
 
 async function getInteractions(postId) {
@@ -304,6 +325,11 @@ export {
   getToken,
   getUserId,
   getInteractions,
+  getBadges,
+  markAllNotificationsRead,
+  getPushKey,
+  savePushSubscription,
+  deletePushSubscription,
   getUserProfile,
   getUserPosts,
   setSession,

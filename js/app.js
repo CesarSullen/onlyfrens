@@ -10,6 +10,10 @@ import { renderProfile } from "./profile.js";
 import { renderNotifications } from "./notifications.js";
 import { renderUserProfile } from "./user-profile.js";
 import { OPEN_PROFILE_EVENT } from "./navigation.js";
+import { startBadges, setNotificationsViewOpen } from "./badges.js";
+import { markAllNotificationsRead } from "./api.js";
+import { syncPush } from "./push.js";
+import { cacheDelete } from "./cache.js";
 import { openComposer } from "./composer.js";
 
 const appEl = document.getElementById("app");
@@ -36,7 +40,29 @@ const SCREENS = {
 let currentScreen = "home";
 let viewingUser = false;
 
+let notificationsOpen = false;
+
+function enterNotifications() {
+  notificationsOpen = true;
+  setNotificationsViewOpen(true);
+}
+
+// Leaving the view is what marks the notifications as read.
+function leaveNotifications(options) {
+  if (!notificationsOpen) return;
+  notificationsOpen = false;
+  setNotificationsViewOpen(false);
+
+  // Only if the user actually saw unread ones: otherwise nothing changes on the server.
+  if (appEl.querySelector(".notification-row.unread")) {
+    markAllNotificationsRead(options).catch(() => {});
+  }
+}
+
 function goToScreen(screenName) {
+  if (screenName === "notifications") enterNotifications();
+  else leaveNotifications();
+
   currentScreen = screenName;
   viewingUser = false;
   window.scrollTo(0, 0);
@@ -53,6 +79,7 @@ function goToScreen(screenName) {
 }
 
 function showUserProfile(username) {
+  leaveNotifications();
   viewingUser = true;
   fab.style.display = "none";
   pageHeader.textContent = SCREEN_TITLES.profile;
@@ -91,7 +118,34 @@ function showApp() {
   bottomNav.style.display = "flex";
   goToScreen("home");
   handleInviteLink();
+  openFromHash();
+  startBadges();
+  syncPush();
 }
+
+// Opening a push notification starts the app on #notifications.
+function openFromHash() {
+  if (location.hash !== "#notifications") return;
+  history.replaceState(null, "", location.pathname + location.search);
+  goToScreen("notifications");
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    leaveNotifications({ keepalive: true });
+  } else if (currentScreen === "notifications" && !viewingUser && bottomNav.style.display === "flex") {
+    goToScreen("notifications");
+  }
+});
+
+navigator.serviceWorker?.addEventListener("message", ({ data }) => {
+  if (data?.type === "open-notifications" && bottomNav.style.display === "flex") {
+    goToScreen("notifications");
+  } else if (data?.type === "push-received" && currentScreen === "notifications" && !viewingUser) {
+    cacheDelete("notifications");
+    SCREENS.notifications?.();
+  }
+});
 
 navButtons.forEach((btn) => {
   btn.addEventListener("click", () => {

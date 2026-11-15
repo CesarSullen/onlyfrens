@@ -1,4 +1,4 @@
-const CACHE_NAME = "onlyfrens-v0.0.10";
+const CACHE_NAME = "onlyfrens-v0.0.11";
 const IMAGE_CACHE = "onlyfrens-images";
 const MAX_IMAGES = 150;
 const ASSETS = [
@@ -11,6 +11,8 @@ const ASSETS = [
   "./js/auth.js",
   "./js/auth-screen.js",
   "./js/cache.js",
+  "./js/badges.js",
+  "./js/push.js",
   "./js/avatar.js",
   "./js/verified.js",
   "./js/navigation.js",
@@ -97,5 +99,45 @@ self.addEventListener("fetch", (e) => {
         .catch(() => cached);
       return cached || network;
     })
+  );
+});
+
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data?.json() ?? {};
+  } catch {
+    data = {};
+  }
+
+  event.waitUntil(
+    (async () => {
+      await self.registration.showNotification(data.title || "OnlyFrens", {
+        body: data.body,
+        tag: data.tag,
+        renotify: Boolean(data.tag),
+        icon: "./assets/opengraph/icon-192.png",
+        badge: "./assets/opengraph/icon-192.png",
+      });
+
+      const windows = await clients.matchAll({ type: "window", includeUncontrolled: true });
+      windows.forEach((client) => client.postMessage({ type: "push-received" }));
+    })(),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  event.waitUntil(
+    (async () => {
+      const windows = await clients.matchAll({ type: "window", includeUncontrolled: true });
+      if (windows.length > 0) {
+        await windows[0].focus();
+        windows[0].postMessage({ type: "open-notifications" });
+      } else {
+        await clients.openWindow(`${self.registration.scope}#notifications`);
+      }
+    })(),
   );
 });
