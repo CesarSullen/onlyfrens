@@ -273,6 +273,17 @@ button:focus-visible {
   border-color: var(--danger);
 }
 
+.outline-btn.icon-only {
+  width: 37px;
+  min-width: 0;
+  padding: 0;
+}
+
+.outline-btn.icon-only .icon {
+  width: 20px;
+  height: 20px;
+}
+
 .solid-btn {
   background: var(--primary);
   color: var(--primary-text);
@@ -1784,6 +1795,8 @@ html:has(.sheet-overlay, #modal-ui.active) {
   padding: 1.5rem;
   width: 100%;
   max-width: 340px;
+  max-height: calc(100vh - 3rem);
+  max-height: calc(100dvh - 3rem);
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -1821,6 +1834,9 @@ html:has(.sheet-overlay, #modal-ui.active) {
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .modal-ui-field {

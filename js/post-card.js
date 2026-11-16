@@ -71,7 +71,7 @@ export function postCardHTML(post) {
     : post.is_mine && !post.is_repost;
 
   const metricsButton = isContentOwner
-    ? `<button class="action-btn metrics-btn" aria-label="Ver interacciones">${icon("chart-bar", "regular")}</button>`
+    ? `<button class="action-btn metrics-btn" aria-label="Ver interacciones">${icon("trend-up", "regular")}</button>`
     : "";
 
   const profileAttr = post.is_mine

@@ -1,7 +1,8 @@
 import { getProfile, updateProfile, getOwnPosts, uploadImage } from "./api.js";
 import { showToast, showForm, showConfirm, haptic, profileFieldsError } from "./utils.js";
 import { postCardHTML, attachPostCardListeners } from "./post-card.js";
-import { signOut } from "./auth.js";
+import { signOut, requestEmailChange } from "./auth.js";
+import { isEmail, normalizePhone, PHONE_HINT } from "./contact.js";
 import { disablePush } from "./push.js";
 import { icon } from "./icons.js";
 import { compressImage } from "./compress.js";
@@ -15,6 +16,14 @@ import {
   cleanHandle,
   socialsError,
 } from "./profile-view.js";
+
+// The email can be changed but not removed; the phone is optional. Both must look valid.
+function contactError({ email, phone }, profile) {
+  if (profile.email && !email.trim()) return "No puedes quitar tu correo, solo cambiarlo";
+  if (email.trim() && !isEmail(email)) return "El correo no es válido";
+  if (phone.trim() && !normalizePhone(phone)) return PHONE_HINT;
+  return null;
+}
 
 function handleEditProfile(profile) {
   const currentBirthday =
@@ -52,6 +61,22 @@ function handleEditProfile(profile) {
         value: currentBirthday,
       },
       {
+        name: "email",
+        label: "Correo",
+        placeholder: "tu@correo.com",
+        value: profile.email ?? "",
+        type: "email",
+        autocomplete: "email",
+      },
+      {
+        name: "phone",
+        label: "Teléfono para que te escriban (con código de país)",
+        placeholder: "+34 600 000 000",
+        value: profile.phone ?? "",
+        type: "tel",
+        autocomplete: "tel",
+      },
+      {
         name: "instagram",
         label: "Instagram (usuario)",
         placeholder: "tu_usuario",
@@ -64,13 +89,14 @@ function handleEditProfile(profile) {
         value: profile.x_username ?? "",
       },
     ],
-    validate: ({ name, username, birthday, instagram, x }) =>
+    validate: ({ name, username, birthday, email, phone, instagram, x }) =>
       profileFieldsError(cleanUsername(username), name.trim() || profile.display_name) ||
       (birthday.trim() && !parseBirthday(birthday)
         ? "Usa el formato día/mes, por ejemplo 15/5"
         : null) ||
+      contactError({ email, phone }, profile) ||
       socialsError({ instagram: cleanHandle(instagram), x_username: cleanHandle(x) }),
-    onConfirm: async ({ name, username, bio, birthday, instagram, x }) => {
+    onConfirm: async ({ name, username, bio, birthday, email, phone, instagram, x }) => {
       const updates = { bio: bio.trim() };
 
       if (name.trim()) updates.display_name = name.trim();
@@ -89,9 +115,21 @@ function handleEditProfile(profile) {
         if (handle !== (profile[field] ?? "")) updates[field] = handle;
       });
 
+      // An empty value removes the phone.
+      const newPhone = phone.trim() ? normalizePhone(phone) : "";
+      if (newPhone !== (profile.phone ?? "")) updates.phone = newPhone;
+
+      const newEmail = email.trim().toLowerCase();
+      const emailChanged = newEmail && newEmail !== (profile.email ?? "").toLowerCase();
+
       try {
         await updateProfile(updates);
-        showToast("Perfil actualizado");
+        if (emailChanged) {
+          await requestEmailChange(newEmail);
+          showToast("Te enviamos un enlace para confirmar el nuevo correo", "success", 5000);
+        } else {
+          showToast("Perfil actualizado");
+        }
         renderProfile(document.getElementById("app"));
       } catch (err) {
         showToast(err.message, "error");

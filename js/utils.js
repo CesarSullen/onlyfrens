@@ -167,11 +167,12 @@ function showForm({ title, fields, validate, onConfirm }) {
     label.textContent = field.label;
 
     const input = document.createElement("input");
-    input.type = "text";
+    input.type = field.type ?? "text";
     input.className = "modal-ui-input";
     input.placeholder = field.placeholder ?? "";
     input.value = field.value ?? "";
-    input.autocomplete = "off";
+    input.autocomplete = field.autocomplete ?? "off";
+    if (field.inputMode) input.inputMode = field.inputMode;
     if (field.maxLength) input.maxLength = field.maxLength;
 
     label.appendChild(input);
@@ -181,8 +182,8 @@ function showForm({ title, fields, validate, onConfirm }) {
 
   const errorEl = document.createElement("p");
   errorEl.className = "modal-ui-error";
-  fieldsEl.appendChild(errorEl);
-  modalActions.before(fieldsEl);
+  // The error sits outside the scrollable fields so it stays visible.
+  modalActions.before(fieldsEl, errorEl);
 
   const cancelButton = document.createElement("button");
   cancelButton.className = "modal-ui-btn";

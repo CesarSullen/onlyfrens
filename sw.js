@@ -1,4 +1,4 @@
-const CACHE_NAME = "onlyfrens-v0.0.12";
+const CACHE_NAME = "onlyfrens-v0.0.13";
 const IMAGE_CACHE = "onlyfrens-images";
 const MAX_IMAGES = 150;
 const ASSETS = [
@@ -27,6 +27,7 @@ const ASSETS = [
   "./js/compress.js",
   "./js/composer.js",
   "./js/config.js",
+  "./js/contact.js",
   "./js/friends.js",
   "./js/home.js",
   "./js/icons.js",

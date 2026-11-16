@@ -1,5 +1,5 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
-import { setSession, clearToken } from "./api.js";
+import { setSession, clearToken, getToken } from "./api.js";
 import { clearCache } from "./cache.js";
 
 const AUTH_ERRORS = {
@@ -83,6 +83,12 @@ export async function requestPasswordReset(email) {
 
 export async function updatePassword(accessToken, password) {
   await supabaseAuthFetch("/user", { password }, { method: "PUT", token: accessToken });
+}
+
+// Supabase emails a confirmation link; the address only changes once it is opened.
+export async function requestEmailChange(email) {
+  const redirectTo = encodeURIComponent(location.origin + location.pathname);
+  await supabaseAuthFetch(`/user?redirect_to=${redirectTo}`, { email }, { method: "PUT", token: getToken() });
 }
 
 export function getAuthUser(accessToken) {

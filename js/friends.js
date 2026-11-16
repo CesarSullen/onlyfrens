@@ -13,6 +13,7 @@ import { avatarSrc } from "./avatar.js";
 import { icon } from "./icons.js";
 import { loaderHTML, removeLoader } from "./loader.js";
 import { loadWithCache } from "./cache.js";
+import { whatsappUrl } from "./contact.js";
 
 
 function escapeHTML(text) {
@@ -42,10 +43,15 @@ function rowHTML(
   `;
 }
 
+// The message button only exists when the friend has a phone number.
 function friendRowHTML(profile) {
+  const message = profile.phone
+    ? `<a class="outline-btn icon-only message-btn" href="${whatsappUrl(profile.phone)}" target="_blank" rel="noopener noreferrer" aria-label="Escribir por WhatsApp">${icon("chat-circle", "regular")}</a>`
+    : "";
+
   return rowHTML(
     profile,
-    `<button class="outline-btn danger remove-friend-btn" data-friendship-id="${profile.friendship_id}">Eliminar</button>`,
+    `${message}<button class="outline-btn danger icon-only remove-friend-btn" data-friendship-id="${profile.friendship_id}" aria-label="Eliminar amigo">${icon("user-slash", "regular")}</button>`,
   );
 }
 
@@ -194,7 +200,7 @@ function friendsListHTML({ friends, incomingRequests, outgoingRequests }) {
       "Solicitudes enviadas",
       outgoingRequests.map(outgoingRequestHTML).join(""),
     ) +
-    sectionHTML("Amigos", friends.map(friendRowHTML).join(""));
+    sectionHTML(`Amigos (${friends.length})`, friends.map(friendRowHTML).join(""));
 
   return (
     sections ||
@@ -216,6 +222,10 @@ function showFriends(listEl, data) {
   listEl.querySelectorAll(".remove-friend-btn").forEach((btn) => {
     const friend = data.friends.find((f) => f.friendship_id === btn.dataset.friendshipId);
     btn.addEventListener("click", () => friend && handleRemoveFriend(friend));
+  });
+
+  listEl.querySelectorAll(".message-btn").forEach((link) => {
+    link.addEventListener("click", () => haptic());
   });
 
   listEl.querySelectorAll("[data-profile]").forEach((el) => {
