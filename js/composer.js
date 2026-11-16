@@ -1,9 +1,11 @@
-import { createPost, uploadImage } from "./api.js";
+import { createPost, uploadImage, getProfile } from "./api.js";
+import { loadWithCache } from "./cache.js";
 import { showToast, haptic } from "./utils.js";
 import { compressImage } from "./compress.js";
 import { icon } from "./icons.js";
 
-const MAX_TEXT_LENGTH = 500;
+const MAX_TEXT_LENGTH = 200;
+const MAX_TEXT_LENGTH_VERIFIED = 500;
 const MAX_IMAGES = 2;
 
 let selectedFiles = [];
@@ -122,10 +124,23 @@ export function openComposer(onPublished) {
   const imagesContainer = document.getElementById("composer-images");
   const fileInput = document.getElementById("composer-file-input");
 
+  let textLimit = MAX_TEXT_LENGTH;
+
+  function updateCounter() {
+    counterEl.textContent = `${textEl.value.length}/${textLimit}`;
+  }
+
   textEl.addEventListener("input", () => {
-    counterEl.textContent = `${textEl.value.length}/${MAX_TEXT_LENGTH}`;
+    updateCounter();
     updatePublishState();
   });
+
+  // Starts at the normal limit and rises to the verified one as soon as the profile says so.
+  loadWithCache("profile", getProfile, ({ profile }) => {
+    textLimit = profile.verified ? MAX_TEXT_LENGTH_VERIFIED : MAX_TEXT_LENGTH;
+    textEl.maxLength = textLimit;
+    updateCounter();
+  }).catch(() => {});
 
   document.getElementById("composer-add-image").addEventListener("click", () => {
     if (selectedFiles.length >= MAX_IMAGES) {

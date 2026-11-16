@@ -1,5 +1,7 @@
 import {
   getFriends,
+  getProfile,
+  getSuggestions,
   addFriend,
   acceptFriendRequest,
   removeFriend,
@@ -25,12 +27,13 @@ function rowHTML(
   requestId = "",
   subtitle = "",
   stacked = false,
+  tappable = true,
 ) {
   return `
     <div class="friend-row" data-request-id="${requestId}">
-      <img class="avatar tappable" data-profile="${escapeHTML(profile.username)}" src="${avatarSrc(profile)}" alt="" loading="lazy" />
+      <img class="avatar${tappable ? " tappable" : ""}"${tappable ? ` data-profile="${escapeHTML(profile.username)}"` : ""} src="${avatarSrc(profile)}" alt="" loading="lazy" />
       <div class="friend-info">
-        <p class="friend-name tappable" data-profile="${escapeHTML(profile.username)}">${escapeHTML(profile.display_name)}${verifiedBadgeHTML(profile)}</p>
+        <p class="friend-name${tappable ? " tappable" : ""}"${tappable ? ` data-profile="${escapeHTML(profile.username)}"` : ""}>${escapeHTML(profile.display_name)}${verifiedBadgeHTML(profile)}</p>
         ${subtitle ? `<span class="friend-sub">${subtitle}</span>` : ""}
         ${stacked ? `<div class="friend-actions-stacked">${actionsHTML}</div>` : ""}
       </div>
@@ -116,6 +119,55 @@ function handleReject(requestId) {
   );
 }
 
+// Suggested people are not related to you yet, so their profile can't be opened.
+function suggestionsHTML(suggestions) {
+  const rows = suggestions
+    .map((profile) =>
+      rowHTML(
+        profile,
+        `<button class="solid-btn suggestion-add-btn" data-username="${escapeHTML(profile.username)}">Agregar</button>`,
+        "",
+        `${profile.mutual_friends} amigos en común`,
+        false,
+        false,
+      ),
+    )
+    .join("");
+
+  return sectionHTML("Sugerencias para ti", rows);
+}
+
+async function handleSuggestionAdd(suggestionsEl, button) {
+  haptic();
+  button.disabled = true;
+
+  try {
+    await addFriend(button.dataset.username);
+    showToast("Solicitud enviada");
+
+    const row = button.closest(".friend-row");
+    row.classList.add("leaving");
+    setTimeout(() => {
+      row.remove();
+      if (!suggestionsEl.querySelector(".friend-row")) suggestionsEl.innerHTML = "";
+    }, 300);
+
+    // The new request shows up in the list below.
+    const listEl = document.getElementById("friends-list");
+    if (listEl) getFriends().then((data) => showFriends(listEl, data)).catch(() => {});
+  } catch (err) {
+    showToast(err.message, "error");
+    button.disabled = false;
+  }
+}
+
+function showSuggestions(suggestionsEl, suggestions) {
+  suggestionsEl.innerHTML = suggestionsHTML(suggestions);
+  suggestionsEl.querySelectorAll(".suggestion-add-btn").forEach((button) => {
+    button.addEventListener("click", () => handleSuggestionAdd(suggestionsEl, button));
+  });
+}
+
 function handleRemoveFriend(friend) {
   showConfirm(
     `¿Eliminar a ${friend.display_name} de tus amigos?`,
@@ -178,11 +230,29 @@ export async function renderFriends(appEl) {
   appEl.innerHTML = `
     <div class="friends-screen fade-in">
       <button class="primary-btn" id="add-friend-btn">${icon("user-plus", "regular")}Agregar amigo</button>
+      <div id="suggestions"></div>
       <div class="friends-list" id="friends-list">${loaderHTML()}</div>
     </div>
   `;
 
   const listEl = document.getElementById("friends-list");
+  const suggestionsEl = document.getElementById("suggestions");
+
+  // Only verified accounts get suggestions: the profile tells which one this is.
+  let suggestionsStarted = false;
+  loadWithCache("profile", getProfile, ({ profile }) => {
+    if (!profile.verified || suggestionsStarted || !suggestionsEl.isConnected) return;
+    suggestionsStarted = true;
+
+    loadWithCache(
+      "suggestions",
+      getSuggestions,
+      ({ suggestions }) => {
+        if (suggestionsEl.isConnected) showSuggestions(suggestionsEl, suggestions);
+      },
+      10 * 60_000,
+    ).catch(() => {});
+  }).catch(() => {});
 
   document.getElementById("add-friend-btn").addEventListener("click", () => {
     haptic();

@@ -794,6 +794,12 @@ button:focus-visible {
   border-bottom: 1px solid var(--line);
 }
 
+.friend-row.leaving {
+  opacity: 0;
+  transform: translateX(24px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
 .friend-info {
   flex: 1;
   min-width: 0;

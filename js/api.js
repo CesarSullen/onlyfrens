@@ -163,6 +163,10 @@ async function getInteractions(postId) {
   return { likers: likes.likers ?? [], reposters: reposts.reposters ?? [] };
 }
 
+function getSuggestions() {
+  return apiFetch("/friends/suggestions");
+}
+
 function getUserPosts(username) {
   return apiFetch(`/profile/${encodeURIComponent(username)}/posts`);
 }
@@ -200,7 +204,7 @@ function addFriend(username) {
   return mutate(
     "/friends/add",
     { method: "POST", body: JSON.stringify({ username }) },
-    { drop: ["friends"] },
+    { drop: ["friends", "suggestions"] },
   );
 }
 
@@ -208,7 +212,7 @@ function acceptFriendRequest(requestId) {
   return mutate(
     `/friends/${requestId}/accept`,
     { method: "POST" },
-    { drop: ["friends", "feed", "notifications", "user:*"] },
+    { drop: ["friends", "feed", "notifications", "profile", "suggestions", "user:*"] },
   );
 }
 
@@ -216,7 +220,7 @@ function removeFriend(requestId) {
   return mutate(
     `/friends/${requestId}`,
     { method: "DELETE" },
-    { drop: ["friends", "feed", "user:*"] },
+    { drop: ["friends", "feed", "profile", "suggestions", "user:*"] },
   );
 }
 
@@ -332,6 +336,7 @@ export {
   deletePushSubscription,
   getUserProfile,
   getUserPosts,
+  getSuggestions,
   setSession,
   clearToken,
   getFeed,
