@@ -1,5 +1,5 @@
 import { getComments, createComment } from "./api.js";
-import { showToast, formatRelativeTime, haptic } from "./utils.js";
+import { showToast, formatRelativeTime, haptic, closeSheet, enableSheetDrag } from "./utils.js";
 import { icon } from "./icons.js";
 import { loaderHTML, removeLoader } from "./loader.js";
 import { verifiedBadgeHTML } from "./verified.js";
@@ -12,10 +12,10 @@ function escapeHTML(text) {
   return div.innerHTML;
 }
 
-function commentRowHTML(comment) {
+function commentRowHTML(comment, { className = "", delay = 0 } = {}) {
   const author = comment.profiles ?? { display_name: "Desconocido" };
   return `
-    <div class="comment-row">
+    <div class="comment-row${className}"${delay ? ` style="animation-delay: ${delay}ms"` : ""}>
       <img class="avatar" src="${avatarSrc(author)}" alt="" loading="lazy" />
       <div>
         <p class="comment-author">${escapeHTML(author.display_name)}${verifiedBadgeHTML(author)}<span class="comment-time">${formatRelativeTime(comment.created_at)}</span></p>
@@ -49,12 +49,25 @@ export function openComments(postId, onCountChange) {
   const listEl = document.getElementById("comments-list");
   const inputEl = document.getElementById("comment-input");
   const sendBtn = document.getElementById("comment-send");
+  const shown = new Set();
+  let loadedOnce = false;
+
+  // The first load fades the rows in one after another; later loads only animate the new ones.
+  function animationFor(comment, index, firstLoad) {
+    const key = comment.id ?? comment.created_at;
+    const isNew = !shown.has(key);
+    shown.add(key);
+    if (firstLoad) return { className: " enter", delay: Math.min(index, 8) * 40 };
+    return { className: isNew ? " fresh" : "" };
+  }
 
   async function loadComments() {
     try {
       const { comments } = await getComments(postId);
+      const firstLoad = !loadedOnce;
+      loadedOnce = true;
       listEl.innerHTML = comments.length
-        ? comments.map(commentRowHTML).join("")
+        ? comments.map((comment, i) => commentRowHTML(comment, animationFor(comment, i, firstLoad))).join("")
         : `<p class="empty-label" style="padding: 18px 0;">Aún no hay respuestas visibles</p>`;
     } catch (err) {
       removeLoader(listEl);
@@ -90,7 +103,9 @@ export function openComments(postId, onCountChange) {
     handleSend();
   });
 
-  document.getElementById("comments-close").addEventListener("click", () => overlay.remove());
+  const close = () => closeSheet(overlay);
+  document.getElementById("comments-close").addEventListener("click", close);
+  enableSheetDrag(overlay, close);
 
   loadComments();
 }

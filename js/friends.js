@@ -212,7 +212,10 @@ function showFriends(listEl, data) {
   listEl.innerHTML = friendsListHTML(data);
 
   listEl.querySelectorAll(".accept-btn").forEach((btn) => {
-    btn.addEventListener("click", () => handleAccept(btn.dataset.requestId));
+    btn.addEventListener("click", () => {
+      haptic();
+      handleAccept(btn.dataset.requestId);
+    });
   });
 
   listEl.querySelectorAll(".reject-btn").forEach((btn) => {

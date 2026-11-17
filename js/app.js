@@ -13,9 +13,10 @@ import { OPEN_PROFILE_EVENT } from "./navigation.js";
 import { startBadges, setNotificationsViewOpen } from "./badges.js";
 import { markAllNotificationsRead } from "./api.js";
 import { syncPush } from "./push.js";
-import { cacheDelete } from "./cache.js";
+import { cacheDelete, cacheMarkStale } from "./cache.js";
 import { openComposer } from "./composer.js";
 import { takeSharedContent } from "./share.js";
+import { initPullToRefresh } from "./pull-refresh.js";
 
 const appEl = document.getElementById("app");
 const navButtons = document.querySelectorAll(".nav-item");
@@ -38,8 +39,31 @@ const SCREENS = {
   profile: () => renderProfile(appEl),
 };
 
+const REFRESH_KEYS = {
+  home: ["feed"],
+  friends: ["friends", "suggestions"],
+  notifications: ["notifications"],
+  profile: ["profile", "ownPosts"],
+};
+
 let currentScreen = "home";
 let viewingUser = false;
+
+// Content slides in from the side of the tab it comes after.
+function slideIn(offset) {
+  if (!offset) return;
+  appEl.style.setProperty("--slide", `${offset}px`);
+  appEl.classList.remove("slide-in");
+  void appEl.offsetWidth;
+  appEl.classList.add("slide-in");
+}
+
+function bounceNavItem(btn) {
+  btn.classList.remove("bounce");
+  void btn.offsetWidth;
+  btn.classList.add("bounce");
+  btn.addEventListener("animationend", () => btn.classList.remove("bounce"), { once: true });
+}
 
 let notificationsOpen = false;
 
@@ -64,13 +88,18 @@ function goToScreen(screenName) {
   if (screenName === "notifications") enterNotifications();
   else leaveNotifications();
 
+  const order = Object.keys(SCREENS);
+  slideIn(viewingUser ? -16 : Math.sign(order.indexOf(screenName) - order.indexOf(currentScreen)) * 16);
+
   currentScreen = screenName;
   viewingUser = false;
   window.scrollTo(0, 0);
   pageHeader.textContent = SCREEN_TITLES[screenName];
 
   navButtons.forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.screen === screenName);
+    const active = btn.dataset.screen === screenName;
+    if (active && !btn.classList.contains("active")) bounceNavItem(btn);
+    btn.classList.toggle("active", active);
   });
 
   fab.style.display = screenName === "home" ? "flex" : "none";
@@ -81,6 +110,7 @@ function goToScreen(screenName) {
 
 function showUserProfile(username) {
   leaveNotifications();
+  slideIn(16);
   viewingUser = true;
   fab.style.display = "none";
   pageHeader.textContent = SCREEN_TITLES.profile;
@@ -169,6 +199,18 @@ navButtons.forEach((btn) => {
 fab.addEventListener("click", () => {
   haptic();
   openComposer(() => renderHome(appEl));
+});
+
+initPullToRefresh({
+  content: appEl,
+  canPull: () =>
+    bottomNav.style.display === "flex" &&
+    !viewingUser &&
+    !document.querySelector(".sheet-overlay, #modal-ui.active"),
+  onRefresh: () => {
+    cacheMarkStale(...REFRESH_KEYS[currentScreen]);
+    return SCREENS[currentScreen]();
+  },
 });
 
 window.addEventListener("popstate", () => {

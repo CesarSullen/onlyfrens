@@ -1,5 +1,5 @@
 import { likePost, unlikePost, repost, undoRepost, deletePost, getUserId } from "./api.js";
-import { showToast, showConfirm, formatPostTime, haptic } from "./utils.js";
+import { showToast, showConfirm, formatPostTime, haptic, replay } from "./utils.js";
 import { icon } from "./icons.js";
 import { openComments } from "./comments-sheet.js";
 import { openInteractions } from "./interactions.js";
@@ -107,12 +107,35 @@ export function postCardHTML(post) {
 function adjustCount(btn, delta) {
   const countEl = btn.querySelector(".action-count");
   countEl.textContent = Math.max(0, Number(countEl.textContent) + delta);
+  countEl.dataset.dir = delta > 0 ? "up" : "down";
+  replay(countEl, "tick");
+}
+
+const BURST_DOTS = 6;
+
+function celebrate(btn) {
+  const iconEl = btn.querySelector(".action-icon");
+  if (!btn.classList.contains("like-btn")) {
+    replay(iconEl, "spin");
+    return;
+  }
+
+  replay(iconEl, "beat");
+  for (let i = 0; i < BURST_DOTS; i++) {
+    const dot = document.createElement("i");
+    dot.className = "burst-dot";
+    dot.style.setProperty("--angle", `${(360 / BURST_DOTS) * i}deg`);
+    dot.addEventListener("animationend", () => dot.remove());
+    iconEl.append(dot);
+  }
 }
 
 async function handleToggle(btn, postId, { add, remove }) {
   const wasActive = btn.classList.contains("active");
   btn.classList.toggle("active", !wasActive);
   adjustCount(btn, wasActive ? -1 : 1);
+  haptic();
+  if (!wasActive) celebrate(btn);
 
   try {
     await (wasActive ? remove(postId) : add(postId));
@@ -121,6 +144,15 @@ async function handleToggle(btn, postId, { add, remove }) {
     adjustCount(btn, wasActive ? 1 : -1);
     showToast(err.message, "error");
   }
+}
+
+// The height is fixed first so the card can shrink to nothing instead of vanishing at once.
+function removeCard(card) {
+  card.style.height = `${card.offsetHeight}px`;
+  card.classList.add("removing");
+  card.addEventListener("animationend", (e) => {
+    if (e.target === card) card.remove();
+  });
 }
 
 function handleDelete(card, postId) {
@@ -132,7 +164,7 @@ function handleDelete(card, postId) {
   showConfirm(message, async () => {
     try {
       await deletePost(postId);
-      card.remove();
+      removeCard(card);
       showToast("Publicación eliminada");
     } catch (err) {
       showToast(err.message, "error");
@@ -145,6 +177,14 @@ export function attachPostCardListeners(container) {
     if (card.dataset.bound) return;
     card.dataset.bound = "true";
     const postId = card.dataset.postId;
+
+    card.querySelectorAll(".post-image").forEach((image) => {
+      if (image.complete) return;
+      image.classList.add("pending");
+      const ready = () => image.classList.remove("pending");
+      image.addEventListener("load", ready, { once: true });
+      image.addEventListener("error", ready, { once: true });
+    });
 
     card.querySelector(".like-btn").addEventListener("click", (e) =>
       handleToggle(e.currentTarget, postId, { add: likePost, remove: unlikePost })

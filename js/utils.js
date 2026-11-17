@@ -243,6 +243,72 @@ function shake(el) {
   el.addEventListener("animationend", () => el.classList.remove("shake"), { once: true });
 }
 
+function replay(el, className) {
+  el.classList.remove(className);
+  void el.offsetWidth;
+  el.classList.add(className);
+  el.addEventListener("animationend", function done(e) {
+    if (e.target !== el) return;
+    el.classList.remove(className);
+    el.removeEventListener("animationend", done);
+  });
+}
+
+// Plays the exit animation first. Ids are dropped so a sheet opened meanwhile never matches the old one.
+function closeSheet(overlay) {
+  if (!overlay || overlay.classList.contains("closing")) return;
+  overlay.querySelectorAll("[id]").forEach((el) => el.removeAttribute("id"));
+  overlay.removeAttribute("id");
+  overlay.classList.add("closing");
+
+  const remove = () => overlay.remove();
+  overlay.addEventListener("animationend", (e) => {
+    if (e.target === overlay) remove();
+  });
+  setTimeout(remove, 450);
+}
+
+// On phones the header can be dragged down to close the sheet.
+function enableSheetDrag(overlay, onClose) {
+  const header = overlay.querySelector(".sheet-header, .composer-header");
+  if (!header) return;
+  const phone = window.matchMedia("(max-width: 767px)");
+  let startY = null;
+  let offset = 0;
+
+  header.addEventListener("pointerdown", (e) => {
+    if (!phone.matches || e.target.closest("button")) return;
+    startY = e.clientY;
+    offset = 0;
+    header.setPointerCapture(e.pointerId);
+  });
+
+  header.addEventListener("pointermove", (e) => {
+    if (startY === null) return;
+    offset = Math.max(0, e.clientY - startY);
+    overlay.style.transform = `translateY(${offset}px)`;
+  });
+
+  function release() {
+    if (startY === null) return;
+    startY = null;
+
+    if (offset > 120) {
+      onClose();
+      return;
+    }
+
+    overlay.style.transition = "transform 0.25s ease";
+    overlay.style.transform = "";
+    setTimeout(() => {
+      overlay.style.transition = "";
+    }, 250);
+  }
+
+  header.addEventListener("pointerup", release);
+  header.addEventListener("pointercancel", release);
+}
+
 function profileFieldsError(username, displayName) {
   if (!/^[a-z0-9_]{3,20}$/.test(username)) {
     return "El username debe tener 3-20 caracteres: minúsculas, números o guion bajo";
@@ -282,6 +348,9 @@ export {
   showList,
   escapeHTML,
   shake,
+  replay,
+  closeSheet,
+  enableSheetDrag,
   profileFieldsError,
   closeModalUI,
   haptic,

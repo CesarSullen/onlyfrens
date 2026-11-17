@@ -1,6 +1,6 @@
 import { createPost, uploadImage, getProfile } from "./api.js";
 import { loadWithCache } from "./cache.js";
-import { showToast, haptic } from "./utils.js";
+import { showToast, haptic, closeSheet, enableSheetDrag } from "./utils.js";
 import { compressImage } from "./compress.js";
 import { icon } from "./icons.js";
 
@@ -75,8 +75,8 @@ function updatePublishState() {
 }
 
 function closeComposer() {
-  const overlay = document.getElementById("composer-overlay");
-  if (overlay) overlay.remove();
+  closeSheet(document.getElementById("composer-overlay"));
+  document.getElementById("composer-fab")?.classList.remove("open");
   selectedFiles = [];
 }
 
@@ -118,6 +118,8 @@ export function openComposer(onPublished, { text = "", files = [] } = {}) {
   selectedFiles = files.slice(0, MAX_IMAGES);
 
   document.body.insertAdjacentHTML("beforeend", composerHTML());
+  document.getElementById("composer-fab")?.classList.add("open");
+  enableSheetDrag(document.getElementById("composer-overlay"), closeComposer);
 
   const textEl = document.getElementById("composer-text");
   const counterEl = document.getElementById("char-counter");
