@@ -113,9 +113,9 @@ async function handlePublish() {
   }
 }
 
-export function openComposer(onPublished) {
+export function openComposer(onPublished, { text = "", files = [] } = {}) {
   onPublishedCallback = onPublished;
-  selectedFiles = [];
+  selectedFiles = files.slice(0, MAX_IMAGES);
 
   document.body.insertAdjacentHTML("beforeend", composerHTML());
 
@@ -158,6 +158,11 @@ export function openComposer(onPublished) {
     updatePublishState();
     fileInput.value = "";
   });
+
+  textEl.value = text.slice(0, textLimit);
+  renderImagePreviews(imagesContainer);
+  updateCounter();
+  updatePublishState();
 
   document.getElementById("composer-cancel").addEventListener("click", () => {
     haptic();

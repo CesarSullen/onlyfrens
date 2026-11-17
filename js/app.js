@@ -15,6 +15,7 @@ import { markAllNotificationsRead } from "./api.js";
 import { syncPush } from "./push.js";
 import { cacheDelete } from "./cache.js";
 import { openComposer } from "./composer.js";
+import { takeSharedContent } from "./share.js";
 
 const appEl = document.getElementById("app");
 const navButtons = document.querySelectorAll(".nav-item");
@@ -123,11 +124,22 @@ function showApp() {
   syncPush();
 }
 
-// Opening a push notification starts the app on #notifications.
+async function openSharedPost() {
+  const shared = await takeSharedContent();
+  if (shared) openComposer(() => renderHome(appEl), shared);
+}
+
+// Push notifications and the manifest shortcuts start the app on #<screen>, the share sheet on #share.
 function openFromHash() {
-  if (location.hash !== "#notifications") return;
+  const target = location.hash.slice(1);
+  if (target !== "share" && !Object.hasOwn(SCREENS, target)) return;
   history.replaceState(null, "", location.pathname + location.search);
-  goToScreen("notifications");
+
+  if (target === "share") {
+    openSharedPost();
+  } else {
+    goToScreen(target);
+  }
 }
 
 document.addEventListener("visibilitychange", () => {
@@ -230,7 +242,16 @@ function initApp() {
 initApp();
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js");
+  const hadController = Boolean(navigator.serviceWorker.controller);
+
+  window.addEventListener("load", async () => {
+    const registration = await navigator.serviceWorker.register("./sw.js");
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") registration.update();
+    });
+  });
+
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (hadController) location.reload();
   });
 }

@@ -1,5 +1,6 @@
-const CACHE_NAME = "onlyfrens-v0.0.13";
+const CACHE_NAME = "onlyfrens-v0.0.15";
 const IMAGE_CACHE = "onlyfrens-images";
+const SHARE_CACHE = "onlyfrens-share";
 const MAX_IMAGES = 150;
 const ASSETS = [
   "./",
@@ -35,7 +36,11 @@ const ASSETS = [
   "./js/notifications.js",
   "./js/post-card.js",
   "./js/profile.js",
+  "./js/share.js",
   "./js/utils.js",
+  "./assets/shortcuts/friends.png",
+  "./assets/shortcuts/notifications.png",
+  "./assets/shortcuts/profile.png",
   "./typography/jost-400.woff2",
   "./typography/jost-500.woff2",
   "./typography/jost-600.woff2",
@@ -54,7 +59,7 @@ self.addEventListener("install", (e) => {
 self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME && k !== IMAGE_CACHE).map((k) => caches.delete(k)))
+      Promise.all(keys.filter((k) => k !== CACHE_NAME && k !== IMAGE_CACHE && k !== SHARE_CACHE).map((k) => caches.delete(k)))
     )
   );
   self.clients.claim();
@@ -78,8 +83,33 @@ async function cachedImage(request) {
   }
 }
 
+// Files shared from other apps arrive as a POST: keep them for the app and open the composer.
+async function receiveShare(request) {
+  const form = await request.formData();
+  const cache = await caches.open(SHARE_CACHE);
+  await Promise.all((await cache.keys()).map((k) => cache.delete(k)));
+
+  const text = [form.get("text"), form.get("url")].filter(Boolean).join(" ");
+  if (text) await cache.put(`${self.registration.scope}shared/text`, new Response(text));
+
+  const images = form.getAll("images").filter((file) => file.type.startsWith("image/"));
+  await Promise.all(
+    images.map((file, i) =>
+      cache.put(`${self.registration.scope}shared/image-${i}`, new Response(file, { headers: { "Content-Type": file.type } })),
+    ),
+  );
+
+  return Response.redirect(`${self.registration.scope}#share`, 303);
+}
+
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
+
+  if (e.request.method === "POST" && url.href === `${self.registration.scope}share-target`) {
+    e.respondWith(receiveShare(e.request));
+    return;
+  }
+
   if (e.request.method !== "GET") return;
 
   if (e.request.destination === "image" && url.origin !== self.location.origin) {
