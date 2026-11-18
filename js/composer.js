@@ -47,7 +47,7 @@ function composerHTML() {
           </label>
         </div>
         <p class="composer-note" id="composer-note" hidden>
-          Siempre es anónimo: sin tu nombre ni tu foto. Escribe de 1 a 5 #hashtags; puede llevar imágenes. Aparece en esos hashtags, no en el perfil de tus amigos.
+          Siempre es anónimo: sin tu nombre ni tu foto. Escribe de 1 a 5 #hashtags.
         </p>
 
         <div class="composer-footer">
@@ -108,9 +108,9 @@ function closeComposer() {
 
 function audienceChipHTML() {
   if (friendCount < HIDE_MIN_FRIENDS) {
-    return `${icon("lock", "regular")}Audiencia · ${HIDE_MIN_FRIENDS} amigos`;
+    return `${icon("lock", "regular")}${HIDE_MIN_FRIENDS} amigos`;
   }
-  if (!audience) return `${icon("users", "regular")}Todos mis amigos`;
+  if (!audience) return `${icon("users", "regular")}Todos`;
   const n = audience.ids.length;
   return audience.mode === "hide"
     ? `${icon("eye-slash", "regular")}Oculto para ${n}`
