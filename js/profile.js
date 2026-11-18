@@ -8,6 +8,7 @@ import { icon } from "./icons.js";
 import { compressImage } from "./compress.js";
 import { loaderHTML, removeLoader } from "./loader.js";
 import { loadWithCache, livePosts } from "./cache.js";
+import { bindRewardStrip } from "./rewards.js";
 import {
   profileCardHTML,
   shareProfile,
@@ -159,6 +160,8 @@ function showProfile(cardEl, profile) {
       <button class="outline-btn large" id="edit-profile-btn">Editar</button>
       <button class="outline-btn large" id="share-profile-btn">Compartir</button>`,
   });
+
+  bindRewardStrip();
 
   const avatarInput = document.getElementById("avatar-input");
   document.getElementById("avatar-btn").addEventListener("click", () => {

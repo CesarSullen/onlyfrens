@@ -14,18 +14,22 @@ function escapeHTML(text) {
 
 function commentRowHTML(comment, { className = "", delay = 0 } = {}) {
   const author = comment.profiles ?? { display_name: "Desconocido" };
+  // Anonymous comments show only the generated avatar, never a name.
+  const nameHTML = comment.anonymous
+    ? ""
+    : `${escapeHTML(author.display_name)}${verifiedBadgeHTML(author)}`;
   return `
     <div class="comment-row${className}"${delay ? ` style="animation-delay: ${delay}ms"` : ""}>
       <img class="avatar" src="${avatarSrc(author)}" alt="" loading="lazy" />
       <div>
-        <p class="comment-author">${escapeHTML(author.display_name)}${verifiedBadgeHTML(author)}<span class="comment-time">${formatRelativeTime(comment.created_at)}</span></p>
+        <p class="comment-author">${nameHTML}<span class="comment-time${comment.anonymous ? " alone" : ""}">${formatRelativeTime(comment.created_at)}</span></p>
         <p class="comment-text">${escapeHTML(comment.text_content)}</p>
       </div>
     </div>
   `;
 }
 
-export function openComments(postId, onCountChange) {
+export function openComments(postId, onCountChange, { anonymous = false } = {}) {
   document.body.insertAdjacentHTML(
     "beforeend",
     `
@@ -35,7 +39,7 @@ export function openComments(postId, onCountChange) {
         <button class="icon-btn" id="comments-close" aria-label="Cerrar">${icon("x", "bold")}</button>
       </div>
       <div class="sheet-body" id="comments-body">
-        <p class="sheet-note">Solo ves las respuestas de tus amigos.</p>
+        <p class="sheet-note">${anonymous ? "Las respuestas en hashtags son anónimas." : "Solo ves las respuestas de tus amigos."}</p>
         <div id="comments-list">${loaderHTML()}</div>
       </div>
       <div class="sheet-footer">

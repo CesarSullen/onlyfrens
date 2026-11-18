@@ -29,9 +29,18 @@ const ICON_BY_TYPE = {
   birthday: ["cake", "fill"],
 };
 
+// Likes and comments on anonymous posts arrive without an actor and name nobody.
+const ANONYMOUS_MESSAGE_BY_TYPE = {
+  like: ["A alguien le gustó", "tu publicación."],
+  comment: ["Alguien comentó en", "tu publicación."],
+};
+
 function notificationRowHTML(notification) {
+  const anonymous = !notification.actor && ANONYMOUS_MESSAGE_BY_TYPE[notification.type];
   const actorName = notification.actor?.display_name ?? "Alguien";
-  const [head, tail] = MESSAGE_BY_TYPE[notification.type]?.(actorName) ?? ["Nueva notificación.", ""];
+  const [head, tail] = anonymous
+    ? ANONYMOUS_MESSAGE_BY_TYPE[notification.type]
+    : MESSAGE_BY_TYPE[notification.type]?.(actorName) ?? ["Nueva notificación.", ""];
   const [iconName, iconWeight] = ICON_BY_TYPE[notification.type] ?? ["bell", "fill"];
 
   return `

@@ -9,7 +9,9 @@ import { renderFriends } from "./friends.js";
 import { renderProfile } from "./profile.js";
 import { renderNotifications } from "./notifications.js";
 import { renderUserProfile } from "./user-profile.js";
-import { OPEN_PROFILE_EVENT } from "./navigation.js";
+import { OPEN_PROFILE_EVENT, OPEN_PAGE_EVENT } from "./navigation.js";
+import { renderRewards } from "./rewards.js";
+import { renderHashtagPage } from "./hashtag-page.js";
 import { startBadges, setNotificationsViewOpen } from "./badges.js";
 import { markAllNotificationsRead } from "./api.js";
 import { syncPush } from "./push.js";
@@ -118,6 +120,26 @@ function showUserProfile(username) {
   window.scrollTo(0, 0);
   renderUserProfile(appEl, username, { onSelf: () => goToScreen("profile") });
 }
+
+// Rewards and hashtag pages reuse the "viewing someone" behavior: back returns to the tab.
+const SUB_PAGES = {
+  rewards: { title: "Recompensas", render: () => renderRewards(appEl) },
+  hashtag: { title: "Hashtag", render: ({ tag }) => renderHashtagPage(appEl, tag) },
+};
+
+window.addEventListener(OPEN_PAGE_EVENT, ({ detail }) => {
+  const page = SUB_PAGES[detail.page];
+  if (!page) return;
+
+  leaveNotifications();
+  slideIn(16);
+  viewingUser = true;
+  fab.style.display = "none";
+  pageHeader.textContent = page.title;
+  history.pushState({ page: detail.page }, "");
+  window.scrollTo(0, 0);
+  page.render(detail);
+});
 
 window.addEventListener(OPEN_PROFILE_EVENT, ({ detail }) => {
   if (detail.username) {

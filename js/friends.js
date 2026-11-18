@@ -6,7 +6,7 @@ import {
   acceptFriendRequest,
   removeFriend,
 } from "./api.js";
-import { showToast, showPrompt, showConfirm, haptic } from "./utils.js";
+import { showToast, showConfirm, haptic, sortByDisplayName } from "./utils.js";
 import { openUserProfile } from "./navigation.js";
 import { verifiedBadgeHTML } from "./verified.js";
 import { avatarSrc } from "./avatar.js";
@@ -14,6 +14,8 @@ import { icon } from "./icons.js";
 import { loaderHTML, removeLoader } from "./loader.js";
 import { loadWithCache } from "./cache.js";
 import { whatsappUrl } from "./contact.js";
+import { openHashtagSearch } from "./hashtag-search.js";
+import { openFriendSearch } from "./friend-search.js";
 
 
 function escapeHTML(text) {
@@ -83,21 +85,6 @@ function sectionHTML(title, itemsHTML) {
       ${itemsHTML}
     </section>
   `;
-}
-
-function handleAddFriend() {
-  showPrompt("Ingresa el username de tu amigo", "@usuario", async (value) => {
-    const username = value.trim().replace(/^@/, "").toLowerCase();
-    if (!username) return;
-
-    try {
-      await addFriend(username);
-      showToast("Solicitud enviada");
-      renderFriends(document.getElementById("app"));
-    } catch (err) {
-      showToast(err.message, "error");
-    }
-  });
 }
 
 async function handleAccept(requestId) {
@@ -200,7 +187,7 @@ function friendsListHTML({ friends, incomingRequests, outgoingRequests }) {
       "Solicitudes enviadas",
       outgoingRequests.map(outgoingRequestHTML).join(""),
     ) +
-    sectionHTML(`Amigos (${friends.length})`, friends.map(friendRowHTML).join(""));
+    sectionHTML(`Amigos (${friends.length})`, sortByDisplayName(friends).map(friendRowHTML).join(""));
 
   return (
     sections ||
@@ -242,7 +229,10 @@ function showFriends(listEl, data) {
 export async function renderFriends(appEl) {
   appEl.innerHTML = `
     <div class="friends-screen fade-in">
-      <button class="primary-btn" id="add-friend-btn">${icon("user-plus", "regular")}Agregar amigo</button>
+      <div class="friends-actions">
+        <button class="primary-btn" id="add-friend-btn">${icon("user-plus", "regular")}Agregar</button>
+        <button class="outline-btn tags-btn" id="hashtags-btn" aria-label="Buscar hashtags">${icon("hash", "regular")}Hashtags</button>
+      </div>
       <div id="suggestions"></div>
       <div class="friends-list" id="friends-list">${loaderHTML()}</div>
     </div>
@@ -269,7 +259,12 @@ export async function renderFriends(appEl) {
 
   document.getElementById("add-friend-btn").addEventListener("click", () => {
     haptic();
-    handleAddFriend();
+    openFriendSearch(() => renderFriends(document.getElementById("app")));
+  });
+
+  document.getElementById("hashtags-btn").addEventListener("click", () => {
+    haptic();
+    openHashtagSearch();
   });
 
   try {

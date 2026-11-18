@@ -1,15 +1,24 @@
-import { createPost, uploadImage, getProfile } from "./api.js";
+import { createPost, uploadImage, getProfile, getFriends } from "./api.js";
 import { loadWithCache } from "./cache.js";
 import { showToast, haptic, closeSheet, enableSheetDrag } from "./utils.js";
 import { compressImage } from "./compress.js";
 import { icon } from "./icons.js";
+import { extractHashtags } from "./hashtags.js";
+import { openAudiencePicker, HIDE_MIN_FRIENDS } from "./audience-picker.js";
 
 const MAX_TEXT_LENGTH = 200;
 const MAX_TEXT_LENGTH_VERIFIED = 500;
 const MAX_IMAGES = 2;
+const MAX_ANONYMOUS_TAGS = 5;
 
 let selectedFiles = [];
 let onPublishedCallback = null;
+
+// Who may see the post ({ mode: "hide" | "only", ids }) and whether it is an anonymous hashtag post.
+let audience = null;
+let anonymous = false;
+let friendCount = 0;
+let isVerified = false;
 
 function composerHTML() {
   return `
@@ -30,11 +39,22 @@ function composerHTML() {
 
         <div class="composer-images" id="composer-images"></div>
 
+        <div class="composer-options">
+          <button class="option-chip" id="composer-audience" type="button"></button>
+          <label class="switch-row" id="composer-anon-row" hidden>
+            <span>Publicar en hashtags</span>
+            <input type="checkbox" id="composer-anonymous" />
+          </label>
+        </div>
+        <p class="composer-note" id="composer-note" hidden>
+          Siempre es anónimo: sin tu nombre ni tu foto. Escribe de 1 a 5 #hashtags; puede llevar imágenes. Aparece en esos hashtags, no en el perfil de tus amigos.
+        </p>
+
         <div class="composer-footer">
           <button class="icon-btn" id="composer-add-image" aria-label="Agregar imagen">
             ${icon("image", "regular")}
           </button>
-          <label class="switch-row">
+          <label class="switch-row" id="composer-repost-row">
             <span>Permitir reposts</span>
             <input type="checkbox" id="composer-repostable" checked />
           </label>
@@ -70,7 +90,11 @@ function renderImagePreviews(container) {
 function updatePublishState() {
   const textEl = document.getElementById("composer-text");
   const publishBtn = document.getElementById("composer-publish");
-  const hasContent = textEl.value.trim().length > 0 || selectedFiles.length > 0;
+  const text = textEl.value.trim();
+  // Anonymous posts need at least one hashtag in the text; images are optional.
+  const hasContent = anonymous
+    ? extractHashtags(text).length > 0
+    : text.length > 0 || selectedFiles.length > 0;
   publishBtn.disabled = !hasContent;
 }
 
@@ -78,6 +102,61 @@ function closeComposer() {
   closeSheet(document.getElementById("composer-overlay"));
   document.getElementById("composer-fab")?.classList.remove("open");
   selectedFiles = [];
+  audience = null;
+  anonymous = false;
+}
+
+function audienceChipHTML() {
+  if (friendCount < HIDE_MIN_FRIENDS) {
+    return `${icon("lock", "regular")}Audiencia · ${HIDE_MIN_FRIENDS} amigos`;
+  }
+  if (!audience) return `${icon("users", "regular")}Todos mis amigos`;
+  const n = audience.ids.length;
+  return audience.mode === "hide"
+    ? `${icon("eye-slash", "regular")}Oculto para ${n}`
+    : `${icon("eye", "regular")}Solo para ${n}`;
+}
+
+// Shows only the options that apply right now: anonymous posts have no audience or reposts.
+function updateOptions() {
+  const chip = document.getElementById("composer-audience");
+  chip.innerHTML = audienceChipHTML();
+  chip.classList.toggle("locked", friendCount < HIDE_MIN_FRIENDS);
+  chip.classList.toggle("active", !!audience);
+  chip.hidden = anonymous;
+
+  document.getElementById("composer-anon-row").hidden = !isVerified;
+  document.getElementById("composer-note").hidden = !anonymous;
+  document.getElementById("composer-repost-row").hidden = anonymous;
+  document.getElementById("composer-text").placeholder = anonymous
+    ? "Escribe algo con #hashtags"
+    : "¿Qué está pasando?";
+  updatePublishState();
+}
+
+async function handleAudience() {
+  if (friendCount < HIDE_MIN_FRIENDS) {
+    showToast(`Desbloquea la audiencia con ${HIDE_MIN_FRIENDS} amigos`);
+    return;
+  }
+
+  try {
+    let data;
+    await loadWithCache("friends", getFriends, (value) => {
+      data ??= value;
+    });
+    openAudiencePicker({
+      friends: data.friends,
+      friendCount,
+      current: audience,
+      onDone: (value) => {
+        audience = value;
+        updateOptions();
+      },
+    });
+  } catch (err) {
+    showToast(err.message, "error");
+  }
 }
 
 async function handlePublish() {
@@ -92,15 +171,23 @@ async function handlePublish() {
     const uploadedUrls = [];
     for (const file of selectedFiles) {
       const compressed = await compressImage(file);
-      const { url } = await uploadImage(compressed);
+      // Anonymous posts upload to a folder that doesn't carry the user id.
+      const { url } = await uploadImage(compressed, { anonymous });
       uploadedUrls.push(url);
     }
 
+    const text = textEl.value.trim();
+    if (anonymous && extractHashtags(text).length > MAX_ANONYMOUS_TAGS) {
+      throw new Error(`Usa como máximo ${MAX_ANONYMOUS_TAGS} hashtags`);
+    }
+
     await createPost({
-      text_content: textEl.value.trim() || undefined,
+      text_content: text || undefined,
       image_url: uploadedUrls[0],
       image_url_2: uploadedUrls[1],
-      is_repostable: repostableEl.checked,
+      is_repostable: anonymous ? false : repostableEl.checked,
+      audience: audience && !anonymous ? { mode: audience.mode, user_ids: audience.ids } : undefined,
+      anonymous: anonymous || undefined,
     });
 
     showToast("Publicado");
@@ -113,8 +200,12 @@ async function handlePublish() {
   }
 }
 
-export function openComposer(onPublished, { text = "", files = [] } = {}) {
+export function openComposer(onPublished, { text = "", files = [], anonymous: startAnonymous = false } = {}) {
   onPublishedCallback = onPublished;
+  audience = null;
+  anonymous = false;
+  friendCount = 0;
+  isVerified = false;
   selectedFiles = files.slice(0, MAX_IMAGES);
 
   document.body.insertAdjacentHTML("beforeend", composerHTML());
@@ -125,6 +216,8 @@ export function openComposer(onPublished, { text = "", files = [] } = {}) {
   const counterEl = document.getElementById("char-counter");
   const imagesContainer = document.getElementById("composer-images");
   const fileInput = document.getElementById("composer-file-input");
+
+  const anonymousEl = document.getElementById("composer-anonymous");
 
   let textLimit = MAX_TEXT_LENGTH;
 
@@ -141,8 +234,31 @@ export function openComposer(onPublished, { text = "", files = [] } = {}) {
   loadWithCache("profile", getProfile, ({ profile }) => {
     textLimit = profile.verified ? MAX_TEXT_LENGTH_VERIFIED : MAX_TEXT_LENGTH;
     textEl.maxLength = textLimit;
+    friendCount = profile.friend_count ?? 0;
+    isVerified = !!profile.verified;
+    if (startAnonymous && isVerified && !anonymous) {
+      anonymousEl.checked = true;
+      setAnonymous(true);
+    }
     updateCounter();
+    updateOptions();
   }).catch(() => {});
+
+  function setAnonymous(value) {
+    anonymous = value;
+    if (value) audience = null;
+    updateOptions();
+  }
+
+  anonymousEl.addEventListener("change", () => {
+    haptic();
+    setAnonymous(anonymousEl.checked);
+  });
+
+  document.getElementById("composer-audience").addEventListener("click", () => {
+    haptic();
+    handleAudience();
+  });
 
   document.getElementById("composer-add-image").addEventListener("click", () => {
     if (selectedFiles.length >= MAX_IMAGES) {
@@ -164,7 +280,7 @@ export function openComposer(onPublished, { text = "", files = [] } = {}) {
   textEl.value = text.slice(0, textLimit);
   renderImagePreviews(imagesContainer);
   updateCounter();
-  updatePublishState();
+  updateOptions();
 
   document.getElementById("composer-cancel").addEventListener("click", () => {
     haptic();

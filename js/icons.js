@@ -60,6 +60,24 @@ export const ICONS = {
   "user-slash": {
     regular: `<path d="M129.5 160.0A64 64 0 0 1 67.0 76.7M88.6 45.5A64 64 0 1 1 165.4 147.9" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round"/><path d="M32.0 216.0C50.8 183.4 84.1 164.0 128.0 160.0M128.0 160.0C128.5 160.0 129.1 160.1 129.6 160.2M189.2 179.6C203.6 188.8 215.3 201.0 224.0 216.0" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round"/><path d="M56 32L200 224" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round"/>`,
   },
+  "hash": {
+    regular: `<path d="M96 40L72 216M184 40L160 216M40 96H216M32 160H208" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>`,
+  },
+  "sparkle": {
+    regular: `<path d="M128 36C133 92 164 123 220 128C164 133 133 164 128 220C123 164 92 133 36 128C92 123 123 92 128 36Z" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>`,
+  },
+  "text-lines": {
+    regular: `<path d="M40 72H216M40 128H216M40 184H136" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>`,
+  },
+  "lock": {
+    regular: `<rect x="48" y="104" width="160" height="112" rx="16" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/><path d="M84 104V76a44 44 0 0 1 88 0v28" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>`,
+  },
+  "medal": {
+    regular: `<circle cx="128" cy="100" r="60" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/><path d="M92 152L68 224L128 200L188 224L164 152" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>`,
+  },
+  "check": {
+    regular: `<path d="M44 136L100 192L212 72" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>`,
+  },
   "user-plus": {
     regular: `<path d="M256,136a8,8,0,0,1-8,8H232v16a8,8,0,0,1-16,0V144H200a8,8,0,0,1,0-16h16V112a8,8,0,0,1,16,0v16h16A8,8,0,0,1,256,136Zm-57.87,58.85a8,8,0,0,1-12.26,10.3C165.75,181.19,138.09,168,108,168s-57.75,13.19-77.87,37.15a8,8,0,0,1-12.25-10.3c14.94-17.78,33.52-30.41,54.17-37.17a68,68,0,1,1,71.9,0C164.6,164.44,183.18,177.07,198.13,194.85ZM108,152a52,52,0,1,0-52-52A52.06,52.06,0,0,0,108,152Z"/>`,
     fill: `<path d="M256,136a8,8,0,0,1-8,8H232v16a8,8,0,0,1-16,0V144H200a8,8,0,0,1,0-16h16V112a8,8,0,0,1,16,0v16h16A8,8,0,0,1,256,136ZM144,157.68a68,68,0,1,0-71.9,0c-20.65,6.76-39.23,19.39-54.17,37.17A8,8,0,0,0,24,208H192a8,8,0,0,0,6.13-13.15C183.18,177.07,164.6,164.44,144,157.68Z"/>`,

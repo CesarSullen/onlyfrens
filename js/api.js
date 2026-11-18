@@ -163,6 +163,34 @@ async function getInteractions(postId) {
   return { likers: likes.likers ?? [], reposters: reposts.reposters ?? [] };
 }
 
+function searchAccounts(query) {
+  return apiFetch(`/friends/search?q=${encodeURIComponent(query)}`);
+}
+
+function getRewards() {
+  return apiFetch("/rewards");
+}
+
+function searchHashtags(query) {
+  return apiFetch(`/hashtags?q=${encodeURIComponent(query)}`);
+}
+
+function getFollowedHashtags() {
+  return apiFetch("/hashtags/followed");
+}
+
+function getHashtag(tag) {
+  return apiFetch(`/hashtags/${encodeURIComponent(tag)}`);
+}
+
+function followHashtag(tag) {
+  return apiFetch(`/hashtags/${encodeURIComponent(tag)}/follow`, { method: "POST" });
+}
+
+function unfollowHashtag(tag) {
+  return apiFetch(`/hashtags/${encodeURIComponent(tag)}/follow`, { method: "DELETE" });
+}
+
 function getSuggestions() {
   return apiFetch("/friends/suggestions");
 }
@@ -296,10 +324,11 @@ function getRepostCount(postId) {
   return apiFetch(`/posts/${postId}/repost`, { method: "GET" });
 }
 
-function uploadImage(file) {
+function uploadImage(file, { anonymous = false } = {}) {
   const token = getToken();
   const formData = new FormData();
   formData.append("image", file);
+  if (anonymous) formData.append("anonymous", "true");
 
   return fetch(`${API_BASE_URL}/upload`, {
     method: "POST",
@@ -337,6 +366,13 @@ export {
   getUserProfile,
   getUserPosts,
   getSuggestions,
+  searchAccounts,
+  getRewards,
+  searchHashtags,
+  getFollowedHashtags,
+  getHashtag,
+  followHashtag,
+  unfollowHashtag,
   setSession,
   clearToken,
   getFeed,

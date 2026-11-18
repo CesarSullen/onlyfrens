@@ -3,9 +3,10 @@ import { showToast, showConfirm, formatPostTime, haptic, replay } from "./utils.
 import { icon } from "./icons.js";
 import { openComments } from "./comments-sheet.js";
 import { openInteractions } from "./interactions.js";
-import { openUserProfile } from "./navigation.js";
 import { verifiedBadgeHTML } from "./verified.js";
 import { avatarSrc } from "./avatar.js";
+import { linkifyHashtags } from "./hashtags.js";
+import { openHashtag, openUserProfile } from "./navigation.js";
 
 
 function escapeHTML(text) {
@@ -40,12 +41,19 @@ export function postCardHTML(post) {
     ? `<div class="pill pill-birthday">${icon("cake", "fill")}Cumpleaños</div>`
     : "";
 
+  // Anonymous posts: replies are open (and anonymous), but no reposts and no list of who liked them.
+  const anonymous = content.anonymous === true;
+
+  const anonymousPill = anonymous && !post.is_repost
+    ? `<div class="pill pill-anonymous">${icon("eye-slash", "regular")}Anónimo</div>`
+    : "";
+
   const repostPill = post.is_repost
     ? `<div class="pill pill-repost">${icon("arrows-clockwise", "regular")}Compartido</div>`
     : "";
 
   const textHTML = content.text_content
-    ? `<p class="post-text">${escapeHTML(content.text_content)}</p>`
+    ? `<p class="post-text">${linkifyHashtags(content.text_content)}</p>`
     : "";
 
   const images = [content.image_url, content.image_url_2].filter(Boolean);
@@ -55,7 +63,7 @@ export function postCardHTML(post) {
         .join("")}</div>`
     : "";
 
-  const repostButton = content.is_repostable
+  const repostButton = content.is_repostable && !anonymous
     ? actionButtonHTML({
         cls: "repost-btn",
         label: "Compartir",
@@ -70,19 +78,22 @@ export function postCardHTML(post) {
     ? content.author_id === getUserId()
     : post.is_mine && !post.is_repost;
 
-  const metricsButton = isContentOwner
+  const metricsButton = isContentOwner && !anonymous
     ? `<button class="action-btn metrics-btn" aria-label="Ver interacciones">${icon("trend-up", "regular")}</button>`
     : "";
 
-  const profileAttr = post.is_mine
+  const profileAttr = anonymous
+    ? ""
+    : post.is_mine
     ? 'data-profile=""'
     : author.username
       ? `data-profile="${escapeHTML(author.username)}"`
       : "";
 
   return `
-    <article class="post-card fade-in" data-post-id="${post.id}" data-is-repost="${post.is_repost}">
+    <article class="post-card fade-in" data-post-id="${post.id}" data-is-repost="${post.is_repost}" data-anonymous="${anonymous}">
       ${birthdayPill}
+      ${anonymousPill}
       ${repostPill}
       <header class="post-header">
         <img class="avatar${profileAttr ? " tappable" : ""}" ${profileAttr} src="${avatarSrc(author)}" alt="" loading="lazy" />
@@ -208,9 +219,18 @@ export function attachPostCardListeners(container) {
 
     card.querySelector(".post-delete-btn")?.addEventListener("click", () => handleDelete(card, postId));
 
+    card.querySelectorAll(".hashtag").forEach((tagEl) => {
+      tagEl.addEventListener("click", () => {
+        haptic();
+        openHashtag(tagEl.dataset.tag);
+      });
+    });
+
     const commentBtn = card.querySelector(".comment-btn");
-    commentBtn.addEventListener("click", () =>
-      openComments(postId, (delta) => adjustCount(commentBtn, delta))
+    commentBtn?.addEventListener("click", () =>
+      openComments(postId, (delta) => adjustCount(commentBtn, delta), {
+        anonymous: card.dataset.anonymous === "true",
+      })
     );
   });
 }

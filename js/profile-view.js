@@ -2,6 +2,7 @@ import { icon } from "./icons.js";
 import { escapeHTML, showToast } from "./utils.js";
 import { verifiedBadgeHTML } from "./verified.js";
 import { avatarSrc } from "./avatar.js";
+import { rewardStripHTML } from "./rewards.js";
 
 const MONTH_NAMES = [
   "enero",
@@ -108,6 +109,7 @@ export function profileCardHTML(profile, { actionsHTML, avatarEditable = false, 
         <p class="profile-username">@${escapeHTML(profile.username)}</p>
       </div>
     </div>
+    ${rewardStripHTML(profile.reward_ids, { own: avatarEditable })}
     ${profile.bio ? `<p class="profile-bio post-text">${escapeHTML(profile.bio)}</p>` : ""}
     <div class="profile-details">
       <p class="profile-detail">${icon("cake", "fill")}${formatBirthday(profile.birthday_day, profile.birthday_month)}</p>

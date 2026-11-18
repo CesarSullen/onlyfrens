@@ -333,7 +333,15 @@ function haptic() {
   document.body.removeChild(el);
 }
 
+// Alphabetical by the name people see, ignoring accents and case.
+function sortByDisplayName(people) {
+  return [...people].sort((a, b) =>
+    a.display_name.localeCompare(b.display_name, "es", { sensitivity: "base" })
+  );
+}
+
 export {
+  sortByDisplayName,
   generateId,
   formatDateShort,
   formatDateWithTime,
