@@ -53,7 +53,7 @@ function friendRowHTML(profile) {
 
   return rowHTML(
     profile,
-    `${message}<button class="outline-btn danger icon-only remove-friend-btn" data-friendship-id="${profile.friendship_id}" aria-label="Eliminar amigo">${icon("user-slash", "regular")}</button>`,
+    `${message}<button class="outline-btn danger icon-only remove-friend-btn" data-friendship-id="${profile.friendship_id}" aria-label="Eliminar amigo">${icon("user-minus", "regular")}</button>`,
   );
 }
 

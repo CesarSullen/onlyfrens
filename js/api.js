@@ -183,12 +183,25 @@ function getHashtag(tag) {
   return apiFetch(`/hashtags/${encodeURIComponent(tag)}`);
 }
 
-function followHashtag(tag) {
-  return apiFetch(`/hashtags/${encodeURIComponent(tag)}/follow`, { method: "POST" });
+// inFeed: also show this hashtag's posts in the home feed.
+function followHashtag(tag, { inFeed } = {}) {
+  return mutate(
+    `/hashtags/${encodeURIComponent(tag)}/follow`,
+    { method: "POST", body: inFeed === undefined ? undefined : JSON.stringify({ in_feed: inFeed }) },
+    { stale: ["feed"] },
+  );
 }
 
 function unfollowHashtag(tag) {
-  return apiFetch(`/hashtags/${encodeURIComponent(tag)}/follow`, { method: "DELETE" });
+  return mutate(`/hashtags/${encodeURIComponent(tag)}/follow`, { method: "DELETE" }, { stale: ["feed"] });
+}
+
+function likeComment(postId, commentId) {
+  return apiFetch(`/posts/${postId}/comments/${commentId}/like`, { method: "POST" });
+}
+
+function unlikeComment(postId, commentId) {
+  return apiFetch(`/posts/${postId}/comments/${commentId}/like`, { method: "DELETE" });
 }
 
 function getSuggestions() {
@@ -367,6 +380,8 @@ export {
   getUserPosts,
   getSuggestions,
   searchAccounts,
+  likeComment,
+  unlikeComment,
   getRewards,
   searchHashtags,
   getFollowedHashtags,

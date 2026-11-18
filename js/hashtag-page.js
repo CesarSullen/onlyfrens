@@ -51,6 +51,10 @@ export async function renderHashtagPage(appEl, tag, { onPublished } = {}) {
         </div>
         <button class="outline-btn follow-btn${following ? " following" : ""}" id="follow-btn">${followLabel(following)}</button>
       </header>
+      <label class="switch-row feed-toggle" id="feed-toggle-row"${following ? "" : " hidden"}>
+        <span>Mostrar en mi feed</span>
+        <input type="checkbox" id="feed-toggle"${data.in_feed ? " checked" : ""} />
+      </label>
       <p class="sheet-note">Aquí nadie sabe quién publica. Puedes dar me gusta y responder, también de forma anónima.</p>
       <div id="hashtag-compose"></div>
       <div id="hashtag-posts">${postsHTML(data.posts)}</div>
@@ -59,18 +63,39 @@ export async function renderHashtagPage(appEl, tag, { onPublished } = {}) {
     attachPostCardListeners(pageEl);
 
     const followBtn = document.getElementById("follow-btn");
+    const feedRow = document.getElementById("feed-toggle-row");
+    const feedToggle = document.getElementById("feed-toggle");
+
+    function showFollowState() {
+      followBtn.classList.toggle("following", following);
+      followBtn.textContent = followLabel(following);
+      feedRow.hidden = !following;
+      if (!following) feedToggle.checked = false;
+    }
+
     followBtn.addEventListener("click", async () => {
       haptic();
       following = !following;
-      followBtn.classList.toggle("following", following);
-      followBtn.textContent = followLabel(following);
+      showFollowState();
 
       try {
         await (following ? followHashtag(tag) : unfollowHashtag(tag));
       } catch (err) {
         following = !following;
-        followBtn.classList.toggle("following", following);
-        followBtn.textContent = followLabel(following);
+        showFollowState();
+        showToast(err.message, "error");
+      }
+    });
+
+    // Followed hashtags can also bring their posts into the home feed.
+    feedToggle.addEventListener("change", async () => {
+      haptic();
+      const value = feedToggle.checked;
+      try {
+        await followHashtag(tag, { inFeed: value });
+        showToast(value ? "Verás este hashtag en tu feed" : "Ya no aparece en tu feed");
+      } catch (err) {
+        feedToggle.checked = !value;
         showToast(err.message, "error");
       }
     });

@@ -1,4 +1,4 @@
-import { getComments, createComment } from "./api.js";
+import { getComments, createComment, likeComment, unlikeComment } from "./api.js";
 import { showToast, formatRelativeTime, haptic, closeSheet, enableSheetDrag } from "./utils.js";
 import { icon } from "./icons.js";
 import { loaderHTML, removeLoader } from "./loader.js";
@@ -13,6 +13,7 @@ function escapeHTML(text) {
 }
 
 function commentRowHTML(comment, { className = "", delay = 0 } = {}) {
+  const likes = comment.like_count ?? 0;
   const author = comment.profiles ?? { display_name: "Desconocido" };
   // Anonymous comments show only the generated avatar, never a name.
   const nameHTML = comment.anonymous
@@ -25,6 +26,11 @@ function commentRowHTML(comment, { className = "", delay = 0 } = {}) {
         <p class="comment-author">${nameHTML}<span class="comment-time${comment.anonymous ? " alone" : ""}">${formatRelativeTime(comment.created_at)}</span></p>
         <p class="comment-text">${escapeHTML(comment.text_content)}</p>
       </div>
+      <button class="comment-like${comment.liked_by_me ? " liked" : ""}" data-comment-id="${comment.id}" aria-label="Me gusta">
+        <span class="heart-out">${icon("heart", "regular")}</span>
+        <span class="heart-in">${icon("heart", "fill")}</span>
+        <span class="comment-like-count">${likes || ""}</span>
+      </button>
     </div>
   `;
 }
@@ -93,6 +99,28 @@ export function openComments(postId, onCountChange, { anonymous = false } = {}) 
       showToast(err.message, "error");
     }
   }
+
+  // Optimistic like on a comment; goes back if the request fails.
+  listEl.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".comment-like");
+    if (!btn) return;
+
+    haptic();
+    const countEl = btn.querySelector(".comment-like-count");
+    const liked = !btn.classList.contains("liked");
+    const apply = (value, delta) => {
+      btn.classList.toggle("liked", value);
+      countEl.textContent = Math.max(0, (Number(countEl.textContent) || 0) + delta) || "";
+    };
+
+    apply(liked, liked ? 1 : -1);
+    try {
+      await (liked ? likeComment(postId, btn.dataset.commentId) : unlikeComment(postId, btn.dataset.commentId));
+    } catch (err) {
+      apply(!liked, liked ? -1 : 1);
+      showToast(err.message, "error");
+    }
+  });
 
   inputEl.addEventListener("input", () => {
     sendBtn.disabled = inputEl.value.trim().length === 0;

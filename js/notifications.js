@@ -14,6 +14,7 @@ function escapeHTML(text) {
 const MESSAGE_BY_TYPE = {
   like: (name) => [`A ${name} le gustó`, "tu publicación."],
   comment: (name) => [`${name} comentó en`, "tu publicación."],
+  comment_like: (name) => [`A ${name} le gustó`, "tu respuesta."],
   repost: (name) => [`${name} compartió`, "tu publicación."],
   friend_request: (name) => [`${name} quiere agregarte`, "como amigo."],
   friend_accepted: (name) => [`${name} aceptó tu`, "solicitud de amistad."],
@@ -23,6 +24,7 @@ const MESSAGE_BY_TYPE = {
 const ICON_BY_TYPE = {
   like: ["heart", "fill"],
   comment: ["chat-circle", "fill"],
+  comment_like: ["heart", "fill"],
   repost: ["arrows-clockwise", "regular"],
   friend_request: ["user-plus", "fill"],
   friend_accepted: ["user-check", "fill"],
@@ -33,6 +35,7 @@ const ICON_BY_TYPE = {
 const ANONYMOUS_MESSAGE_BY_TYPE = {
   like: ["A alguien le gustó", "tu publicación."],
   comment: ["Alguien comentó en", "tu publicación."],
+  comment_like: ["A alguien le gustó", "tu respuesta."],
 };
 
 function notificationRowHTML(notification) {
