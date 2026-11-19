@@ -39,25 +39,23 @@ function composerHTML() {
 
         <div class="composer-images" id="composer-images"></div>
 
-        <div class="composer-options">
-          <button class="option-chip" id="composer-audience" type="button"></button>
-          <label class="switch-row" id="composer-anon-row" hidden>
-            <span>Publicar en hashtags</span>
-            <input type="checkbox" id="composer-anonymous" />
-          </label>
-        </div>
         <p class="composer-note" id="composer-note" hidden>
           Siempre es anónimo: sin tu nombre ni tu foto. Escribe de 1 a 5 #hashtags.
         </p>
 
         <div class="composer-footer">
-          <button class="icon-btn" id="composer-add-image" aria-label="Agregar imagen">
-            ${icon("image", "regular")}
-          </button>
-          <label class="switch-row" id="composer-repost-row">
-            <span>Permitir reposts</span>
-            <input type="checkbox" id="composer-repostable" checked />
-          </label>
+          <div class="composer-actions">
+            <button class="icon-btn" id="composer-add-image" type="button" aria-label="Agregar imagen">
+              ${icon("image", "regular")}
+            </button>
+            <button class="icon-btn toggle-btn" id="composer-repostable" type="button" aria-label="Permitir reposts" aria-pressed="true">
+              ${icon("arrows-clockwise", "regular")}
+            </button>
+            <button class="icon-btn toggle-btn" id="composer-anonymous" type="button" aria-label="Publicar en hashtags" aria-pressed="false" hidden>
+              ${icon("hash", "regular")}
+            </button>
+          </div>
+          <button class="option-chip" id="composer-audience" type="button"></button>
         </div>
 
         <input type="file" id="composer-file-input" accept="image/*" multiple hidden />
@@ -125,9 +123,9 @@ function updateOptions() {
   chip.classList.toggle("active", !!audience);
   chip.hidden = anonymous;
 
-  document.getElementById("composer-anon-row").hidden = !isVerified;
+  document.getElementById("composer-anonymous").hidden = !isVerified;
   document.getElementById("composer-note").hidden = !anonymous;
-  document.getElementById("composer-repost-row").hidden = anonymous;
+  document.getElementById("composer-repostable").hidden = anonymous;
   document.getElementById("composer-text").placeholder = anonymous
     ? "Escribe algo con #hashtags"
     : "¿Qué está pasando?";
@@ -161,7 +159,7 @@ async function handleAudience() {
 
 async function handlePublish() {
   const textEl = document.getElementById("composer-text");
-  const repostableEl = document.getElementById("composer-repostable");
+  const repostable = document.getElementById("composer-repostable").getAttribute("aria-pressed") === "true";
   const publishBtn = document.getElementById("composer-publish");
 
   publishBtn.disabled = true;
@@ -185,7 +183,7 @@ async function handlePublish() {
       text_content: text || undefined,
       image_url: uploadedUrls[0],
       image_url_2: uploadedUrls[1],
-      is_repostable: anonymous ? false : repostableEl.checked,
+      is_repostable: anonymous ? false : repostable,
       audience: audience && !anonymous ? { mode: audience.mode, user_ids: audience.ids } : undefined,
       anonymous: anonymous || undefined,
     });
@@ -218,6 +216,7 @@ export function openComposer(onPublished, { text = "", files = [], anonymous: st
   const fileInput = document.getElementById("composer-file-input");
 
   const anonymousEl = document.getElementById("composer-anonymous");
+  const repostableEl = document.getElementById("composer-repostable");
 
   let textLimit = MAX_TEXT_LENGTH;
 
@@ -237,7 +236,7 @@ export function openComposer(onPublished, { text = "", files = [], anonymous: st
     friendCount = profile.friend_count ?? 0;
     isVerified = !!profile.verified;
     if (startAnonymous && isVerified && !anonymous) {
-      anonymousEl.checked = true;
+      anonymousEl.setAttribute("aria-pressed", "true");
       setAnonymous(true);
     }
     updateCounter();
@@ -250,9 +249,23 @@ export function openComposer(onPublished, { text = "", files = [], anonymous: st
     updateOptions();
   }
 
-  anonymousEl.addEventListener("change", () => {
+  // Flips a toggle button and returns its new state.
+  function flip(button) {
+    const on = button.getAttribute("aria-pressed") !== "true";
+    button.setAttribute("aria-pressed", String(on));
+    return on;
+  }
+
+  anonymousEl.addEventListener("click", () => {
     haptic();
-    setAnonymous(anonymousEl.checked);
+    const on = flip(anonymousEl);
+    showToast(on ? "Solo en hashtags" : "En tu perfil");
+    setAnonymous(on);
+  });
+
+  repostableEl.addEventListener("click", () => {
+    haptic();
+    showToast(flip(repostableEl) ? "Reposts permitidos" : "Reposts desactivados");
   });
 
   document.getElementById("composer-audience").addEventListener("click", () => {
