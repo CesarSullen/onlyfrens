@@ -1,30 +1,9 @@
-function generateId(prefix) {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-}
+import { icon } from "./icons.js";
 
-function formatDateShort(isoString) {
-  return new Date(isoString).toLocaleDateString("es-ES", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-}
-
-function formatDateWithTime(isoString) {
-  return new Date(isoString).toLocaleDateString("es-ES", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function formatTimeOnly(isoString) {
-  return new Date(isoString).toLocaleTimeString("es-ES", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+const UNDO_MS = 5000;
+const HAPTIC_PATTERNS = { light: [8], success: [8, 50, 14], error: [24, 40, 24] };
+const HTML_ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+const phoneQuery = window.matchMedia("(max-width: 767px)");
 
 function formatPostTime(isoString) {
   const date = new Date(isoString);
@@ -63,100 +42,155 @@ function formatRelativeTime(isoString) {
   return `${Math.floor(hours / 24)} d`;
 }
 
-function showToast(message, type = "success", duration = 3000) {
+function escapeHTML(text) {
+  return String(text ?? "").replace(/[&<>"']/g, (char) => HTML_ESCAPES[char]);
+}
+
+// action: { label, onClick, onExpire } adds a button; onExpire runs only if the toast times out untouched.
+function showToast(message, type = "success", duration = 3000, action = null) {
   const container = document.getElementById("toast-container");
   const toast = document.createElement("div");
   toast.className = `toast toast-${type}`;
-  toast.textContent = message;
-  container.appendChild(toast);
 
-  requestAnimationFrame(() => toast.classList.add("toast-visible"));
+  const text = document.createElement("span");
+  text.textContent = message;
+  toast.append(text);
 
-  setTimeout(() => {
+  let timer;
+  const dismiss = () => {
+    clearTimeout(timer);
     toast.classList.remove("toast-visible");
     setTimeout(() => toast.remove(), 250);
+  };
+
+  if (action) {
+    toast.classList.add("has-action");
+    const button = document.createElement("button");
+    button.className = "toast-action";
+    button.textContent = action.label;
+    button.addEventListener(
+      "click",
+      () => {
+        action.onClick();
+        dismiss();
+      },
+      { once: true },
+    );
+    toast.append(button);
+  }
+
+  container.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add("toast-visible"));
+  if (type === "error" && navigator.userActivation?.isActive) haptic("error");
+
+  timer = setTimeout(() => {
+    dismiss();
+    action?.onExpire?.();
   }, duration);
+}
+
+// Hides the item now and runs commit only after the undo window, or when the app goes to the background.
+function undoable({ message, hide, restore, commit }) {
+  hide();
+  let settled = false;
+
+  const flush = () => {
+    if (settled) return;
+    settled = true;
+    document.removeEventListener("visibilitychange", onHidden);
+    commit({ keepalive: document.visibilityState === "hidden" }).catch((err) => {
+      restore();
+      showToast(err.message, "error");
+    });
+  };
+
+  function onHidden() {
+    if (document.visibilityState === "hidden") flush();
+  }
+
+  document.addEventListener("visibilitychange", onHidden);
+  showToast(message, "success", UNDO_MS, {
+    label: "Deshacer",
+    onClick: () => {
+      settled = true;
+      document.removeEventListener("visibilitychange", onHidden);
+      restore();
+    },
+    onExpire: flush,
+  });
 }
 
 const modalUI = document.getElementById("modal-ui");
 const modalMessage = document.getElementById("modal-ui-message");
-const modalInput = document.getElementById("modal-ui-input");
 const modalActions = document.getElementById("modal-ui-actions");
+let modalOpener = null;
 
-function closeModalUI() {
-  modalUI.classList.remove("active");
-  modalInput.style.display = "none";
+function resetModal() {
+  modalActions.className = "modal-ui-actions";
   modalActions.innerHTML = "";
-  modalUI.querySelector(".modal-ui-fields")?.remove();
+  modalUI.querySelectorAll(".modal-ui-fields, .modal-ui-error").forEach((el) => el.remove());
 }
 
-function showAlert(message, onClose) {
-  modalMessage.textContent = message;
-  modalActions.innerHTML = "";
-
-  const okButton = document.createElement("button");
-  okButton.className = "modal-ui-btn primary";
-  okButton.textContent = "Entendido";
-  okButton.addEventListener("click", () => {
-    closeModalUI();
-    if (onClose) onClose();
-  });
-
-  modalActions.appendChild(okButton);
+function openModal({ sheet = false, focusEl = null } = {}) {
+  modalOpener = document.activeElement;
+  modalUI.classList.toggle("as-sheet", sheet);
   modalUI.classList.add("active");
+  focusEl?.focus({ preventScroll: true });
+}
+
+// The content stays until the fade-out ends so the box doesn't collapse while it leaves.
+function closeModalUI() {
+  modalUI.classList.remove("active");
+  setTimeout(() => {
+    if (!modalUI.classList.contains("active")) resetModal();
+  }, 300);
+  if (modalOpener?.isConnected) modalOpener.focus({ preventScroll: true });
+  modalOpener = null;
+}
+
+function modalButton(label, className, onClick) {
+  const button = document.createElement("button");
+  button.className = `modal-ui-btn ${className}`.trim();
+  button.textContent = label;
+  button.addEventListener("click", onClick);
+  return button;
 }
 
 function showConfirm(message, onConfirm, destructive = false) {
+  resetModal();
   modalMessage.textContent = message;
-  modalActions.innerHTML = "";
 
-  const cancelButton = document.createElement("button");
-  cancelButton.className = "modal-ui-btn";
-  cancelButton.textContent = "Cancelar";
-  cancelButton.addEventListener("click", closeModalUI);
-
-  const confirmButton = document.createElement("button");
-  confirmButton.className = `modal-ui-btn ${destructive ? "destructive" : "primary"}`;
-  confirmButton.textContent = "Confirmar";
-  confirmButton.addEventListener("click", () => {
+  const cancelButton = modalButton("Cancelar", "", closeModalUI);
+  const confirmButton = modalButton("Confirmar", destructive ? "destructive" : "primary", () => {
     closeModalUI();
     onConfirm();
   });
 
-  modalActions.appendChild(cancelButton);
-  modalActions.appendChild(confirmButton);
-  modalUI.classList.add("active");
+  modalActions.append(cancelButton, confirmButton);
+  openModal({ sheet: true, focusEl: destructive ? cancelButton : confirmButton });
 }
 
-function showPrompt(message, placeholder, onConfirm, defaultValue = "") {
-  modalMessage.textContent = message;
-  modalInput.style.display = "block";
-  modalInput.placeholder = placeholder ?? "";
-  modalInput.value = defaultValue;
-  modalActions.innerHTML = "";
+// items: [{ label, onClick, destructive }]. Shown as a bottom sheet on phones.
+function showActions(items) {
+  resetModal();
+  modalMessage.textContent = "";
+  modalActions.classList.add("stacked");
 
-  const cancelButton = document.createElement("button");
-  cancelButton.className = "modal-ui-btn";
-  cancelButton.textContent = "Cancelar";
-  cancelButton.addEventListener("click", closeModalUI);
-
-  const confirmButton = document.createElement("button");
-  confirmButton.className = "modal-ui-btn primary";
-  confirmButton.textContent = "Aceptar";
-  confirmButton.addEventListener("click", () => {
-    const value = modalInput.value;
-    closeModalUI();
-    onConfirm(value);
+  items.forEach(({ label, onClick, destructive }) => {
+    modalActions.append(
+      modalButton(label, destructive ? "destructive-text" : "", () => {
+        closeModalUI();
+        onClick();
+      }),
+    );
   });
-
-  modalActions.appendChild(cancelButton);
-  modalActions.appendChild(confirmButton);
-  modalUI.classList.add("active");
+  modalActions.append(modalButton("Cancelar", "cancel", closeModalUI));
+  openModal({ sheet: true });
 }
 
 function showForm({ title, fields, validate, onConfirm }) {
+  resetModal();
   modalMessage.textContent = title;
-  modalActions.innerHTML = "";
 
   const fieldsEl = document.createElement("div");
   fieldsEl.className = "modal-ui-fields";
@@ -185,15 +219,7 @@ function showForm({ title, fields, validate, onConfirm }) {
   // The error sits outside the scrollable fields so it stays visible.
   modalActions.before(fieldsEl, errorEl);
 
-  const cancelButton = document.createElement("button");
-  cancelButton.className = "modal-ui-btn";
-  cancelButton.textContent = "Cancelar";
-  cancelButton.addEventListener("click", closeModalUI);
-
-  const confirmButton = document.createElement("button");
-  confirmButton.className = "modal-ui-btn primary";
-  confirmButton.textContent = "Guardar";
-  confirmButton.addEventListener("click", () => {
+  const confirmButton = modalButton("Guardar", "primary", () => {
     const values = Object.fromEntries(
       inputs.map(({ name, input }) => [name, input.value]),
     );
@@ -206,34 +232,22 @@ function showForm({ title, fields, validate, onConfirm }) {
     onConfirm(values);
   });
 
-  modalActions.appendChild(cancelButton);
-  modalActions.appendChild(confirmButton);
-  modalUI.classList.add("active");
+  modalActions.append(modalButton("Cancelar", "", closeModalUI), confirmButton);
+  openModal();
 }
 
 function showList(title, contentHTML) {
+  resetModal();
   modalMessage.textContent = title;
-  modalActions.innerHTML = "";
 
   const listEl = document.createElement("div");
   listEl.className = "modal-ui-fields modal-ui-list";
   listEl.innerHTML = contentHTML;
   modalActions.before(listEl);
 
-  const closeButton = document.createElement("button");
-  closeButton.className = "modal-ui-btn";
-  closeButton.textContent = "Cerrar";
-  closeButton.addEventListener("click", closeModalUI);
-  modalActions.appendChild(closeButton);
-
-  modalUI.classList.add("active");
+  modalActions.append(modalButton("Cerrar", "", closeModalUI));
+  openModal();
   return listEl;
-}
-
-function escapeHTML(text) {
-  const div = document.createElement("div");
-  div.textContent = text;
-  return div.innerHTML;
 }
 
 function shake(el) {
@@ -268,23 +282,75 @@ function closeSheet(overlay) {
   setTimeout(remove, 450);
 }
 
-// On phones the header can be dragged down to close the sheet.
+// Shared shell of the full-screen sheets. Returns the pieces each sheet fills in.
+function openSheet({ title, bodyHTML = "", footerHTML = "", footerClass = "", onClose }) {
+  const opener = document.activeElement;
+  const overlay = document.createElement("div");
+  overlay.className = "sheet-overlay";
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-label", title);
+  overlay.innerHTML = `
+    <div class="sheet-header">
+      <span class="sheet-title">${escapeHTML(title)}</span>
+      <button class="icon-btn sheet-close" type="button" aria-label="Cerrar">${icon("x", "bold")}</button>
+    </div>
+    <div class="sheet-body">${bodyHTML}</div>
+    ${footerHTML ? `<div class="sheet-footer ${footerClass}">${footerHTML}</div>` : ""}
+  `;
+  document.body.appendChild(overlay);
+
+  let closed = false;
+  const onKey = (e) => {
+    if (e.key === "Escape") close();
+  };
+
+  function close() {
+    if (closed) return;
+    closed = true;
+    document.removeEventListener("keydown", onKey);
+    closeSheet(overlay);
+    if (opener?.isConnected) opener.focus({ preventScroll: true });
+    onClose?.();
+  }
+
+  document.addEventListener("keydown", onKey);
+  overlay.querySelector(".sheet-close").addEventListener("click", close);
+  enableSheetDrag(overlay, close);
+
+  return {
+    overlay,
+    body: overlay.querySelector(".sheet-body"),
+    footer: overlay.querySelector(".sheet-footer"),
+    close,
+  };
+}
+
+// On phones the header can be dragged down to close the sheet; a quick flick closes it too.
 function enableSheetDrag(overlay, onClose) {
   const header = overlay.querySelector(".sheet-header, .composer-header");
   if (!header) return;
-  const phone = window.matchMedia("(max-width: 767px)");
   let startY = null;
   let offset = 0;
+  let lastY = 0;
+  let lastTime = 0;
+  let velocity = 0;
 
   header.addEventListener("pointerdown", (e) => {
-    if (!phone.matches || e.target.closest("button")) return;
-    startY = e.clientY;
+    if (!phoneQuery.matches || e.target.closest("button")) return;
+    startY = lastY = e.clientY;
+    lastTime = e.timeStamp;
     offset = 0;
+    velocity = 0;
     header.setPointerCapture(e.pointerId);
   });
 
   header.addEventListener("pointermove", (e) => {
     if (startY === null) return;
+    const elapsed = e.timeStamp - lastTime;
+    if (elapsed > 0) velocity = (e.clientY - lastY) / elapsed;
+    lastY = e.clientY;
+    lastTime = e.timeStamp;
     offset = Math.max(0, e.clientY - startY);
     overlay.style.transform = `translateY(${offset}px)`;
   });
@@ -293,16 +359,16 @@ function enableSheetDrag(overlay, onClose) {
     if (startY === null) return;
     startY = null;
 
-    if (offset > 120) {
+    if (offset > 120 || (velocity > 0.5 && offset > 24)) {
       onClose();
       return;
     }
 
-    overlay.style.transition = "transform 0.25s ease";
+    overlay.style.transition = "transform 0.3s cubic-bezier(0.3, 1.2, 0.5, 1)";
     overlay.style.transform = "";
     setTimeout(() => {
       overlay.style.transition = "";
-    }, 250);
+    }, 300);
   }
 
   header.addEventListener("pointerup", release);
@@ -319,18 +385,24 @@ function profileFieldsError(username, displayName) {
   return null;
 }
 
-function haptic() {
-  if (navigator.vibrate) {
-    navigator.vibrate(8);
-    return;
-  }
+function iosTick() {
   const el = document.createElement("input");
   el.type = "checkbox";
   el.setAttribute("switch", "");
-  el.style.cssText = "position:fixed;opacity:0;pointer-events:none;";
+  el.className = "haptic-probe";
   document.body.appendChild(el);
   el.click();
   document.body.removeChild(el);
+}
+
+// kind: "light" for taps, "success" and "error" for the result of an action.
+function haptic(kind = "light") {
+  if (navigator.vibrate) {
+    navigator.vibrate(HAPTIC_PATTERNS[kind]);
+    return;
+  }
+  iosTick();
+  if (kind !== "light") setTimeout(iosTick, 70);
 }
 
 // Alphabetical by the name people see, ignoring accents and case.
@@ -340,26 +412,48 @@ function sortByDisplayName(people) {
   );
 }
 
+function backBarHTML() {
+  return `
+    <div class="user-profile-bar">
+      <button class="back-btn" id="back-btn" aria-label="Volver">${icon("caret-left", "regular")}</button>
+    </div>`;
+}
+
+// title and text are trusted markup, never user input.
+function emptyStateHTML(iconName, title, text, className = "") {
+  return `
+    <div class="empty-state ${className}">
+      <div class="empty-state-icon">${icon(iconName, "regular")}</div>
+      <p class="empty-state-title">${title}</p>
+      <p class="empty-state-text">${text}</p>
+    </div>`;
+}
+
+// variant: "padded" inside lists, "centered" under a list, "error" for failed loads.
+function emptyLabelHTML(text, variant = "padded") {
+  return `<p class="empty-label ${variant}">${text}</p>`;
+}
+
 export {
   sortByDisplayName,
-  generateId,
-  formatDateShort,
-  formatDateWithTime,
-  formatTimeOnly,
   formatPostTime,
   formatRelativeTime,
   showToast,
-  showAlert,
+  undoable,
   showConfirm,
-  showPrompt,
+  showActions,
   showForm,
   showList,
   escapeHTML,
   shake,
   replay,
   closeSheet,
+  openSheet,
   enableSheetDrag,
   profileFieldsError,
   closeModalUI,
   haptic,
+  backBarHTML,
+  emptyStateHTML,
+  emptyLabelHTML,
 };

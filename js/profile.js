@@ -141,7 +141,7 @@ function handleEditProfile(profile) {
 
 async function handleAvatarChange(file) {
   try {
-    const compressed = await compressImage(file, 512);
+    const compressed = await compressImage(file, 256);
     const { url } = await uploadImage(compressed);
     await updateProfile({
       avatar_url: `${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`,

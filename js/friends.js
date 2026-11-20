@@ -6,7 +6,7 @@ import {
   acceptFriendRequest,
   removeFriend,
 } from "./api.js";
-import { showToast, showConfirm, haptic, sortByDisplayName } from "./utils.js";
+import { showToast, showConfirm, haptic, sortByDisplayName, escapeHTML, undoable } from "./utils.js";
 import { openUserProfile } from "./navigation.js";
 import { verifiedBadgeHTML } from "./verified.js";
 import { avatarSrc } from "./avatar.js";
@@ -17,12 +17,6 @@ import { whatsappUrl } from "./contact.js";
 import { openHashtagSearch } from "./hashtag-search.js";
 import { openFriendSearch } from "./friend-search.js";
 
-
-function escapeHTML(text) {
-  const div = document.createElement("div");
-  div.textContent = text;
-  return div.innerHTML;
-}
 
 function rowHTML(
   profile,
@@ -98,18 +92,24 @@ async function handleAccept(requestId) {
 }
 
 function handleReject(requestId) {
-  showConfirm(
-    "¿Eliminar esta solicitud?",
-    async () => {
-      try {
-        await removeFriend(requestId);
-        renderFriends(document.getElementById("app"));
-      } catch (err) {
-        showToast(err.message, "error");
-      }
+  const row = document.querySelector(`.friend-row[data-request-id="${requestId}"]`);
+  if (!row) return;
+
+  undoable({
+    message: "Solicitud eliminada",
+    hide: () => {
+      row.style.height = `${row.offsetHeight}px`;
+      row.classList.add("leaving");
     },
-    true,
-  );
+    restore: () => {
+      row.classList.remove("leaving");
+      row.style.height = "";
+    },
+    commit: async (options) => {
+      await removeFriend(requestId, options);
+      row.remove();
+    },
+  });
 }
 
 // Suggested people are not related to you yet, so their profile can't be opened.

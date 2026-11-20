@@ -1,4 +1,4 @@
-import { haptic, closeSheet, enableSheetDrag, escapeHTML, sortByDisplayName } from "./utils.js";
+import { haptic, openSheet, escapeHTML, sortByDisplayName } from "./utils.js";
 import { icon } from "./icons.js";
 import { avatarSrc } from "./avatar.js";
 
@@ -13,7 +13,7 @@ const MODE_NOTES = {
 function friendRowHTML(friend, selected) {
   return `
     <label class="pick-row" data-name="${escapeHTML(friend.display_name.toLowerCase())}">
-      <img class="avatar" src="${avatarSrc(friend)}" alt="" loading="lazy" />
+      <img class="avatar" src="${avatarSrc(friend)}" alt="" loading="lazy" decoding="async" />
       <span class="pick-name">${escapeHTML(friend.display_name)}</span>
       <input type="checkbox" class="pick-check" value="${friend.id}"${selected ? " checked" : ""} />
       <span class="pick-box">${icon("check", "regular")}</span>
@@ -26,36 +26,26 @@ export function openAudiencePicker({ friends, friendCount, current, onDone }) {
   const selected = new Set(current?.ids ?? []);
   const onlyLocked = friendCount < ONLY_MIN_FRIENDS;
 
-  document.body.insertAdjacentHTML(
-    "beforeend",
-    `
-    <div class="sheet-overlay" id="audience-overlay">
-      <div class="sheet-header">
-        <span class="sheet-title">Audiencia</span>
-        <button class="icon-btn" id="audience-close" aria-label="Cerrar">${icon("x", "bold")}</button>
+  const { overlay, body, footer, close } = openSheet({
+    title: "Audiencia",
+    bodyHTML: `
+      <div class="segmented">
+        <button class="segment" data-mode="hide">${icon("eye-slash", "regular")}Ocultar a</button>
+        <button class="segment" data-mode="only"${onlyLocked ? " disabled" : ""}>${icon(onlyLocked ? "lock" : "eye", "regular")}Mostrar solo a</button>
       </div>
-      <div class="sheet-body">
-        <div class="segmented" id="audience-modes">
-          <button class="segment" data-mode="hide">${icon("eye-slash", "regular")}Ocultar a</button>
-          <button class="segment" data-mode="only"${onlyLocked ? " disabled" : ""}>${icon(onlyLocked ? "lock" : "eye", "regular")}Mostrar solo a</button>
-        </div>
-        <p class="sheet-note" id="audience-note"></p>
-        <input type="text" class="pick-search" id="audience-search" placeholder="Buscar amigo" autocomplete="off" />
-        <div class="pick-list" id="audience-list">
-          ${sortByDisplayName(friends).map((f) => friendRowHTML(f, selected.has(f.id))).join("")}
-        </div>
-      </div>
-      <div class="sheet-footer audience-footer">
-        ${current ? `<button class="outline-btn large" id="audience-clear">Quitar</button>` : ""}
-        <button class="solid-btn large" id="audience-done" disabled>Listo</button>
-      </div>
-    </div>`,
-  );
+      <p class="sheet-note"></p>
+      <input type="text" class="pick-search" placeholder="Buscar amigo" autocomplete="off" />
+      <div class="pick-list">
+        ${sortByDisplayName(friends).map((f) => friendRowHTML(f, selected.has(f.id))).join("")}
+      </div>`,
+    footerHTML: `
+      ${current ? `<button class="outline-btn large" data-role="clear">Quitar</button>` : ""}
+      <button class="solid-btn large" data-role="done" disabled>Listo</button>`,
+    footerClass: "audience-footer",
+  });
 
-  const overlay = document.getElementById("audience-overlay");
-  const noteEl = document.getElementById("audience-note");
-  const doneBtn = document.getElementById("audience-done");
-  const close = () => closeSheet(overlay);
+  const noteEl = body.querySelector(".sheet-note");
+  const doneBtn = footer.querySelector('[data-role="done"]');
 
   function refresh() {
     overlay.querySelectorAll(".segment").forEach((btn) => {
@@ -83,14 +73,14 @@ export function openAudiencePicker({ friends, friendCount, current, onDone }) {
     });
   });
 
-  document.getElementById("audience-search").addEventListener("input", (e) => {
+  body.querySelector(".pick-search").addEventListener("input", (e) => {
     const query = e.target.value.trim().toLowerCase();
     overlay.querySelectorAll(".pick-row").forEach((row) => {
       row.hidden = query !== "" && !row.dataset.name.includes(query);
     });
   });
 
-  document.getElementById("audience-clear")?.addEventListener("click", () => {
+  footer.querySelector('[data-role="clear"]')?.addEventListener("click", () => {
     haptic();
     onDone(null);
     close();
@@ -102,7 +92,5 @@ export function openAudiencePicker({ friends, friendCount, current, onDone }) {
     close();
   });
 
-  document.getElementById("audience-close").addEventListener("click", close);
-  enableSheetDrag(overlay, close);
   refresh();
 }

@@ -1,5 +1,5 @@
 import { showToast, showConfirm, haptic } from "./utils.js";
-import { getToken, getProfile, addFriend } from "./api.js";
+import { getToken, getProfile, addFriend, getFriends, getNotifications } from "./api.js";
 import { readAuthRedirect, startSession, getAuthUser } from "./auth.js";
 import { renderAuthScreen } from "./auth-screen.js";
 import { renderResetScreen } from "./password-reset.js";
@@ -15,7 +15,7 @@ import { renderHashtagPage } from "./hashtag-page.js";
 import { startBadges, setNotificationsViewOpen } from "./badges.js";
 import { markAllNotificationsRead } from "./api.js";
 import { syncPush } from "./push.js";
-import { cacheDelete, cacheMarkStale } from "./cache.js";
+import { cacheDelete, cacheMarkStale, prefetch } from "./cache.js";
 import { openComposer } from "./composer.js";
 import { takeSharedContent } from "./share.js";
 import { initPullToRefresh } from "./pull-refresh.js";
@@ -50,6 +50,18 @@ const REFRESH_KEYS = {
 
 let currentScreen = "home";
 let viewingUser = false;
+let homeScroll = 0;
+
+// Only the feed remembers where you were; the other tabs always open at the top.
+function rememberHomeScroll() {
+  if (currentScreen === "home" && !viewingUser) homeScroll = window.scrollY;
+}
+
+function restoreHomeScroll() {
+  if (!homeScroll) return;
+  const target = homeScroll;
+  requestAnimationFrame(() => window.scrollTo(0, target));
+}
 
 // Content slides in from the side of the tab it comes after.
 function slideIn(offset) {
@@ -86,7 +98,8 @@ function leaveNotifications(options) {
   }
 }
 
-function goToScreen(screenName) {
+function goToScreen(screenName, { restore = false } = {}) {
+  rememberHomeScroll();
   if (screenName === "notifications") enterNotifications();
   else leaveNotifications();
 
@@ -108,9 +121,11 @@ function goToScreen(screenName) {
 
   const render = SCREENS[screenName];
   if (render) render();
+  if (screenName === "home" && restore) restoreHomeScroll();
 }
 
 function showUserProfile(username) {
+  rememberHomeScroll();
   leaveNotifications();
   slideIn(16);
   viewingUser = true;
@@ -131,6 +146,7 @@ window.addEventListener(OPEN_PAGE_EVENT, ({ detail }) => {
   const page = SUB_PAGES[detail.page];
   if (!page) return;
 
+  rememberHomeScroll();
   leaveNotifications();
   slideIn(16);
   viewingUser = true;
@@ -174,11 +190,12 @@ function showApp() {
   openFromHash();
   startBadges();
   syncPush();
+  warmTabs();
 }
 
 async function openSharedPost() {
   const shared = await takeSharedContent();
-  if (shared) openComposer(() => renderHome(appEl), shared);
+  if (shared) openComposer(afterPublish, shared);
 }
 
 // Push notifications and the manifest shortcuts start the app on #<screen>, the share sheet on #share.
@@ -211,16 +228,48 @@ navigator.serviceWorker?.addEventListener("message", ({ data }) => {
   }
 });
 
+const PREFETCH = {
+  friends: () => prefetch("friends", getFriends),
+  notifications: () => prefetch("notifications", getNotifications),
+};
+
+// When the tab opens the data is usually already there.
+function warmTabs() {
+  const run = () => Object.values(PREFETCH).forEach((fetch) => fetch());
+  if ("requestIdleCallback" in window) requestIdleCallback(run, { timeout: 4000 });
+  else setTimeout(run, 2000);
+}
+
+function refreshCurrent() {
+  cacheMarkStale(...REFRESH_KEYS[currentScreen]);
+  return SCREENS[currentScreen]();
+}
+
 navButtons.forEach((btn) => {
+  btn.addEventListener("pointerdown", () => PREFETCH[btn.dataset.screen]?.(), { passive: true });
   btn.addEventListener("click", () => {
     haptic();
-    goToScreen(btn.dataset.screen);
+    const screen = btn.dataset.screen;
+
+    // Tapping the active tab: first scroll to the top, and from the top refresh.
+    if (screen === currentScreen && !viewingUser) {
+      if (window.scrollY > 80) window.scrollTo({ top: 0, behavior: "smooth" });
+      else refreshCurrent();
+      return;
+    }
+    goToScreen(screen, { restore: true });
   });
 });
 
+function afterPublish() {
+  homeScroll = 0;
+  window.scrollTo(0, 0);
+  renderHome(appEl);
+}
+
 fab.addEventListener("click", () => {
   haptic();
-  openComposer(() => renderHome(appEl));
+  openComposer(afterPublish);
 });
 
 initPullToRefresh({
@@ -229,15 +278,12 @@ initPullToRefresh({
     bottomNav.style.display === "flex" &&
     !viewingUser &&
     !document.querySelector(".sheet-overlay, #modal-ui.active"),
-  onRefresh: () => {
-    cacheMarkStale(...REFRESH_KEYS[currentScreen]);
-    return SCREENS[currentScreen]();
-  },
+  onRefresh: refreshCurrent,
 });
 
 window.addEventListener("popstate", () => {
   if (modalUI.classList.contains("active")) modalUI.classList.remove("active");
-  if (viewingUser) goToScreen(currentScreen);
+  if (viewingUser) goToScreen(currentScreen, { restore: true });
 });
 
 document.addEventListener("keydown", (e) => {

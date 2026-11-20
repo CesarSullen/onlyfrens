@@ -1,3 +1,6 @@
+import { loadWithCache } from "./cache.js";
+import { showToast } from "./utils.js";
+
 export function loaderHTML() {
   return `
     <div class="loader" role="status" aria-label="Cargando">
@@ -17,4 +20,19 @@ export function loaderHTML() {
 
 export function removeLoader(root) {
   root.querySelector(".loader")?.remove();
+}
+
+// Shows cached then fresh data in a container; a failed load drops the spinner and shows the error.
+export function loadInto(el, key, fetcher, onData, maxAgeMs) {
+  return loadWithCache(
+    key,
+    fetcher,
+    (data, meta) => {
+      if (el.isConnected) onData(data, meta);
+    },
+    maxAgeMs,
+  ).catch((err) => {
+    removeLoader(el);
+    showToast(err.message, "error");
+  });
 }

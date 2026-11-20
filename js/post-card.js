@@ -1,19 +1,10 @@
 import { likePost, unlikePost, repost, undoRepost, deletePost, getUserId } from "./api.js";
-import { showToast, showConfirm, formatPostTime, haptic, replay } from "./utils.js";
+import { showToast, showActions, undoable, formatPostTime, haptic, replay, escapeHTML } from "./utils.js";
 import { icon } from "./icons.js";
-import { openComments } from "./comments-sheet.js";
-import { openInteractions } from "./interactions.js";
 import { verifiedBadgeHTML } from "./verified.js";
 import { avatarSrc } from "./avatar.js";
 import { linkifyHashtags } from "./hashtags.js";
 import { openHashtag, openUserProfile } from "./navigation.js";
-
-
-function escapeHTML(text) {
-  const div = document.createElement("div");
-  div.textContent = text;
-  return div.innerHTML;
-}
 
 function isBirthdayToday(profile) {
   if (!profile?.birthday_day || !profile?.birthday_month) return false;
@@ -59,7 +50,7 @@ export function postCardHTML(post) {
   const images = [content.image_url, content.image_url_2].filter(Boolean);
   const imagesHTML = images.length
     ? `<div class="post-images${images.length === 2 ? " two" : ""}">${images
-        .map((url) => `<img class="post-image" src="${url}" loading="lazy" alt="" />`)
+        .map((url) => `<img class="post-image" src="${url}" loading="lazy" decoding="async" alt="" />`)
         .join("")}</div>`
     : "";
 
@@ -78,9 +69,9 @@ export function postCardHTML(post) {
     ? content.author_id === getUserId()
     : post.is_mine && !post.is_repost;
 
-  const metricsButton = isContentOwner && !anonymous
-    ? `<button class="action-btn metrics-btn" aria-label="Ver interacciones">${icon("trend-up", "regular")}</button>`
-    : "";
+  const hasStats = isContentOwner && !anonymous;
+  const hasMenu = post.is_mine || hasStats || Boolean(content.text_content);
+  const signature = [post.like_count, post.comment_count, post.repost_count, post.liked_by_me, post.reposted_by_me].join("|");
 
   const profileAttr = anonymous
     ? ""
@@ -91,17 +82,17 @@ export function postCardHTML(post) {
       : "";
 
   return `
-    <article class="post-card fade-in" data-post-id="${post.id}" data-is-repost="${post.is_repost}" data-anonymous="${anonymous}">
+    <article class="post-card fade-in" data-post-id="${post.id}" data-sig="${signature}" data-is-repost="${post.is_repost}" data-anonymous="${anonymous}" data-mine="${Boolean(post.is_mine)}" data-stats="${hasStats}">
       ${birthdayPill}
       ${anonymousPill}
       ${repostPill}
       <header class="post-header">
-        <img class="avatar${profileAttr ? " tappable" : ""}" ${profileAttr} src="${avatarSrc(author)}" alt="" loading="lazy" />
+        <img class="avatar${profileAttr ? " tappable" : ""}" ${profileAttr} src="${avatarSrc(author)}" alt="" loading="lazy" decoding="async" />
         <div>
           <p class="post-author${profileAttr ? " tappable" : ""}" ${profileAttr}>${escapeHTML(author.display_name)}${verifiedBadgeHTML(author)}</p>
           <p class="post-time">${formatPostTime(post.created_at)}</p>
         </div>
-        ${post.is_mine ? `<button class="post-delete-btn" aria-label="Eliminar publicación">${icon("trash")}</button>` : ""}
+        ${hasMenu ? `<button class="post-menu-btn" aria-label="Más opciones">${icon("dots-three", "bold")}</button>` : ""}
       </header>
       ${textHTML}
       ${imagesHTML}
@@ -109,7 +100,6 @@ export function postCardHTML(post) {
         ${actionButtonHTML({ cls: "like-btn", label: "Me gusta", name: "heart", active: post.liked_by_me, count: post.like_count })}
         ${actionButtonHTML({ cls: "comment-btn", label: "Respuestas", name: "chat-circle", active: false, count: post.comment_count })}
         ${repostButton}
-        ${metricsButton}
       </div>
     </article>
   `;
@@ -158,79 +148,136 @@ async function handleToggle(btn, postId, { add, remove }) {
 }
 
 // The height is fixed first so the card can shrink to nothing instead of vanishing at once.
-function removeCard(card) {
+function hideCard(card) {
   card.style.height = `${card.offsetHeight}px`;
   card.classList.add("removing");
-  card.addEventListener("animationend", (e) => {
-    if (e.target === card) card.remove();
-  });
+}
+
+function showCard(card) {
+  if (!card.isConnected) return;
+  card.classList.remove("removing");
+  card.style.height = "";
+  replay(card, "fade-in");
 }
 
 function handleDelete(card, postId) {
-  const message =
-    card.dataset.isRepost === "true"
-      ? "¿Quitar esta publicación compartida?"
-      : "¿Eliminar esta publicación? Se borrará para todos, incluidos quienes la compartieron.";
-
-  showConfirm(message, async () => {
-    try {
-      await deletePost(postId);
-      removeCard(card);
-      showToast("Publicación eliminada");
-    } catch (err) {
-      showToast(err.message, "error");
-    }
-  }, true);
+  undoable({
+    message: card.dataset.isRepost === "true" ? "Publicación compartida quitada" : "Publicación eliminada",
+    hide: () => hideCard(card),
+    restore: () => showCard(card),
+    commit: async (options) => {
+      await deletePost(postId, options);
+      card.remove();
+    },
+  });
 }
 
-export function attachPostCardListeners(container) {
-  container.querySelectorAll(".post-card").forEach((card) => {
-    if (card.dataset.bound) return;
-    card.dataset.bound = "true";
-    const postId = card.dataset.postId;
+function copyText(text) {
+  navigator.clipboard?.writeText(text).then(
+    () => showToast("Texto copiado"),
+    () => showToast("No se pudo copiar", "error"),
+  );
+}
 
-    card.querySelectorAll(".post-image").forEach((image) => {
-      if (image.complete) return;
-      image.classList.add("pending");
-      const ready = () => image.classList.remove("pending");
-      image.addEventListener("load", ready, { once: true });
-      image.addEventListener("error", ready, { once: true });
+function openPostMenu(card, postId) {
+  const items = [];
+  const text = card.querySelector(".post-text")?.textContent.trim();
+
+  if (text) items.push({ label: "Copiar texto", onClick: () => copyText(text) });
+  if (card.dataset.stats === "true") {
+    items.push({
+      label: "Ver interacciones",
+      onClick: () => import("./interactions.js").then(({ openInteractions }) => openInteractions(postId)),
     });
-
-    card.querySelector(".like-btn").addEventListener("click", (e) =>
-      handleToggle(e.currentTarget, postId, { add: likePost, remove: unlikePost })
-    );
-
-    card.querySelectorAll("[data-profile]").forEach((el) => {
-      el.addEventListener("click", () => {
-        haptic();
-        openUserProfile(el.dataset.profile);
-      });
+  }
+  if (card.dataset.mine === "true") {
+    items.push({
+      label: card.dataset.isRepost === "true" ? "Quitar publicación compartida" : "Eliminar publicación",
+      destructive: true,
+      onClick: () => handleDelete(card, postId),
     });
+  }
 
-    card.querySelector(".metrics-btn")?.addEventListener("click", () => {
-      haptic();
-      openInteractions(postId);
-    });
+  showActions(items);
+}
 
-    card.querySelector(".repost-btn")?.addEventListener("click", (e) =>
-      handleToggle(e.currentTarget, postId, { add: repost, remove: undoRepost })
-    );
+function onCardClick(e) {
+  const card = e.target.closest(".post-card");
+  if (!card) return;
+  const postId = card.dataset.postId;
+  const hit = (selector) => e.target.closest(selector);
+  let el;
 
-    card.querySelector(".post-delete-btn")?.addEventListener("click", () => handleDelete(card, postId));
-
-    card.querySelectorAll(".hashtag").forEach((tagEl) => {
-      tagEl.addEventListener("click", () => {
-        haptic();
-        openHashtag(tagEl.dataset.tag);
-      });
-    });
-
-    const commentBtn = card.querySelector(".comment-btn");
-    commentBtn?.addEventListener("click", () =>
-      openComments(postId, (delta) => adjustCount(commentBtn, delta), {
+  if ((el = hit(".like-btn"))) {
+    handleToggle(el, postId, { add: likePost, remove: unlikePost });
+  } else if ((el = hit(".repost-btn"))) {
+    handleToggle(el, postId, { add: repost, remove: undoRepost });
+  } else if ((el = hit(".comment-btn"))) {
+    import("./comments-sheet.js").then(({ openComments }) =>
+      openComments(postId, (delta) => adjustCount(el, delta), {
         anonymous: card.dataset.anonymous === "true",
-      })
+      }),
     );
+  } else if (hit(".post-menu-btn")) {
+    haptic();
+    openPostMenu(card, postId);
+  } else if ((el = hit("[data-profile]"))) {
+    haptic();
+    openUserProfile(el.dataset.profile);
+  } else if ((el = hit(".hashtag"))) {
+    haptic();
+    openHashtag(el.dataset.tag);
+  } else if ((el = hit(".post-image"))) {
+    import("./image-viewer.js").then(({ openImageViewer }) => openImageViewer(el.currentSrc || el.src));
+  }
+}
+
+// One click listener per container; cards can be swapped without binding again.
+export function attachPostCardListeners(container) {
+  if (!container.dataset.postListeners) {
+    container.dataset.postListeners = "true";
+    container.addEventListener("click", onCardClick);
+  }
+
+  container.querySelectorAll(".post-image").forEach((image) => {
+    if (image.complete) return;
+    image.classList.add("pending");
+    const ready = () => image.classList.remove("pending");
+    image.addEventListener("load", ready, { once: true });
+    image.addEventListener("error", ready, { once: true });
   });
+}
+
+// Updates the list in place: unchanged cards stay untouched, so a refresh doesn't flash or replay animations.
+export function renderPosts(container, posts, emptyHTML = "") {
+  const cards = [...container.children].filter((el) => el.classList.contains("post-card"));
+  const reconcile = cards.length > 0 && cards.length === container.children.length && posts.length > 0;
+
+  if (!reconcile) {
+    container.innerHTML = posts.length ? posts.map(postCardHTML).join("") : emptyHTML;
+    attachPostCardListeners(container);
+    return;
+  }
+
+  const current = new Map(cards.map((card) => [card.dataset.postId, card]));
+  const template = document.createElement("template");
+  template.innerHTML = posts.map(postCardHTML).join("");
+
+  const nodes = [...template.content.children].map((fresh) => {
+    const old = current.get(fresh.dataset.postId);
+    if (!old) return fresh;
+    if (old.dataset.sig === fresh.dataset.sig) return old;
+    fresh.classList.remove("fade-in");
+    return fresh;
+  });
+
+  const keep = new Set(nodes);
+  cards.forEach((card) => {
+    if (!keep.has(card)) card.remove();
+  });
+  nodes.forEach((node, i) => {
+    const at = container.children[i];
+    if (at !== node) container.insertBefore(node, at ?? null);
+  });
+  attachPostCardListeners(container);
 }

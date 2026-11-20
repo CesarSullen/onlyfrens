@@ -1,4 +1,7 @@
-import { getPushKey, savePushSubscription, deletePushSubscription } from "./api.js";
+import { getPushKey, savePushSubscription, deletePushSubscription, getUserId } from "./api.js";
+
+const SYNC_KEY = "onlyfrens_push_synced";
+const RESYNC_MS = 7 * 24 * 60 * 60 * 1000;
 
 export function isPushSupported() {
   return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
@@ -18,7 +21,21 @@ function keyToBytes(base64Url) {
   return Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
 }
 
-async function registerDevice() {
+function syncStamp(subscription) {
+  return `${getUserId()}|${subscription.endpoint}`;
+}
+
+// The server already has this device for this user: nothing to send until the week is out.
+function isSynced(subscription) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SYNC_KEY));
+    return saved?.stamp === syncStamp(subscription) && Date.now() - saved.at < RESYNC_MS;
+  } catch {
+    return false;
+  }
+}
+
+async function registerDevice({ force = false } = {}) {
   const registration = await navigator.serviceWorker.ready;
   let subscription = await registration.pushManager.getSubscription();
 
@@ -30,7 +47,12 @@ async function registerDevice() {
     });
   }
 
+  if (!force && isSynced(subscription)) return;
+
   await savePushSubscription(subscription.toJSON());
+  try {
+    localStorage.setItem(SYNC_KEY, JSON.stringify({ stamp: syncStamp(subscription), at: Date.now() }));
+  } catch {}
 }
 
 // Must be called from a tap: browsers only show the permission prompt after one.
@@ -38,7 +60,7 @@ export async function enablePush() {
   const permission = await Notification.requestPermission();
   if (permission !== "granted") return false;
 
-  await registerDevice();
+  await registerDevice({ force: true });
   return true;
 }
 
@@ -62,6 +84,7 @@ export async function disablePush() {
     const subscription = await registration.pushManager.getSubscription();
     if (!subscription) return;
 
+    localStorage.removeItem(SYNC_KEY);
     await deletePushSubscription(subscription.endpoint);
     await subscription.unsubscribe();
   } catch {

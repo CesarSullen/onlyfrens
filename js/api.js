@@ -221,10 +221,10 @@ function getFeed(before) {
   return apiFetch(`/posts${query}`, { method: "GET" });
 }
 
-function deletePost(postId) {
+function deletePost(postId, options = {}) {
   return mutate(
     `/posts/${postId}`,
-    { method: "DELETE" },
+    { method: "DELETE", ...options },
     { drop: ["feed", "ownPosts"], stale: ["user:*"] },
   );
 }
@@ -257,10 +257,10 @@ function acceptFriendRequest(requestId) {
   );
 }
 
-function removeFriend(requestId) {
+function removeFriend(requestId, options = {}) {
   return mutate(
     `/friends/${requestId}`,
-    { method: "DELETE" },
+    { method: "DELETE", ...options },
     { drop: ["friends", "feed", "profile", "suggestions", "user:*"] },
   );
 }

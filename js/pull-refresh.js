@@ -1,4 +1,5 @@
 import { loaderHTML } from "./loader.js";
+import { haptic } from "./utils.js";
 
 const THRESHOLD = 64;
 const MAX_PULL = 110;
@@ -16,9 +17,15 @@ export function initPullToRefresh({ content, canPull, onRefresh }) {
   let startY = null;
   let pull = 0;
   let busy = false;
+  let armed = false;
 
   function show(distance) {
     pull = distance;
+    const reached = distance >= THRESHOLD;
+    if (reached !== armed) {
+      armed = reached;
+      if (reached && !busy) haptic();
+    }
     content.style.transform = `translateY(${distance}px)`;
     indicator.style.opacity = Math.min(1, distance / 40);
     indicator.style.transform = `translate(-50%, ${distance / 2 - 28}px)`;
@@ -37,27 +44,27 @@ export function initPullToRefresh({ content, canPull, onRefresh }) {
     (e) => {
       if (busy || e.touches.length !== 1 || window.scrollY > 0 || !canPull()) return;
       startY = e.touches[0].clientY;
+      // The blocking listener only exists while a pull is possible, so normal scrolling stays on the fast path.
+      document.addEventListener("touchmove", onMove, { passive: false });
     },
     { passive: true },
   );
 
-  document.addEventListener(
-    "touchmove",
-    (e) => {
-      if (startY === null) return;
-      const dy = e.touches[0].clientY - startY;
-      if (dy <= 0) {
-        startY = null;
-        show(0);
-        return;
-      }
-      e.preventDefault();
-      show(Math.min(MAX_PULL, dy * 0.5));
-    },
-    { passive: false },
-  );
+  function onMove(e) {
+    if (startY === null) return;
+    const dy = e.touches[0].clientY - startY;
+    if (dy <= 0) {
+      startY = null;
+      document.removeEventListener("touchmove", onMove);
+      show(0);
+      return;
+    }
+    e.preventDefault();
+    show(Math.min(MAX_PULL, dy * 0.5));
+  }
 
   async function release() {
+    document.removeEventListener("touchmove", onMove);
     if (startY === null) return;
     startY = null;
     setSettling(true);

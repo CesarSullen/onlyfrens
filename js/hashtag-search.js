@@ -1,5 +1,5 @@
 import { searchHashtags, getFollowedHashtags, followHashtag, unfollowHashtag } from "./api.js";
-import { haptic, showToast, closeSheet, enableSheetDrag, escapeHTML } from "./utils.js";
+import { haptic, showToast, openSheet, escapeHTML, emptyLabelHTML } from "./utils.js";
 import { icon } from "./icons.js";
 import { openHashtag } from "./navigation.js";
 
@@ -29,60 +29,49 @@ function sectionHTML(title, rows) {
 }
 
 export function openHashtagSearch() {
-  document.body.insertAdjacentHTML(
-    "beforeend",
-    `
-    <div class="sheet-overlay" id="hashtags-overlay">
-      <div class="sheet-header">
-        <span class="sheet-title">Hashtags</span>
-        <button class="icon-btn" id="hashtags-close" aria-label="Cerrar">${icon("x", "bold")}</button>
+  const { body, close } = openSheet({
+    title: "Hashtags",
+    bodyHTML: `
+      <div class="tag-search">
+        <span>${icon("hash", "regular")}</span>
+        <input type="text" placeholder="Buscar hashtag" autocomplete="off" autocapitalize="none" maxlength="30" />
       </div>
-      <div class="sheet-body">
-        <div class="tag-search">
-          <span>${icon("hash", "regular")}</span>
-          <input type="text" id="hashtags-input" placeholder="Buscar hashtag" autocomplete="off" autocapitalize="none" maxlength="30" />
-        </div>
-        <div id="hashtags-results"></div>
-      </div>
-    </div>`,
-  );
+      <div class="search-results"></div>`,
+  });
 
-  const overlay = document.getElementById("hashtags-overlay");
-  const inputEl = document.getElementById("hashtags-input");
-  const resultsEl = document.getElementById("hashtags-results");
-  const close = () => closeSheet(overlay);
+  const inputEl = body.querySelector("input");
+  const resultsEl = body.querySelector(".search-results");
   let timer;
   let latest = 0;
 
   function show(html) {
-    resultsEl.innerHTML = html || `<p class="empty-label" style="padding: 18px 0;">No hay hashtags con ese nombre</p>`;
-
-    resultsEl.querySelectorAll(".tag-row").forEach((row) => {
-      const tag = row.dataset.tag;
-
-      row.addEventListener("click", (e) => {
-        if (e.target.closest(".tag-follow")) return;
-        haptic();
-        close();
-        openHashtag(tag);
-      });
-
-      const btn = row.querySelector(".tag-follow");
-      btn.addEventListener("click", async () => {
-        haptic();
-        const next = !btn.classList.contains("following");
-        btn.classList.toggle("following", next);
-        btn.textContent = next ? "Siguiendo" : "Seguir";
-        try {
-          await (next ? followHashtag(tag) : unfollowHashtag(tag));
-        } catch (err) {
-          btn.classList.toggle("following", !next);
-          btn.textContent = next ? "Seguir" : "Siguiendo";
-          showToast(err.message, "error");
-        }
-      });
-    });
+    resultsEl.innerHTML = html || emptyLabelHTML("No hay hashtags con ese nombre");
   }
+
+  resultsEl.addEventListener("click", async (e) => {
+    const row = e.target.closest(".tag-row");
+    if (!row) return;
+    const tag = row.dataset.tag;
+    const btn = e.target.closest(".tag-follow");
+
+    haptic();
+    if (!btn) {
+      close();
+      openHashtag(tag);
+      return;
+    }
+
+    const next = !btn.classList.contains("following");
+    btn.classList.toggle("following", next);
+    btn.textContent = next ? "Siguiendo" : "Seguir";
+    try {
+      await (next ? followHashtag(tag) : unfollowHashtag(tag));
+    } catch (err) {
+      btn.classList.toggle("following", !next);
+      btn.textContent = next ? "Seguir" : "Siguiendo";
+      showToast(err.message, "error");
+    }
+  });
 
   async function load() {
     const query = inputEl.value.trim().replace(/^#/, "").toLowerCase();
@@ -117,7 +106,5 @@ export function openHashtagSearch() {
     timer = setTimeout(load, SEARCH_DELAY_MS);
   });
 
-  document.getElementById("hashtags-close").addEventListener("click", close);
-  enableSheetDrag(overlay, close);
   load();
 }

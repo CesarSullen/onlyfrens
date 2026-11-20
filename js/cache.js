@@ -61,6 +61,21 @@ export function livePosts(posts) {
   return posts.filter((post) => new Date(post.created_at).getTime() > limit);
 }
 
+// Two callers asking for the same key at once share one request.
+const inflight = new Map();
+
+function fetchOnce(key, fetcher) {
+  if (!inflight.has(key)) {
+    inflight.set(key, fetcher().finally(() => inflight.delete(key)));
+  }
+  return inflight.get(key);
+}
+
+// Warms the cache without touching the screen.
+export function prefetch(key, fetcher, maxAgeMs = 60_000) {
+  return loadWithCache(key, fetcher, () => {}, maxAgeMs).catch(() => {});
+}
+
 export async function loadWithCache(key, fetcher, onData, maxAgeMs = 60_000) {
   const cached = read(key);
 
@@ -70,7 +85,7 @@ export async function loadWithCache(key, fetcher, onData, maxAgeMs = 60_000) {
   }
 
   try {
-    const data = await fetcher();
+    const data = await fetchOnce(key, fetcher);
     write(key, data);
     if (!cached || JSON.stringify(cached.data) !== JSON.stringify(data)) {
       onData(data, { cached: false });

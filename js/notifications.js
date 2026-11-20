@@ -1,15 +1,9 @@
 import { getNotifications, markNotificationRead } from "./api.js";
-import { showToast, formatRelativeTime, haptic } from "./utils.js";
+import { showToast, formatRelativeTime, haptic, escapeHTML } from "./utils.js";
 import { icon } from "./icons.js";
 import { loaderHTML, removeLoader } from "./loader.js";
 import { loadWithCache } from "./cache.js";
 import { canAskForPush, needsInstallForPush, enablePush } from "./push.js";
-
-function escapeHTML(text) {
-  const div = document.createElement("div");
-  div.textContent = text;
-  return div.innerHTML;
-}
 
 const MESSAGE_BY_TYPE = {
   like: (name) => [`A ${name} le gustó`, "tu publicación."],

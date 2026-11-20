@@ -17,7 +17,13 @@
     <link rel="preconnect" href="https://api.dicebear.com" crossorigin />
     <link rel="icon" type="image/png" href="./assets/opengraph/logo.png" />
     <link rel="apple-touch-icon" href="./assets/opengraph/icon-512.png" />
+    <link rel="preload" href="./typography/jost-400.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="./typography/jost-600.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="./css/style.css" />
+    <link rel="modulepreload" href="./js/app.js" />
+    <link rel="modulepreload" href="./js/post-card.js" />
+    <link rel="modulepreload" href="./js/utils.js" />
+    <link rel="modulepreload" href="./js/api.js" />
     <link rel="manifest" href="./manifest.json" />
     <title>OnlyFrens</title>
   </head>
@@ -54,12 +60,11 @@
       <span class="fab-label">Publicar</span>
     </button>
 
-    <div id="toast-container"></div>
+    <div id="toast-container" role="status" aria-live="polite"></div>
 
     <div id="modal-ui">
-      <div class="modal-ui-box">
+      <div class="modal-ui-box" role="dialog" aria-modal="true" aria-labelledby="modal-ui-message">
         <p class="modal-ui-message" id="modal-ui-message"></p>
-        <input type="text" id="modal-ui-input" class="modal-ui-input" style="display: none" autocomplete="off" />
         <div class="modal-ui-actions" id="modal-ui-actions"></div>
       </div>
     </div>

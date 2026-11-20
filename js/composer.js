@@ -23,7 +23,7 @@ let isVerified = false;
 function composerHTML() {
   return `
     <div class="sheet-overlay" id="composer-overlay">
-      <div class="composer-sheet fade-in">
+      <div class="composer-sheet fade-in" role="dialog" aria-modal="true" aria-label="Nueva publicación">
         <div class="composer-header">
           <button class="text-btn" id="composer-cancel">Cancelar</button>
           <span class="char-counter" id="char-counter">0/${MAX_TEXT_LENGTH}</span>
@@ -64,12 +64,28 @@ function composerHTML() {
   `;
 }
 
+const previewUrls = new Map();
+
+function previewUrl(file) {
+  if (!previewUrls.has(file)) previewUrls.set(file, URL.createObjectURL(file));
+  return previewUrls.get(file);
+}
+
+function releasePreviews(keep = []) {
+  for (const [file, url] of previewUrls) {
+    if (keep.includes(file)) continue;
+    URL.revokeObjectURL(url);
+    previewUrls.delete(file);
+  }
+}
+
 function renderImagePreviews(container) {
+  releasePreviews(selectedFiles);
   container.innerHTML = selectedFiles
     .map(
       (file, index) => `
         <div class="composer-image-preview">
-          <img src="${URL.createObjectURL(file)}" alt="" />
+          <img src="${previewUrl(file)}" alt="" decoding="async" />
           <button class="remove-image-btn" data-index="${index}" aria-label="Quitar imagen">${icon("x", "bold")}</button>
         </div>
       `,
@@ -98,10 +114,16 @@ function updatePublishState() {
 
 function closeComposer() {
   closeSheet(document.getElementById("composer-overlay"));
+  document.removeEventListener("keydown", onComposerKey);
   document.getElementById("composer-fab")?.classList.remove("open");
   selectedFiles = [];
+  releasePreviews();
   audience = null;
   anonymous = false;
+}
+
+function onComposerKey(e) {
+  if (e.key === "Escape" && !document.querySelector(".sheet-overlay:not(#composer-overlay)")) closeComposer();
 }
 
 function audienceChipHTML() {
@@ -166,13 +188,13 @@ async function handlePublish() {
   publishBtn.textContent = "Publicando...";
 
   try {
-    const uploadedUrls = [];
-    for (const file of selectedFiles) {
-      const compressed = await compressImage(file);
-      // Anonymous posts upload to a folder that doesn't carry the user id.
-      const { url } = await uploadImage(compressed, { anonymous });
-      uploadedUrls.push(url);
-    }
+    // Anonymous posts upload to a folder that doesn't carry the user id.
+    const uploadedUrls = await Promise.all(
+      selectedFiles.map(async (file) => {
+        const { url } = await uploadImage(await compressImage(file), { anonymous });
+        return url;
+      }),
+    );
 
     const text = textEl.value.trim();
     if (anonymous && extractHashtags(text).length > MAX_ANONYMOUS_TAGS) {
@@ -188,6 +210,7 @@ async function handlePublish() {
       anonymous: anonymous || undefined,
     });
 
+    haptic("success");
     showToast("Publicado");
     closeComposer();
     if (onPublishedCallback) onPublishedCallback();
@@ -209,6 +232,7 @@ export function openComposer(onPublished, { text = "", files = [], anonymous: st
   document.body.insertAdjacentHTML("beforeend", composerHTML());
   document.getElementById("composer-fab")?.classList.add("open");
   enableSheetDrag(document.getElementById("composer-overlay"), closeComposer);
+  document.addEventListener("keydown", onComposerKey);
 
   const textEl = document.getElementById("composer-text");
   const counterEl = document.getElementById("char-counter");

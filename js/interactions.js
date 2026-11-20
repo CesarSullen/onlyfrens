@@ -1,5 +1,5 @@
 import { getInteractions } from "./api.js";
-import { showList, escapeHTML, haptic } from "./utils.js";
+import { showList, escapeHTML, haptic, emptyLabelHTML } from "./utils.js";
 import { loaderHTML } from "./loader.js";
 import { openUserProfile } from "./navigation.js";
 import { verifiedBadgeHTML } from "./verified.js";
@@ -9,7 +9,7 @@ import { avatarSrc } from "./avatar.js";
 function personRowHTML(profile, index) {
   return `
     <div class="friend-row liker-row tappable" data-profile="${escapeHTML(profile?.username ?? "")}" style="animation-delay: ${Math.min(index, 8) * 40}ms">
-      <img class="avatar" src="${avatarSrc(profile)}" alt="" loading="lazy" />
+      <img class="avatar" src="${avatarSrc(profile)}" alt="" loading="lazy" decoding="async" />
       <div class="friend-info">
         <p class="friend-name">${escapeHTML(profile?.display_name ?? "Desconocido")}${verifiedBadgeHTML(profile)}</p>
         <span class="friend-sub">@${escapeHTML(profile?.username ?? "")}</span>
@@ -27,7 +27,7 @@ function sectionHTML(title, profiles, startIndex) {
 }
 
 function messageHTML(text) {
-  return `<p class="empty-label liker-empty">${escapeHTML(text)}</p>`;
+  return emptyLabelHTML(escapeHTML(text), "liker-empty");
 }
 
 export async function openInteractions(postId) {
@@ -42,11 +42,11 @@ export async function openInteractions(postId) {
         : sectionHTML("Les gustó", likers.map((l) => l.profiles), 0) +
           sectionHTML("Lo compartieron", reposters.map((r) => r.profiles), likers.length);
 
-    listEl.querySelectorAll("[data-profile]").forEach((row) => {
-      row.addEventListener("click", () => {
-        haptic();
-        openUserProfile(row.dataset.profile);
-      });
+    listEl.addEventListener("click", (e) => {
+      const row = e.target.closest("[data-profile]");
+      if (!row) return;
+      haptic();
+      openUserProfile(row.dataset.profile);
     });
   } catch (err) {
     listEl.innerHTML = messageHTML(err.message);

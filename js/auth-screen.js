@@ -16,14 +16,14 @@ function authScreenHTML() {
       <p class="auth-subtitle">${isLogin ? "Inicia sesión" : "Crea tu cuenta"}</p>
 
       <form id="auth-form" class="auth-form">
-        <input type="email" id="auth-email" placeholder="Email" required autocomplete="email" />
+        <input type="email" id="auth-email" placeholder="Email" required autocomplete="email" autocapitalize="none" spellcheck="false" />
         ${passwordFieldHTML({ id: "auth-password", placeholder: "Contraseña", autocomplete: isLogin ? "current-password" : "new-password", withToggle: true })}
         ${
           isLogin
             ? `<button type="button" class="text-btn forgot-link" id="auth-forgot">¿Olvidaste tu contraseña?</button>`
             : `
           ${passwordFieldHTML({ id: "auth-password-confirm", placeholder: "Repite la contraseña", autocomplete: "new-password", checkLength: false })}
-          <input type="text" id="auth-username" placeholder="Username (sin @)" required />
+          <input type="text" id="auth-username" placeholder="Username (sin @)" required autocapitalize="none" autocomplete="username" spellcheck="false" />
           <input type="text" id="auth-display-name" placeholder="Nombre a mostrar" required />
         `
         }
