@@ -4,6 +4,7 @@ import { icon } from "./icons.js";
 import { loaderHTML, removeLoader } from "./loader.js";
 import { loadWithCache } from "./cache.js";
 import { canAskForPush, needsInstallForPush, enablePush } from "./push.js";
+import { patchKeyed } from "./patch-list.js";
 
 const MESSAGE_BY_TYPE = {
   like: (name) => [`A ${name} le gustó`, "tu publicación."],
@@ -41,7 +42,7 @@ function notificationRowHTML(notification) {
   const [iconName, iconWeight] = ICON_BY_TYPE[notification.type] ?? ["bell", "fill"];
 
   return `
-    <div class="notification-row${notification.read ? "" : " unread"}" data-notification-id="${notification.id}">
+    <div class="notification-row${notification.read ? "" : " unread"}" data-key="${notification.id}" data-notification-id="${notification.id}">
       <div class="notification-icon">${icon(iconName, iconWeight)}</div>
       <p class="notification-message">${escapeHTML(head)}<span class="notification-tail">${escapeHTML(tail)}</span></p>
       <div class="notification-meta">
@@ -64,7 +65,7 @@ async function handleRowClick(row) {
 }
 
 const EMPTY_NOTIFICATIONS_HTML = `
-  <div class="empty-state fade-in">
+  <div class="empty-state fade-in" data-key="empty">
     <div class="empty-state-icon">${icon("bell", "regular")}</div>
     <p class="empty-state-title">Todo tranquilo por aquí</p>
     <p class="empty-state-text">Sal a tomar el aire. Toca césped my fren.</p>
@@ -74,7 +75,7 @@ const EMPTY_NOTIFICATIONS_HTML = `
 function pushBannerHTML() {
   if (canAskForPush()) {
     return `
-      <div class="push-banner">
+      <div class="push-banner" data-key="banner">
         ${icon("bell", "fill")}
         <p>Activa las notificaciones para enterarte al instante.</p>
         <button class="solid-btn" id="enable-push">Activar</button>
@@ -82,7 +83,7 @@ function pushBannerHTML() {
   }
   if (needsInstallForPush()) {
     return `
-      <div class="push-banner">
+      <div class="push-banner" data-key="banner">
         ${icon("bell", "fill")}
         <p>Para recibir notificaciones, agrega la app a tu pantalla de inicio.</p>
       </div>`;
@@ -90,48 +91,38 @@ function pushBannerHTML() {
   return "";
 }
 
-function setupPushBanner(screenEl) {
-  const button = screenEl.querySelector("#enable-push");
-  if (!button) return;
-
-  button.addEventListener("click", async () => {
-    haptic();
-    button.disabled = true;
-    try {
-      const enabled = await enablePush();
-      if (enabled) {
-        screenEl.querySelector(".push-banner").remove();
-        showToast("Notificaciones activadas");
-      } else {
-        button.disabled = false;
-      }
-    } catch (err) {
-      showToast(err.message, "error");
+async function enableFromBanner(screenEl, button) {
+  haptic();
+  button.disabled = true;
+  try {
+    const enabled = await enablePush();
+    if (enabled) {
+      screenEl.querySelector(".push-banner")?.remove();
+      showToast("Notificaciones activadas");
+    } else {
       button.disabled = false;
     }
-  });
+  } catch (err) {
+    showToast(err.message, "error");
+    button.disabled = false;
+  }
 }
 
 function showNotifications(screenEl, notifications) {
-  const banner = pushBannerHTML();
-
-  if (notifications.length === 0) {
-    screenEl.innerHTML = banner + EMPTY_NOTIFICATIONS_HTML;
-    setupPushBanner(screenEl);
-    return;
-  }
-
-  screenEl.innerHTML = banner + notifications.map(notificationRowHTML).join("");
-  setupPushBanner(screenEl);
-
-  screenEl.querySelectorAll(".notification-row").forEach((row) => {
-    row.addEventListener("click", () => handleRowClick(row));
-  });
+  const rows = notifications.length ? notifications.map(notificationRowHTML).join("") : EMPTY_NOTIFICATIONS_HTML;
+  patchKeyed(screenEl, pushBannerHTML() + rows);
 }
 
 export async function renderNotifications(appEl) {
   appEl.innerHTML = `<div class="notifications-screen fade-in">${loaderHTML()}</div>`;
   const screenEl = appEl.firstElementChild;
+
+  screenEl.addEventListener("click", (event) => {
+    const button = event.target.closest("#enable-push");
+    if (button) return enableFromBanner(screenEl, button);
+    const row = event.target.closest(".notification-row");
+    if (row) handleRowClick(row);
+  });
 
   try {
     await loadWithCache("notifications", getNotifications, ({ notifications }) => {

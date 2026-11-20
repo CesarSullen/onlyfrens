@@ -6,7 +6,7 @@ import {
   acceptFriendRequest,
   removeFriend,
 } from "./api.js";
-import { showToast, showConfirm, haptic, sortByDisplayName, escapeHTML, undoable } from "./utils.js";
+import { showToast, showConfirm, haptic, sortByDisplayName, escapeHTML, undoable, loadModule } from "./utils.js";
 import { openUserProfile } from "./navigation.js";
 import { verifiedBadgeHTML } from "./verified.js";
 import { avatarSrc } from "./avatar.js";
@@ -14,9 +14,7 @@ import { icon } from "./icons.js";
 import { loaderHTML, removeLoader } from "./loader.js";
 import { loadWithCache } from "./cache.js";
 import { whatsappUrl } from "./contact.js";
-import { openHashtagSearch } from "./hashtag-search.js";
-import { openFriendSearch } from "./friend-search.js";
-
+import { patchKeyed } from "./patch-list.js";
 
 function rowHTML(
   profile,
@@ -27,7 +25,7 @@ function rowHTML(
   tappable = true,
 ) {
   return `
-    <div class="friend-row" data-request-id="${requestId}">
+    <div class="friend-row" data-key="${escapeHTML(requestId || profile.friendship_id || profile.username)}" data-request-id="${requestId}">
       <img class="avatar${tappable ? " tappable" : ""}"${tappable ? ` data-profile="${escapeHTML(profile.username)}"` : ""} src="${avatarSrc(profile)}" alt="" loading="lazy" />
       <div class="friend-info">
         <p class="friend-name${tappable ? " tappable" : ""}"${tappable ? ` data-profile="${escapeHTML(profile.username)}"` : ""}>${escapeHTML(profile.display_name)}${verifiedBadgeHTML(profile)}</p>
@@ -71,21 +69,21 @@ function outgoingRequestHTML(request) {
   );
 }
 
-function sectionHTML(title, itemsHTML) {
+function sectionHTML(key, title, itemsHTML) {
   if (!itemsHTML) return "";
   return `
-    <section>
-      <h2 class="friends-section-title">${title}</h2>
+    <section data-key="${key}" data-nested>
+      <h2 class="friends-section-title" data-key="title">${title}</h2>
       ${itemsHTML}
     </section>
   `;
 }
 
-async function handleAccept(requestId) {
+async function handleAccept(requestId, refresh) {
   try {
     await acceptFriendRequest(requestId);
     showToast("Ahora son amigos");
-    renderFriends(document.getElementById("app"));
+    refresh();
   } catch (err) {
     showToast(err.message, "error");
   }
@@ -127,10 +125,10 @@ function suggestionsHTML(suggestions) {
     )
     .join("");
 
-  return sectionHTML("Sugerencias para ti", rows);
+  return sectionHTML("suggestions", "Sugerencias para ti", rows);
 }
 
-async function handleSuggestionAdd(suggestionsEl, button) {
+async function handleSuggestionAdd(suggestionsEl, button, refresh) {
   haptic();
   button.disabled = true;
 
@@ -146,8 +144,7 @@ async function handleSuggestionAdd(suggestionsEl, button) {
     }, 300);
 
     // The new request shows up in the list below.
-    const listEl = document.getElementById("friends-list");
-    if (listEl) getFriends().then((data) => showFriends(listEl, data)).catch(() => {});
+    refresh();
   } catch (err) {
     showToast(err.message, "error");
     button.disabled = false;
@@ -155,20 +152,17 @@ async function handleSuggestionAdd(suggestionsEl, button) {
 }
 
 function showSuggestions(suggestionsEl, suggestions) {
-  suggestionsEl.innerHTML = suggestionsHTML(suggestions);
-  suggestionsEl.querySelectorAll(".suggestion-add-btn").forEach((button) => {
-    button.addEventListener("click", () => handleSuggestionAdd(suggestionsEl, button));
-  });
+  patchKeyed(suggestionsEl, suggestionsHTML(suggestions));
 }
 
-function handleRemoveFriend(friend) {
+function handleRemoveFriend(friend, refresh) {
   showConfirm(
     `¿Eliminar a ${friend.display_name} de tus amigos?`,
     async () => {
       try {
         await removeFriend(friend.friendship_id);
         showToast("Amigo eliminado");
-        renderFriends(document.getElementById("app"));
+        refresh();
       } catch (err) {
         showToast(err.message, "error");
       }
@@ -179,51 +173,18 @@ function handleRemoveFriend(friend) {
 
 function friendsListHTML({ friends, incomingRequests, outgoingRequests }) {
   const sections =
-    sectionHTML(
-      "Solicitudes recibidas",
-      incomingRequests.map(incomingRequestHTML).join(""),
-    ) +
-    sectionHTML(
-      "Solicitudes enviadas",
-      outgoingRequests.map(outgoingRequestHTML).join(""),
-    ) +
-    sectionHTML(`Amigos (${friends.length})`, sortByDisplayName(friends).map(friendRowHTML).join(""));
+    sectionHTML("incoming", "Solicitudes recibidas", incomingRequests.map(incomingRequestHTML).join("")) +
+    sectionHTML("outgoing", "Solicitudes enviadas", outgoingRequests.map(outgoingRequestHTML).join("")) +
+    sectionHTML("friends", `Amigos (${friends.length})`, sortByDisplayName(friends).map(friendRowHTML).join(""));
 
   return (
     sections ||
-    `<p class="empty-label" style="margin-top: 24px; text-align: center;">Aún no tienes amigos agregados. ¿Necesitas un abrazo?</p>`
+    `<p class="empty-label friends-empty" data-key="empty">Aún no tienes amigos agregados. ¿Necesitas un abrazo?</p>`
   );
 }
 
 function showFriends(listEl, data) {
-  listEl.innerHTML = friendsListHTML(data);
-
-  listEl.querySelectorAll(".accept-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      haptic();
-      handleAccept(btn.dataset.requestId);
-    });
-  });
-
-  listEl.querySelectorAll(".reject-btn").forEach((btn) => {
-    btn.addEventListener("click", () => handleReject(btn.dataset.requestId));
-  });
-
-  listEl.querySelectorAll(".remove-friend-btn").forEach((btn) => {
-    const friend = data.friends.find((f) => f.friendship_id === btn.dataset.friendshipId);
-    btn.addEventListener("click", () => friend && handleRemoveFriend(friend));
-  });
-
-  listEl.querySelectorAll(".message-btn").forEach((link) => {
-    link.addEventListener("click", () => haptic());
-  });
-
-  listEl.querySelectorAll("[data-profile]").forEach((el) => {
-    el.addEventListener("click", () => {
-      haptic();
-      openUserProfile(el.dataset.profile);
-    });
-  });
+  patchKeyed(listEl, friendsListHTML(data));
 }
 
 export async function renderFriends(appEl) {
@@ -238,8 +199,18 @@ export async function renderFriends(appEl) {
     </div>
   `;
 
+  const screenEl = appEl.firstElementChild;
   const listEl = document.getElementById("friends-list");
   const suggestionsEl = document.getElementById("suggestions");
+  let friendsData = { friends: [] };
+
+  const showList = (data) => {
+    friendsData = data;
+    showFriends(listEl, data);
+  };
+
+  // Only the list repaints after a change, so the screen does not flash a loader.
+  const refreshList = () => getFriends().then(showList).catch(() => {});
 
   // Only verified accounts get suggestions: the profile tells which one this is.
   let suggestionsStarted = false;
@@ -257,19 +228,43 @@ export async function renderFriends(appEl) {
     ).catch(() => {});
   }).catch(() => {});
 
-  document.getElementById("add-friend-btn").addEventListener("click", () => {
-    haptic();
-    openFriendSearch(() => renderFriends(document.getElementById("app")));
-  });
+  screenEl.addEventListener("click", (event) => {
+    const target = event.target.closest(
+      ".accept-btn, .reject-btn, .remove-friend-btn, .message-btn, .suggestion-add-btn, #add-friend-btn, #hashtags-btn, [data-profile]",
+    );
+    if (!target) return;
 
-  document.getElementById("hashtags-btn").addEventListener("click", () => {
-    haptic();
-    openHashtagSearch();
+    if (target.matches(".accept-btn")) {
+      haptic();
+      handleAccept(target.dataset.requestId, refreshList);
+    } else if (target.matches(".reject-btn")) {
+      handleReject(target.dataset.requestId);
+    } else if (target.matches(".remove-friend-btn")) {
+      const friend = friendsData.friends.find((f) => f.friendship_id === target.dataset.friendshipId);
+      if (friend) handleRemoveFriend(friend, refreshList);
+    } else if (target.matches(".suggestion-add-btn")) {
+      handleSuggestionAdd(suggestionsEl, target, refreshList);
+    } else if (target.matches("#add-friend-btn")) {
+      haptic();
+      loadModule(
+        () => import("./friend-search.js"),
+        ({ openFriendSearch }) => openFriendSearch(refreshList),
+      );
+    } else if (target.matches("#hashtags-btn")) {
+      haptic();
+      loadModule(
+        () => import("./hashtag-search.js"),
+        ({ openHashtagSearch }) => openHashtagSearch(),
+      );
+    } else {
+      haptic();
+      if (target.dataset.profile) openUserProfile(target.dataset.profile);
+    }
   });
 
   try {
     await loadWithCache("friends", getFriends, (data) => {
-      if (listEl.isConnected) showFriends(listEl, data);
+      if (listEl.isConnected) showList(data);
     });
   } catch (err) {
     removeLoader(listEl);

@@ -1,9 +1,9 @@
 import { getUserProfile, getUserPosts, removeFriend, acceptFriendRequest } from "./api.js";
-import { showToast, showConfirm, haptic, escapeHTML } from "./utils.js";
+import { showToast, showConfirm, haptic, escapeHTML, emptyStateHTML } from "./utils.js";
 import { icon } from "./icons.js";
 import { loaderHTML, removeLoader } from "./loader.js";
 import { loadWithCache, livePosts } from "./cache.js";
-import { postCardHTML, attachPostCardListeners } from "./post-card.js";
+import { renderPosts } from "./post-card.js";
 import { profileCardHTML, shareProfile } from "./profile-view.js";
 
 function actionsHTML(relation) {
@@ -26,20 +26,14 @@ function confirmText(relation, name) {
   return `¿Eliminar a ${name} de tus amigos?`;
 }
 
-function showUserPosts(listEl, posts) {
-  if (posts.length === 0) {
-    listEl.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-state-icon">${icon("package", "regular")}</div>
-        <p class="empty-state-title">Aún no ha publicado nada</p>
-        <p class="empty-state-text">Quizás es boomer y no sabe usar la app.</p>
-      </div>
-    `;
-    return;
-  }
+const EMPTY_USER_POSTS_HTML = emptyStateHTML(
+  "package",
+  "Aún no ha publicado nada",
+  "Quizás es boomer y no sabe usar la app.",
+);
 
-  listEl.innerHTML = `<div class="feed-list">${posts.map(postCardHTML).join("")}</div>`;
-  attachPostCardListeners(listEl);
+function showUserPosts(listEl, posts) {
+  renderPosts(listEl, posts, EMPTY_USER_POSTS_HTML);
 }
 
 async function loadUserPosts(listEl, username) {
@@ -106,7 +100,7 @@ export async function renderUserProfile(appEl, username, { onSelf }) {
       <button class="back-btn" id="back-btn" aria-label="Volver">${icon("caret-left", "regular")}</button>
     </div>
     <div class="profile-screen fade-in" id="user-profile-card">${loaderHTML()}</div>
-    <div id="user-posts"></div>
+    <div class="feed-list" id="user-posts"></div>
   `;
 
   const cardEl = document.getElementById("user-profile-card");

@@ -1,6 +1,6 @@
 import { requestPasswordReset, updatePassword } from "./auth.js";
 import { passwordFieldHTML, setupPasswordToggle } from "./password-field.js";
-import { showToast, shake, escapeHTML } from "./utils.js";
+import { showToast, showFieldError, escapeHTML } from "./utils.js";
 import { icon } from "./icons.js";
 
 export function renderForgotScreen(appEl, onBack) {
@@ -12,7 +12,7 @@ export function renderForgotScreen(appEl, onBack) {
       <div id="forgot-body">
         <form id="forgot-form" class="auth-form">
           <p class="auth-hint">Escribe tu email y te enviaremos un enlace para crear una contraseña nueva.</p>
-          <input type="email" id="forgot-email" placeholder="Email" required autocomplete="email" />
+          <input type="email" id="forgot-email" placeholder="Email" required autocomplete="email" autocapitalize="none" spellcheck="false" />
           <button type="submit" class="primary-btn" id="forgot-submit">Enviar enlace</button>
         </form>
       </div>
@@ -69,9 +69,7 @@ export function renderResetScreen(appEl, session, onDone) {
     const submitBtn = document.getElementById("reset-submit");
 
     if (password !== confirmInput.value) {
-      showToast("Las contraseñas no coinciden", "error");
-      shake(confirmInput);
-      confirmInput.focus();
+      showFieldError(confirmInput, "Las contraseñas no coinciden");
       return;
     }
 

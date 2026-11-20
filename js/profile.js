@@ -1,6 +1,6 @@
 import { getProfile, updateProfile, getOwnPosts, uploadImage } from "./api.js";
-import { showToast, showForm, showConfirm, haptic, profileFieldsError } from "./utils.js";
-import { postCardHTML, attachPostCardListeners } from "./post-card.js";
+import { showToast, showForm, showConfirm, haptic, profileFieldsError, emptyStateHTML, loadModule } from "./utils.js";
+import { renderPosts } from "./post-card.js";
 import { signOut, requestEmailChange } from "./auth.js";
 import { isEmail, normalizePhone, PHONE_HINT } from "./contact.js";
 import { disablePush } from "./push.js";
@@ -183,31 +183,36 @@ function showProfile(cardEl, profile) {
   });
 }
 
-function showOwnPosts(listEl, posts) {
-  if (posts.length === 0) {
-    listEl.innerHTML = `
-      <div class="empty-state">
-          <div class="empty-state-icon">${icon("package", "regular")}</div>
-          <p class="empty-state-title">Aún no tienes publicaciones activas</p>
-          <p class="empty-state-text">Aquí aparecerán tus publicaciones de las últimas 24 horas.</p>
-        </div>
-    `;
-    return;
-  }
+const EMPTY_OWN_POSTS_HTML = emptyStateHTML(
+  "package",
+  "Aún no tienes publicaciones activas",
+  "Aquí aparecerán tus publicaciones de las últimas 24 horas.",
+  "",
+  `<button class="text-btn primary" id="own-publish">Publicar algo</button>`,
+);
 
-  listEl.innerHTML = `<div class="feed-list">${posts.map(postCardHTML).join("")}</div>`;
-  attachPostCardListeners(listEl);
+function showOwnPosts(listEl, posts) {
+  renderPosts(listEl, posts, EMPTY_OWN_POSTS_HTML);
 }
 
 export async function renderProfile(appEl) {
   appEl.innerHTML = `
     <div class="profile-screen fade-in" id="profile-card">${loaderHTML()}</div>
-    <div id="own-posts">${loaderHTML()}</div>
+    <div class="feed-list" id="own-posts">${loaderHTML()}</div>
     <button class="outline-btn danger large profile-logout" id="logout-btn">Cerrar sesión</button>
   `;
 
   const cardEl = document.getElementById("profile-card");
   const listEl = document.getElementById("own-posts");
+
+  listEl.addEventListener("click", (event) => {
+    if (!event.target.closest("#own-publish")) return;
+    haptic();
+    loadModule(
+      () => import("./composer.js"),
+      ({ openComposer }) => openComposer(() => renderProfile(appEl)),
+    );
+  });
 
   document.getElementById("logout-btn").addEventListener("click", () => {
     haptic();

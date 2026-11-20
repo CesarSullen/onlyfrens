@@ -364,25 +364,50 @@ function enableSheetDrag(overlay, onClose) {
       return;
     }
 
-    overlay.style.transition = "transform 0.3s cubic-bezier(0.3, 1.2, 0.5, 1)";
+    overlay.classList.add("snap-back");
     overlay.style.transform = "";
-    setTimeout(() => {
-      overlay.style.transition = "";
-    }, 300);
+    setTimeout(() => overlay.classList.remove("snap-back"), 300);
   }
 
   header.addEventListener("pointerup", release);
   header.addEventListener("pointercancel", release);
 }
 
+function usernameError(username) {
+  if (/^[a-z0-9_]{3,20}$/.test(username)) return null;
+  return "El username debe tener 3-20 caracteres: minúsculas, números o guion bajo";
+}
+
+function displayNameError(displayName) {
+  if (displayName && displayName.length <= 50) return null;
+  return "El nombre a mostrar debe tener entre 1 y 50 caracteres";
+}
+
 function profileFieldsError(username, displayName) {
-  if (!/^[a-z0-9_]{3,20}$/.test(username)) {
-    return "El username debe tener 3-20 caracteres: minúsculas, números o guion bajo";
-  }
-  if (!displayName || displayName.length > 50) {
-    return "El nombre a mostrar debe tener entre 1 y 50 caracteres";
-  }
-  return null;
+  return usernameError(username) || displayNameError(displayName);
+}
+
+function clearFieldError(input) {
+  input.removeAttribute("aria-invalid");
+  input.removeAttribute("aria-describedby");
+  document.getElementById(`${input.id}-error`)?.remove();
+}
+
+// Shows the message under the field, so the user sees which one to fix.
+function showFieldError(input, message) {
+  clearFieldError(input);
+  const error = document.createElement("p");
+  error.className = "field-error fade-in";
+  error.id = `${input.id}-error`;
+  error.setAttribute("role", "alert");
+  error.textContent = message;
+  (input.closest(".password-field") ?? input).after(error);
+
+  input.setAttribute("aria-invalid", "true");
+  input.setAttribute("aria-describedby", error.id);
+  shake(input);
+  input.focus();
+  input.addEventListener("input", () => clearFieldError(input), { once: true });
 }
 
 function iosTick() {
@@ -420,12 +445,13 @@ function backBarHTML() {
 }
 
 // title and text are trusted markup, never user input.
-function emptyStateHTML(iconName, title, text, className = "") {
+function emptyStateHTML(iconName, title, text, className = "", actionHTML = "") {
   return `
     <div class="empty-state ${className}">
       <div class="empty-state-icon">${icon(iconName, "regular")}</div>
       <p class="empty-state-title">${title}</p>
       <p class="empty-state-text">${text}</p>
+      ${actionHTML}
     </div>`;
 }
 
@@ -434,7 +460,20 @@ function emptyLabelHTML(text, variant = "padded") {
   return `<p class="empty-label ${variant}">${text}</p>`;
 }
 
+// Fetches a module on demand and tells the user if the network fails.
+async function loadModule(importer, run) {
+  let loaded;
+  try {
+    loaded = await importer();
+  } catch {
+    showToast("No se pudo cargar. Revisa tu conexión", "error");
+    return;
+  }
+  run(loaded);
+}
+
 export {
+  loadModule,
   sortByDisplayName,
   formatPostTime,
   formatRelativeTime,
@@ -451,6 +490,9 @@ export {
   openSheet,
   enableSheetDrag,
   profileFieldsError,
+  usernameError,
+  displayNameError,
+  showFieldError,
   closeModalUI,
   haptic,
   backBarHTML,

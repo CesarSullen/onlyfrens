@@ -35,7 +35,7 @@ export function initPullToRefresh({ content, canPull, onRefresh }) {
   }
 
   function setSettling(on) {
-    content.style.transition = on ? "transform 0.25s ease" : "";
+    content.classList.toggle("ptr-settling", on);
     indicator.classList.toggle("settling", on);
   }
 

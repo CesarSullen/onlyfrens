@@ -1,6 +1,6 @@
 import { signUp, signIn } from "./auth.js";
 import { createProfile } from "./api.js";
-import { showToast, haptic, shake, profileFieldsError } from "./utils.js";
+import { showToast, haptic, usernameError, displayNameError, showFieldError } from "./utils.js";
 import { passwordFieldHTML, setupPasswordToggle } from "./password-field.js";
 import { oauthButtonsHTML, setupOAuthButtons } from "./oauth.js";
 import { renderForgotScreen } from "./password-reset.js";
@@ -23,8 +23,8 @@ function authScreenHTML() {
             ? `<button type="button" class="text-btn forgot-link" id="auth-forgot">¿Olvidaste tu contraseña?</button>`
             : `
           ${passwordFieldHTML({ id: "auth-password-confirm", placeholder: "Repite la contraseña", autocomplete: "new-password", checkLength: false })}
-          <input type="text" id="auth-username" placeholder="Username (sin @)" required autocapitalize="none" autocomplete="username" spellcheck="false" />
-          <input type="text" id="auth-display-name" placeholder="Nombre a mostrar" required />
+          <input type="text" id="auth-username" placeholder="Username (sin @)" required maxlength="20" autocapitalize="none" autocomplete="username" spellcheck="false" />
+          <input type="text" id="auth-display-name" placeholder="Nombre a mostrar" required maxlength="50" autocomplete="name" />
         `
         }
         <button type="submit" class="primary-btn" id="auth-submit">
@@ -56,23 +56,23 @@ async function handleSubmit(e, onAuthenticated) {
     } else {
       const confirmInput = document.getElementById("auth-password-confirm");
       if (password !== confirmInput.value) {
-        showToast("Las contraseñas no coinciden", "error");
-        shake(confirmInput);
-        confirmInput.focus();
+        showFieldError(confirmInput, "Las contraseñas no coinciden");
         submitBtn.disabled = false;
         return;
       }
 
-      const username = document
-        .getElementById("auth-username")
-        .value.trim()
-        .replace(/^@/, "")
-        .toLowerCase();
-      const displayName = document.getElementById("auth-display-name").value.trim();
+      const usernameInput = document.getElementById("auth-username");
+      const displayNameInput = document.getElementById("auth-display-name");
+      const username = usernameInput.value.trim().replace(/^@/, "").toLowerCase();
+      const displayName = displayNameInput.value.trim();
 
-      const fieldsError = profileFieldsError(username, displayName);
-      if (fieldsError) {
-        showToast(fieldsError, "error");
+      const fieldError = usernameError(username)
+        ? [usernameInput, usernameError(username)]
+        : displayNameError(displayName)
+          ? [displayNameInput, displayNameError(displayName)]
+          : null;
+      if (fieldError) {
+        showFieldError(...fieldError);
         submitBtn.disabled = false;
         return;
       }

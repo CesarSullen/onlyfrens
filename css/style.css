@@ -38,8 +38,10 @@
   --tier-gold: #e09a00;
   --tier-purple: #8b5cf6;
   --danger: #ef4444;
-  --radius-sm: 12px;
-  --radius-md: 10px;
+  --radius-xs: 8px;
+  --radius-sm: 10px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
   --radius-full: 999px;
   --nav-height: 58px;
   --nav-total: calc(var(--nav-height) + 16px);
@@ -51,6 +53,23 @@
   --layout-left: max(0px, calc(50% - (var(--sidebar-width) + var(--column-width)) / 2));
   --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-spring: cubic-bezier(0.3, 1.4, 0.5, 1);
+  --ease-pop: cubic-bezier(0.3, 1.6, 0.5, 1);
+  --ease-settle: cubic-bezier(0.3, 1.2, 0.5, 1);
+  --dur-fast: 0.15s;
+  --dur-base: 0.2s;
+  --dur-slow: 0.3s;
+  --dur-long: 0.45s;
+  --fs-2xs: 0.8rem;
+  --fs-xs: 0.85rem;
+  --fs-sm: 0.9rem;
+  --fs-md: 0.95rem;
+  --fs-base: 1rem;
+  --fs-lg: 1.1rem;
+  --fs-xl: 1.2rem;
+  --fs-2xl: 1.5rem;
+  --fs-3xl: 1.6rem;
+  --fs-4xl: 2.2rem;
+  --fs-5xl: 2.6rem;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -85,8 +104,8 @@ button, input, select, textarea {
 }
 
 button, a, input, select, textarea, [role="button"] {
-  transition: background 0.2s ease, color 0.15s ease,
-    border-color 0.15s ease, opacity 0.2s ease, transform 0.15s ease;
+  transition: background var(--dur-base) ease, color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease, opacity var(--dur-base) ease, transform var(--dur-fast) ease;
 }
 
 html {
@@ -204,7 +223,7 @@ button:focus-visible {
 }
 
 .fade-in {
-  animation: fade-in 220ms ease both;
+  animation: fade-in var(--dur-base) ease both;
 }
 
 @keyframes fade-in {
@@ -216,25 +235,22 @@ button:focus-visible {
   background: var(--primary);
   color: var(--primary-text);
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   height: 52px;
   padding: 0 20px;
-  font-size: 1.1rem;
+  font-size: var(--fs-lg);
   font-weight: 500;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
+  transition: transform var(--dur-fast) ease, opacity var(--dur-base) ease;
 }
 
 @media (min-width: 768px) {
   .primary-btn:hover {
     filter: brightness(1.06);
   }
-}
-
-.primary-btn {
-  transition: transform 0.12s ease, opacity 0.2s ease;
 }
 
 .primary-btn:active {
@@ -255,9 +271,9 @@ button:focus-visible {
   height: 37px;
   min-width: 75px;
   padding: 0 12px;
-  border-radius: 9px;
+  border-radius: var(--radius-xs);
   border: 1.5px solid var(--primary);
-  font-size: 0.86rem;
+  font-size: var(--fs-xs);
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -312,15 +328,15 @@ button:focus-visible {
 .solid-btn.large {
   height: 40px;
   flex: 1;
-  font-size: 0.94rem;
-  border-radius: 9px;
+  font-size: var(--fs-md);
+  border-radius: var(--radius-xs);
 }
 
 .text-btn {
   background: none;
   border: none;
   color: var(--text);
-  font-size: 1rem;
+  font-size: var(--fs-base);
   padding: 6px;
 }
 
@@ -340,8 +356,13 @@ button:focus-visible {
 }
 
 .empty-label {
-  font-size: 0.95rem;
+  font-size: var(--fs-md);
   color: var(--muted);
+}
+
+.friends-empty {
+  margin-top: 24px;
+  text-align: center;
 }
 
 .pill {
@@ -353,7 +374,7 @@ button:focus-visible {
   height: 32px;
   padding: 0 15px;
   border-radius: var(--radius-full);
-  font-size: 0.9rem;
+  font-size: var(--fs-sm);
   font-weight: 500;
 }
 
@@ -377,8 +398,12 @@ button:focus-visible {
   color: var(--primary);
 }
 
+#app.ptr-settling {
+  transition: transform var(--dur-slow) ease;
+}
+
 #app.slide-in {
-  animation: screen-slide 0.26s cubic-bezier(0.32, 0.72, 0, 1);
+  animation: screen-slide var(--dur-slow) var(--ease-out);
 }
 
 @keyframes screen-slide {
@@ -454,7 +479,7 @@ button:focus-visible {
     height: var(--nav-brand-height);
     padding: 8px 16px 0;
     color: var(--primary);
-    font-size: 1.6rem;
+    font-size: var(--fs-3xl);
     font-weight: 700;
     letter-spacing: -0.02em;
   }
@@ -480,7 +505,7 @@ button:focus-visible {
     padding: 0 16px;
     border-radius: var(--radius-full);
     color: var(--text);
-    transition: background-color 0.15s ease;
+    transition: background-color var(--dur-fast) ease;
   }
 
   .nav-item:hover {
@@ -498,7 +523,7 @@ button:focus-visible {
   border-radius: 50%;
   background: var(--danger);
   border: 2px solid var(--surface);
-  animation: badge-pop 0.35s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+  animation: badge-pop var(--dur-slow) var(--ease-pop) both;
 }
 
 @keyframes badge-pop {
@@ -523,7 +548,7 @@ button:focus-visible {
   .nav-label {
     display: block;
     padding-left: 42px;
-    font-size: 1.15rem;
+    font-size: var(--fs-xl);
   }
 }
 
@@ -538,7 +563,7 @@ button:focus-visible {
 }
 
 .nav-item.bounce .icon-filled {
-  animation: nav-bounce 0.28s ease-out;
+  animation: nav-bounce var(--dur-slow) ease-out;
 }
 
 @keyframes nav-bounce {
@@ -551,7 +576,11 @@ button:focus-visible {
 .action-btn .icon-filled {
   opacity: 0;
   transform: scale(0.7);
-  transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.3, 1.6, 0.5, 1);
+  transition: opacity var(--dur-base) ease, transform var(--dur-base) var(--ease-pop);
+}
+
+.nav-item .icon-filled {
+  transition: opacity var(--dur-base) ease, transform var(--dur-base) ease-out;
 }
 
 .nav-item.active {
@@ -593,7 +622,7 @@ button:focus-visible {
 
 @media (min-width: 768px) {
   .fab {
-    /* The app hides the button per screen with an inline style; on desktop it stays in the menu. */
+    /* The app hides the button per screen with the hidden attribute; on desktop it stays in the menu. */
     display: flex !important;
     top: calc(12px + var(--nav-brand-height) + 4 * 56px + 16px);
     bottom: auto;
@@ -621,7 +650,7 @@ button:focus-visible {
 @media (min-width: 768px) {
   .fab-label {
     display: inline;
-    font-size: 1.05rem;
+    font-size: var(--fs-lg);
     font-weight: 600;
   }
 }
@@ -629,7 +658,7 @@ button:focus-visible {
 .fab .icon {
   width: 26px;
   height: 26px;
-  transition: transform 0.3s cubic-bezier(0.3, 1.4, 0.5, 1);
+  transition: transform var(--dur-slow) var(--ease-spring);
 }
 
 .fab.open .icon {
@@ -652,7 +681,7 @@ button:focus-visible {
 }
 
 .ptr.settling {
-  transition: transform 0.25s ease, opacity 0.25s ease;
+  transition: transform var(--dur-slow) ease, opacity var(--dur-slow) ease;
 }
 
 .ptr .loader {
@@ -683,7 +712,7 @@ button:focus-visible {
     display: flex;
     align-items: center;
     padding: 0 var(--page-padding);
-    font-size: 1.2rem;
+    font-size: var(--fs-xl);
     font-weight: 700;
     background: color-mix(in srgb, var(--bg) 85%, transparent);
     backdrop-filter: blur(12px);
@@ -703,6 +732,10 @@ button:focus-visible {
   padding: 7px var(--page-padding) 0;
 }
 
+.feed-sentinel {
+  height: 1px;
+}
+
 .post-card {
   display: flex;
   flex-direction: column;
@@ -715,7 +748,7 @@ button:focus-visible {
   .post-card {
     padding: 18px var(--page-padding);
     margin-inline: calc(-1 * var(--page-padding));
-    transition: background-color 0.15s ease;
+    transition: background-color var(--dur-fast) ease;
   }
 
   .post-card:hover {
@@ -733,6 +766,29 @@ button:focus-visible {
   gap: 13px;
 }
 
+.post-menu-btn {
+  background: none;
+  border: 0;
+  color: var(--text-soft);
+  width: 36px;
+  height: 36px;
+  margin: -6px -8px 0 auto;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.post-menu-btn .icon {
+  width: 20px;
+  height: 20px;
+}
+
+.post-menu-btn:active {
+  background: rgba(128, 128, 128, 0.15);
+}
+
 .avatar {
   width: 50px;
   height: 50px;
@@ -744,19 +800,19 @@ button:focus-visible {
 
 .post-author {
   font-weight: 600;
-  font-size: 1.16rem;
+  font-size: var(--fs-xl);
   line-height: 1.2;
 }
 
 .post-time {
-  font-size: 0.94rem;
+  font-size: var(--fs-md);
   color: var(--muted);
   margin-top: 4px;
 }
 
 .post-text {
   margin-top: 2px;
-  font-size: 1.12rem;
+  font-size: var(--fs-lg);
   line-height: 1.45;
   white-space: pre-line;
   overflow-wrap: anywhere;
@@ -777,10 +833,12 @@ button:focus-visible {
   height: auto;
   max-height: 70vh;
   object-fit: contain;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   display: block;
   background: var(--line);
-  transition: opacity 0.3s ease;
+  transition: opacity var(--dur-slow) ease;
+  pointer-events: auto;
+  cursor: zoom-in;
 }
 
 .post-image.pending {
@@ -789,7 +847,7 @@ button:focus-visible {
 
 .post-card.removing {
   overflow: hidden;
-  animation: post-out 0.3s ease forwards;
+  animation: post-out var(--dur-slow) ease forwards;
 }
 
 @keyframes post-out {
@@ -828,11 +886,11 @@ button:focus-visible {
   width: 26px;
   height: 26px;
   display: block;
-  transition: transform 0.12s ease;
+  transition: transform var(--dur-fast) ease;
 }
 
 .action-icon.beat {
-  animation: like-beat 0.45s cubic-bezier(0.3, 1.4, 0.5, 1);
+  animation: like-beat var(--dur-long) var(--ease-spring);
 }
 
 @keyframes like-beat {
@@ -842,7 +900,7 @@ button:focus-visible {
 }
 
 .action-icon.spin {
-  animation: repost-spin 0.5s cubic-bezier(0.3, 1.2, 0.5, 1);
+  animation: repost-spin var(--dur-long) var(--ease-settle);
 }
 
 @keyframes repost-spin {
@@ -859,7 +917,7 @@ button:focus-visible {
   border-radius: 50%;
   background: currentColor;
   pointer-events: none;
-  animation: burst-dot 0.5s ease-out forwards;
+  animation: burst-dot var(--dur-long) ease-out forwards;
 }
 
 @keyframes burst-dot {
@@ -879,13 +937,13 @@ button:focus-visible {
 }
 
 .action-count {
-  font-size: 1.03rem;
+  font-size: var(--fs-base);
   color: var(--text-soft);
   min-width: 14px;
 }
 
 .action-count.tick {
-  animation: count-tick-up 0.25s ease-out;
+  animation: count-tick-up var(--dur-slow) ease-out;
 }
 
 .action-count.tick[data-dir="down"] {
@@ -914,7 +972,7 @@ button:focus-visible {
 }
 
 .friends-section-title {
-  font-size: 0.85rem;
+  font-size: var(--fs-xs);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -932,7 +990,7 @@ button:focus-visible {
 
 .friends-list .friend-row,
 .notification-row {
-  animation: fade-in 260ms ease both;
+  animation: fade-in var(--dur-slow) ease both;
 }
 
 .feed-list > :nth-child(2),
@@ -957,7 +1015,14 @@ button:focus-visible {
 .friend-row.leaving {
   opacity: 0;
   transform: translateX(24px);
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  height: 0 !important;
+  margin: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  overflow: hidden;
+  border-width: 0;
+  transition: height var(--dur-slow) ease, opacity var(--dur-base) ease, padding var(--dur-slow) ease,
+    margin var(--dur-slow) ease, transform var(--dur-slow) ease;
 }
 
 .friend-info {
@@ -966,7 +1031,7 @@ button:focus-visible {
 }
 
 .friend-name {
-  font-size: 1.14rem;
+  font-size: var(--fs-lg);
   font-weight: 500;
   line-height: 1.2;
   overflow-wrap: anywhere;
@@ -980,7 +1045,7 @@ button:focus-visible {
 
 .friend-sub {
   display: block;
-  font-size: 0.85rem;
+  font-size: var(--fs-xs);
   color: var(--muted);
   margin-top: 3px;
 }
@@ -1063,19 +1128,19 @@ button:focus-visible {
 }
 
 .profile-name {
-  font-size: 1.26rem;
+  font-size: var(--fs-xl);
   font-weight: 700;
   line-height: 1.15;
 }
 
 .profile-username {
   color: var(--muted);
-  font-size: 1.075rem;
+  font-size: var(--fs-lg);
   margin-top: 8px;
 }
 
 .profile-bio {
-  font-size: 1.1rem;
+  font-size: var(--fs-lg);
   line-height: 1.45;
   color: var(--text-soft);
   max-width: 240px;
@@ -1091,13 +1156,13 @@ button:focus-visible {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 1.03rem;
+  font-size: var(--fs-base);
   color: var(--text-soft);
 }
 
 .profile-link {
   text-decoration: none;
-  transition: opacity 0.15s ease;
+  transition: opacity var(--dur-fast) ease;
 }
 
 .profile-link:active {
@@ -1127,7 +1192,7 @@ button:focus-visible {
   background: none;
   border: none;
   color: var(--text);
-  transition: transform 0.15s ease;
+  transition: transform var(--dur-fast) ease;
 }
 
 .back-btn .icon {
@@ -1154,7 +1219,7 @@ button:focus-visible {
 .tappable {
   pointer-events: auto;
   cursor: pointer;
-  transition: opacity 0.15s ease;
+  transition: opacity var(--dur-fast) ease;
 }
 
 .tappable:active {
@@ -1180,10 +1245,16 @@ button:focus-visible {
 
 .profile-logout {
   display: flex;
-  width: fit-content;
   flex: none;
+  width: calc(100% - 2 * var(--page-padding));
   margin: 12px auto 24px;
-  padding: 0 32px;
+}
+
+@media (min-width: 768px) {
+  .profile-logout {
+    width: fit-content;
+    padding: 0 32px;
+  }
 }
 
 .empty-state {
@@ -1212,13 +1283,18 @@ button:focus-visible {
   height: 52px;
 }
 
+.empty-state .text-btn {
+  margin-top: 8px;
+  padding: 10px 16px;
+}
+
 .empty-state-title {
-  font-size: 1.15rem;
+  font-size: var(--fs-xl);
   font-weight: 600;
 }
 
 .empty-state-text {
-  font-size: 1.02rem;
+  font-size: var(--fs-base);
   color: var(--muted);
   max-width: 260px;
   line-height: 1.4;
@@ -1231,9 +1307,9 @@ button:focus-visible {
   margin-bottom: 12px;
   padding: 12px 14px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   background: var(--surface);
-  animation: fade-in 0.3s ease both;
+  animation: fade-in var(--dur-slow) ease both;
 }
 
 .push-banner .icon {
@@ -1246,7 +1322,7 @@ button:focus-visible {
 .push-banner p {
   flex: 1;
   color: var(--text-soft);
-  font-size: 0.95rem;
+  font-size: var(--fs-md);
   line-height: 1.3;
 }
 
@@ -1288,7 +1364,7 @@ button:focus-visible {
 .notification-message {
   flex: 1;
   min-width: 0;
-  font-size: 1.12rem;
+  font-size: var(--fs-lg);
   line-height: 1.35;
 }
 
@@ -1301,7 +1377,7 @@ button:focus-visible {
 }
 
 .notification-time {
-  font-size: 0.94rem;
+  font-size: var(--fs-md);
   color: var(--muted);
   white-space: nowrap;
 }
@@ -1331,14 +1407,16 @@ button:focus-visible {
 }
 
 .auth-title {
-  font-size: 2.2rem;
+  font-size: var(--fs-5xl);
   font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
   color: var(--primary);
 }
 
 .auth-subtitle {
   color: var(--muted);
-  font-size: 1.1rem;
+  font-size: var(--fs-lg);
   margin-bottom: 24px;
 }
 
@@ -1352,14 +1430,11 @@ button:focus-visible {
 
 .auth-form input {
   border: 1.5px solid var(--line);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   height: 52px;
   padding: 0 16px;
   background: var(--surface);
-}
-
-.auth-form input {
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  transition: border-color var(--dur-base) ease, box-shadow var(--dur-base) ease;
 }
 
 .auth-form input:focus {
@@ -1367,8 +1442,23 @@ button:focus-visible {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
 }
 
+.auth-form input[aria-invalid="true"],
+.auth-form input[aria-invalid="true"]:focus {
+  border-color: var(--danger);
+}
+
+.auth-form input[aria-invalid="true"]:focus {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 18%, transparent);
+}
+
+.field-error {
+  margin: -6px 0 0 4px;
+  color: var(--danger);
+  font-size: var(--fs-xs);
+}
+
 .auth-form > * {
-  animation: fade-in 260ms ease both;
+  animation: fade-in var(--dur-slow) ease both;
 }
 
 .auth-form > :nth-child(2) { animation-delay: 40ms; }
@@ -1398,7 +1488,7 @@ button:focus-visible {
   background: none;
   border: none;
   color: var(--muted);
-  transition: color 0.18s ease, transform 0.12s ease;
+  transition: color var(--dur-base) ease, transform var(--dur-fast) ease;
 }
 
 .password-toggle:active {
@@ -1413,7 +1503,7 @@ button:focus-visible {
   position: absolute;
   width: 24px;
   height: 24px;
-  transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.3, 1.6, 0.5, 1);
+  transition: opacity var(--dur-base) ease, transform var(--dur-base) var(--ease-pop);
 }
 
 .password-toggle .icon-hide,
@@ -1428,7 +1518,7 @@ button:focus-visible {
 }
 
 .shake {
-  animation: shake 0.35s ease;
+  animation: shake var(--dur-slow) ease;
 }
 
 @keyframes shake {
@@ -1447,8 +1537,8 @@ button:focus-visible {
   margin: -4px 0 0;
   padding: 2px 0;
   color: var(--primary);
-  font-size: 0.9rem;
-  transition: opacity 0.15s ease;
+  font-size: var(--fs-sm);
+  transition: opacity var(--dur-fast) ease;
 }
 
 .forgot-link:active {
@@ -1457,7 +1547,7 @@ button:focus-visible {
 
 .auth-hint {
   color: var(--muted);
-  font-size: 0.95rem;
+  font-size: var(--fs-md);
   line-height: 1.4;
   text-align: center;
 }
@@ -1484,7 +1574,7 @@ button:focus-visible {
   border-radius: 50%;
   background: color-mix(in srgb, var(--primary) 14%, transparent);
   color: var(--primary);
-  animation: pop-in 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+  animation: pop-in var(--dur-long) var(--ease-pop) both;
 }
 
 .auth-success-icon .icon {
@@ -1493,13 +1583,13 @@ button:focus-visible {
 }
 
 .auth-success-title {
-  font-size: 1.25rem;
+  font-size: var(--fs-xl);
   font-weight: 600;
-  animation: fade-in 0.4s ease 0.15s both;
+  animation: fade-in var(--dur-long) ease 0.15s both;
 }
 
 .auth-success .auth-hint {
-  animation: fade-in 0.4s ease 0.25s both;
+  animation: fade-in var(--dur-long) ease 0.25s both;
 }
 
 @keyframes pop-in {
@@ -1517,7 +1607,7 @@ button:focus-visible {
   gap: 12px;
   margin-top: 18px;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: var(--fs-sm);
 }
 
 .oauth-divider::before,
@@ -1544,12 +1634,12 @@ button:focus-visible {
   gap: 10px;
   height: 52px;
   border: 1.5px solid var(--line);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--text);
-  font-size: 1rem;
+  font-size: var(--fs-base);
   font-weight: 500;
-  transition: transform 0.12s ease, border-color 0.18s ease, opacity 0.2s ease;
+  transition: transform var(--dur-fast) ease, border-color var(--dur-base) ease, opacity var(--dur-base) ease;
 }
 
 .oauth-btn svg {
@@ -1573,7 +1663,7 @@ button:focus-visible {
 }
 
 .liker-row {
-  animation: fade-in 260ms ease both;
+  animation: fade-in var(--dur-slow) ease both;
 }
 
 .liker-row:last-child {
@@ -1592,7 +1682,7 @@ button:focus-visible {
 .auth-toggle {
   margin-top: 18px;
   color: var(--primary);
-  font-size: 1rem;
+  font-size: var(--fs-base);
 }
 
 .sheet-overlay {
@@ -1604,7 +1694,7 @@ button:focus-visible {
   flex-direction: column;
   padding-top: env(safe-area-inset-top);
   box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.5);
-  animation: sheet-in 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+  animation: sheet-in var(--dur-slow) var(--ease-out);
 }
 
 @keyframes sheet-in {
@@ -1613,7 +1703,11 @@ button:focus-visible {
 
 .sheet-overlay.closing {
   pointer-events: none;
-  animation: sheet-out 0.24s cubic-bezier(0.4, 0, 1, 1) forwards;
+  animation: sheet-out var(--dur-base) cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+.sheet-overlay.snap-back {
+  transition: transform var(--dur-slow) var(--ease-settle);
 }
 
 @keyframes sheet-out {
@@ -1622,19 +1716,19 @@ button:focus-visible {
 
 @media (min-width: 768px) {
   .sheet-overlay {
-    animation: sheet-in-desktop 0.2s ease-out;
+    animation: sheet-in-desktop var(--dur-base) ease-out;
     inset: 0;
     margin: auto;
     width: var(--column-width);
     height: min(90vh, 760px);
     padding-top: 0;
     border: 1px solid var(--line);
-    border-radius: 18px;
+    border-radius: var(--radius-lg);
     overflow: hidden;
   }
 
   .sheet-overlay.closing {
-    animation: sheet-out-desktop 0.16s ease-in forwards;
+    animation: sheet-out-desktop var(--dur-fast) ease-in forwards;
   }
 
   @keyframes sheet-in-desktop {
@@ -1677,7 +1771,7 @@ button:focus-visible {
 }
 
 .sheet-title {
-  font-size: 1.15rem;
+  font-size: var(--fs-xl);
   font-weight: 600;
 }
 
@@ -1700,7 +1794,7 @@ button:focus-visible {
 }
 
 .sheet-note {
-  font-size: 0.9rem;
+  font-size: var(--fs-sm);
   color: var(--muted);
   padding: 14px 0 4px;
 }
@@ -1713,11 +1807,11 @@ button:focus-visible {
 }
 
 .comment-row.enter {
-  animation: fade-in 260ms ease both;
+  animation: fade-in var(--dur-slow) ease both;
 }
 
 .comment-row.fresh {
-  animation: comment-in 0.35s cubic-bezier(0.3, 1.2, 0.5, 1) both;
+  animation: comment-in var(--dur-slow) var(--ease-settle) both;
 }
 
 @keyframes comment-in {
@@ -1736,18 +1830,22 @@ button:focus-visible {
 
 .comment-author {
   font-weight: 600;
-  font-size: 1.02rem;
+  font-size: var(--fs-base);
 }
 
 .comment-time {
-  font-size: 0.85rem;
+  font-size: var(--fs-xs);
   color: var(--muted);
   margin-left: 8px;
   font-weight: 400;
 }
 
+.comment-time.alone {
+  margin-left: 0;
+}
+
 .comment-text {
-  font-size: 1.05rem;
+  font-size: var(--fs-lg);
   line-height: 1.4;
   margin-top: 2px;
   white-space: pre-line;
@@ -1810,7 +1908,7 @@ button:focus-visible {
 }
 
 .char-counter {
-  font-size: 0.9rem;
+  font-size: var(--fs-sm);
   color: var(--muted);
 }
 
@@ -1833,7 +1931,7 @@ button:focus-visible {
   position: relative;
   width: 104px;
   height: 104px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 
@@ -1841,6 +1939,10 @@ button:focus-visible {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.composer-image-preview.processing img {
+  opacity: 0.55;
 }
 
 .remove-image-btn {
@@ -1890,7 +1992,7 @@ button:focus-visible {
 .composer-footer .toggle-btn {
   border-radius: var(--radius-full);
   color: var(--muted);
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color var(--dur-base) ease, color var(--dur-base) ease;
 }
 
 .composer-footer .toggle-btn[aria-pressed="true"] {
@@ -1902,7 +2004,7 @@ button:focus-visible {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 1rem;
+  font-size: var(--fs-base);
   color: var(--text-soft);
 }
 
@@ -1925,7 +2027,7 @@ button:focus-visible {
   border-radius: var(--radius-full);
   background: #ffffff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
-  transition: transform 0.2s ease;
+  transition: transform var(--dur-base) ease;
 }
 
 .switch-row input:checked {
@@ -1952,16 +2054,17 @@ button:focus-visible {
 .toast {
   background: var(--text);
   color: var(--bg);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   padding: 0.7rem 1.2rem;
-  font-size: 1rem;
+  font-size: var(--fs-base);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
   opacity: 0;
   transform: translateY(14px) scale(0.96);
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity var(--dur-base) ease, transform var(--dur-base) ease;
   pointer-events: none;
   max-width: 85vw;
   text-align: center;
+  width: max-content;
 }
 
 @media (min-width: 768px) {
@@ -1973,12 +2076,35 @@ button:focus-visible {
 .toast.toast-visible {
   opacity: 1;
   transform: translateY(0) scale(1);
-  transition: opacity 0.25s ease, transform 0.35s cubic-bezier(0.3, 1.4, 0.5, 1);
+  transition: opacity var(--dur-slow) ease, transform var(--dur-slow) var(--ease-spring);
 }
 
 .toast.toast-error {
   background: var(--danger);
   color: #ffffff;
+}
+
+.toast.has-action {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  pointer-events: auto;
+  padding-right: 0.6rem;
+}
+
+.toast-action {
+  background: none;
+  border: 0;
+  color: inherit;
+  font-weight: 700;
+  padding: 0.4rem 0.7rem;
+  border-radius: var(--radius-sm);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.toast.has-action span {
+  white-space: nowrap;
 }
 
 html:has(.sheet-overlay, #modal-ui.active) {
@@ -2001,7 +2127,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
   padding: 1.5rem;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s;
+  transition: opacity var(--dur-base);
 }
 
 #modal-ui.active {
@@ -2012,7 +2138,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
 .modal-ui-box {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   padding: 1.5rem;
   width: 100%;
   max-width: 340px;
@@ -2022,7 +2148,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
   flex-direction: column;
   gap: 1rem;
   transform: scale(0.94);
-  transition: transform 0.3s cubic-bezier(0.3, 1.4, 0.5, 1);
+  transition: transform var(--dur-slow) var(--ease-spring);
 }
 
 #modal-ui.active .modal-ui-box {
@@ -2036,11 +2162,11 @@ html:has(.sheet-overlay, #modal-ui.active) {
 
 #modal-ui.as-sheet .modal-ui-box {
   max-width: none;
-  border-radius: 20px 20px 0 0;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   border-width: 1px 0 0;
   padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
   transform: translateY(100%);
-  transition: transform 0.32s var(--ease-out);
+  transition: transform var(--dur-slow) var(--ease-out);
 }
 
 #modal-ui.as-sheet.active .modal-ui-box {
@@ -2070,11 +2196,11 @@ html:has(.sheet-overlay, #modal-ui.active) {
 
   #modal-ui.as-sheet .modal-ui-box {
     max-width: 420px;
-    border-radius: 18px;
+    border-radius: var(--radius-lg);
     border-width: 1px;
     padding: 1.5rem;
     transform: scale(0.94);
-    transition: transform 0.3s var(--ease-spring);
+    transition: transform var(--dur-slow) var(--ease-spring);
   }
 
   #modal-ui.as-sheet.active .modal-ui-box {
@@ -2087,10 +2213,14 @@ html:has(.sheet-overlay, #modal-ui.active) {
 }
 
 .modal-ui-message {
-  font-size: 1.05rem;
+  font-size: var(--fs-lg);
   color: var(--text);
   line-height: 1.5;
   white-space: pre-line;
+}
+
+.modal-ui-message:empty {
+  display: none;
 }
 
 .modal-ui-fields {
@@ -2106,13 +2236,28 @@ html:has(.sheet-overlay, #modal-ui.active) {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  font-size: 0.85rem;
+  font-size: var(--fs-xs);
   color: var(--text-soft);
+}
+
+.modal-ui-input {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  background: var(--bg);
+  color: var(--text);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.modal-ui-input:focus {
+  border-color: var(--primary);
 }
 
 .modal-ui-error {
   color: var(--danger);
-  font-size: 0.85rem;
+  font-size: var(--fs-xs);
 }
 
 .modal-ui-error:empty {
@@ -2127,11 +2272,11 @@ html:has(.sheet-overlay, #modal-ui.active) {
 .modal-ui-btn {
   flex: 1;
   height: 44px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   border: 1.5px solid var(--line);
   background: none;
   color: var(--text);
-  font-size: 1rem;
+  font-size: var(--fs-base);
   font-weight: 500;
   display: flex;
   align-items: center;
@@ -2150,11 +2295,24 @@ html:has(.sheet-overlay, #modal-ui.active) {
   color: #ffffff;
 }
 
-/* ---- Verified tiers, rewards, hashtags and audience ---- */
-
-[hidden] {
-  display: none !important;
+.modal-ui-actions.stacked {
+  flex-direction: column;
 }
+
+.modal-ui-btn.destructive-text {
+  color: var(--danger);
+}
+
+.modal-ui-btn.cancel {
+  border-color: transparent;
+  color: var(--text-soft);
+}
+
+.modal-ui-actions.stacked .modal-ui-btn {
+  flex: none;
+}
+
+/* VERIFIED TIERS, REWARDS, HASHTAGS AND AUDIENCE */
 
 .verified-badge.tier-2 {
   color: var(--tier-gold);
@@ -2175,7 +2333,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
   border-radius: var(--radius-full);
   background: var(--tint);
   color: var(--text-soft);
-  font-size: 0.92rem;
+  font-size: var(--fs-sm);
   font-weight: 500;
 }
 
@@ -2193,7 +2351,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
   justify-content: center;
   background: color-mix(in srgb, var(--tier-color) 16%, transparent);
   color: var(--tier-color);
-  animation: chip-pop 0.4s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+  animation: chip-pop var(--dur-long) var(--ease-spring) both;
   animation-delay: calc(var(--i, 0) * 50ms + 120ms);
 }
 
@@ -2229,7 +2387,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
   height: 14px;
   color: var(--muted);
   transform: scaleX(-1);
-  transition: transform 0.2s ease;
+  transition: transform var(--dur-base) ease;
 }
 
 .reward-strip:active .reward-strip-caret .icon {
@@ -2258,7 +2416,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
 
 .rewards-hero {
   padding: 20px;
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   background: var(--tint);
   display: flex;
   flex-direction: column;
@@ -2267,13 +2425,13 @@ html:has(.sheet-overlay, #modal-ui.active) {
 
 .rewards-count {
   color: var(--text-soft);
-  font-size: 1.1rem;
+  font-size: var(--fs-lg);
 }
 
 .rewards-count span {
   margin-right: 6px;
   color: var(--text);
-  font-size: 2.6rem;
+  font-size: var(--fs-5xl);
   font-weight: 700;
   line-height: 1;
 }
@@ -2301,17 +2459,17 @@ html:has(.sheet-overlay, #modal-ui.active) {
 }
 
 .rewards-next {
-  font-size: 1rem;
+  font-size: var(--fs-base);
   color: var(--text-soft);
 }
 
 .tier-card {
   --tier-color: var(--primary);
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   background: var(--surface);
   overflow: hidden;
-  animation: rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: rise var(--dur-long) cubic-bezier(0.2, 0.8, 0.2, 1) both;
   animation-delay: calc(var(--i) * 90ms + 100ms);
 }
 
@@ -2342,12 +2500,12 @@ html:has(.sheet-overlay, #modal-ui.active) {
 }
 
 .tier-name {
-  font-size: 1.15rem;
+  font-size: var(--fs-xl);
   font-weight: 600;
 }
 
 .tier-sub {
-  font-size: 0.9rem;
+  font-size: var(--fs-sm);
   color: var(--muted);
 }
 
@@ -2357,7 +2515,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
   border-radius: var(--radius-full);
   background: var(--line);
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: var(--fs-xs);
   font-weight: 600;
 }
 
@@ -2376,7 +2534,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
   gap: 12px;
   padding: 14px 16px;
   border-top: 1px solid var(--line);
-  animation: fade-in 0.3s ease both;
+  animation: fade-in var(--dur-slow) ease both;
   animation-delay: calc(var(--i) * 35ms + 200ms);
 }
 
@@ -2384,7 +2542,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
   width: 40px;
   height: 40px;
   flex-shrink: 0;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2412,18 +2570,18 @@ html:has(.sheet-overlay, #modal-ui.active) {
 }
 
 .reward-title {
-  font-size: 1.02rem;
+  font-size: var(--fs-base);
   font-weight: 600;
 }
 
 .reward-text {
   margin-top: 2px;
-  font-size: 0.9rem;
+  font-size: var(--fs-sm);
   color: var(--muted);
 }
 
 .reward-status {
-  font-size: 0.82rem;
+  font-size: var(--fs-2xs);
   color: var(--muted);
   white-space: nowrap;
 }
@@ -2439,7 +2597,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
 
 .rewards-footnote {
   text-align: center;
-  font-size: 0.85rem;
+  font-size: var(--fs-xs);
   color: var(--muted);
 }
 
@@ -2452,7 +2610,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
   text-align: inherit;
   cursor: pointer;
   overflow-wrap: anywhere;
-  transition: opacity 0.15s ease;
+  transition: opacity var(--dur-fast) ease;
 }
 
 .hashtag:active {
@@ -2486,8 +2644,8 @@ html:has(.sheet-overlay, #modal-ui.active) {
   justify-content: center;
   gap: 8px;
   border: 1.5px solid var(--primary);
-  border-radius: var(--radius-md);
-  font-size: 1.05rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-lg);
   font-weight: 500;
 }
 
@@ -2508,7 +2666,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
   border-radius: var(--radius-full);
   background: var(--surface);
   color: var(--muted);
-  transition: border-color 0.2s ease, color 0.2s ease;
+  transition: border-color var(--dur-base) ease, color var(--dur-base) ease;
 }
 
 .tag-search:focus-within {
@@ -2536,7 +2694,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
   padding: 12px 0;
   border-bottom: 1px solid var(--line);
   cursor: pointer;
-  animation: rise 0.3s ease both;
+  animation: rise var(--dur-slow) ease both;
   animation-delay: calc(var(--i, 0) * 30ms);
 }
 
@@ -2564,7 +2722,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
 .tag-name {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 1.05rem;
+  font-size: var(--fs-lg);
   font-weight: 600;
 }
 
@@ -2574,7 +2732,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
 }
 
 .tag-count {
-  font-size: 0.88rem;
+  font-size: var(--fs-xs);
   color: var(--muted);
 }
 
@@ -2585,7 +2743,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
   border: 1.5px solid var(--primary);
   border-radius: var(--radius-full);
   font-weight: 500;
-  transition: background 0.2s ease, color 0.2s ease, transform 0.12s ease;
+  transition: background var(--dur-base) ease, color var(--dur-base) ease, transform var(--dur-fast) ease;
 }
 
 .tag-follow:active,
@@ -2608,7 +2766,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
 .hashtag-mark {
   width: 52px;
   height: 52px;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2627,7 +2785,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
 }
 
 .hashtag-title h1 {
-  font-size: 1.5rem;
+  font-size: var(--fs-2xl);
   font-weight: 700;
   overflow-wrap: anywhere;
 }
@@ -2638,7 +2796,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
 }
 
 .hashtag-title p {
-  font-size: 0.95rem;
+  font-size: var(--fs-md);
   color: var(--muted);
 }
 
@@ -2654,9 +2812,9 @@ html:has(.sheet-overlay, #modal-ui.active) {
   border-radius: var(--radius-full);
   background: none;
   color: var(--text-soft);
-  font-size: 0.95rem;
+  font-size: var(--fs-md);
   font-weight: 500;
-  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.12s ease;
+  transition: background var(--dur-base) ease, color var(--dur-base) ease, border-color var(--dur-base) ease, transform var(--dur-fast) ease;
 }
 
 .option-chip .icon {
@@ -2679,10 +2837,10 @@ html:has(.sheet-overlay, #modal-ui.active) {
 }
 
 .composer-note {
-  font-size: 0.88rem;
+  font-size: var(--fs-xs);
   line-height: 1.35;
   color: var(--muted);
-  animation: fade-in 0.25s ease both;
+  animation: fade-in var(--dur-slow) ease both;
 }
 
 .segmented {
@@ -2691,7 +2849,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
   margin-top: 14px;
   margin-bottom: 12px;
   padding: 4px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--line);
 }
 
@@ -2703,11 +2861,11 @@ html:has(.sheet-overlay, #modal-ui.active) {
   justify-content: center;
   gap: 8px;
   border: none;
-  border-radius: 9px;
+  border-radius: var(--radius-xs);
   background: none;
   color: var(--text-soft);
   font-weight: 500;
-  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  transition: background var(--dur-base) ease, color var(--dur-base) ease, box-shadow var(--dur-base) ease;
 }
 
 .segment .icon {
@@ -2776,16 +2934,16 @@ html:has(.sheet-overlay, #modal-ui.active) {
   align-items: center;
   justify-content: center;
   border: 2px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-xs);
   color: transparent;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease, transform var(--dur-fast) ease;
 }
 
 .pick-box .icon {
   width: 16px;
   height: 16px;
   transform: scale(0.4);
-  transition: transform 0.2s cubic-bezier(0.3, 1.5, 0.5, 1);
+  transition: transform var(--dur-base) var(--ease-spring);
 }
 
 .pick-check:checked + .pick-box {
@@ -2810,21 +2968,13 @@ html:has(.sheet-overlay, #modal-ui.active) {
   flex: 1;
 }
 
-.nav-item .icon-filled {
-  transition: opacity 0.18s ease, transform 0.2s ease-out;
-}
-
-.comment-time.alone {
-  margin-left: 0;
-}
-
 .account-row {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 10px 0;
   border-bottom: 1px solid var(--line);
-  animation: rise 0.3s ease both;
+  animation: rise var(--dur-slow) ease both;
   animation-delay: calc(var(--i, 0) * 30ms);
 }
 
@@ -2846,7 +2996,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
 }
 
 .account-user {
-  font-size: 0.9rem;
+  font-size: var(--fs-sm);
   color: var(--muted);
 }
 
@@ -2856,7 +3006,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
   padding: 0 16px;
   border-radius: var(--radius-full);
   font-weight: 500;
-  transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease, transform 0.12s ease;
+  transition: background var(--dur-base) ease, color var(--dur-base) ease, opacity var(--dur-base) ease, transform var(--dur-fast) ease;
 }
 
 .account-action:active {
@@ -2881,8 +3031,8 @@ html:has(.sheet-overlay, #modal-ui.active) {
   border: none;
   background: none;
   color: var(--muted);
-  font-size: 0.8rem;
-  transition: color 0.2s ease, transform 0.12s ease;
+  font-size: var(--fs-2xs);
+  transition: color var(--dur-base) ease, transform var(--dur-fast) ease;
 }
 
 .comment-like:active {
@@ -2899,7 +3049,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
   top: 2px;
   opacity: 0;
   transform: scale(0.4);
-  transition: opacity 0.15s ease;
+  transition: opacity var(--dur-fast) ease;
 }
 
 .comment-like.liked {
@@ -2913,52 +3063,20 @@ html:has(.sheet-overlay, #modal-ui.active) {
 .comment-like.liked .heart-in {
   opacity: 1;
   transform: scale(1);
-  animation: chip-pop 0.35s cubic-bezier(0.3, 1.4, 0.5, 1);
+  animation: chip-pop var(--dur-slow) var(--ease-spring);
 }
 
 .feed-toggle {
   justify-content: space-between;
   padding: 12px 14px;
   border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--tint);
-  animation: fade-in 0.25s ease both;
-}
-
-
-/* ---- Sheets, toasts and menus (shared UI) ---- */
-.modal-ui-actions.stacked {
-  flex-direction: column;
-}
-
-.modal-ui-btn.destructive-text {
-  color: var(--danger);
-}
-
-.modal-ui-btn.cancel {
-  border-color: transparent;
-  color: var(--text-soft);
-}
-
-.toast.has-action {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  pointer-events: auto;
-  padding-right: 0.6rem;
-}
-
-.toast-action {
-  background: none;
-  border: 0;
-  color: inherit;
-  font-weight: 700;
-  padding: 0.4rem 0.7rem;
   border-radius: var(--radius-md);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  background: var(--tint);
+  animation: fade-in var(--dur-slow) ease both;
 }
 
+
+/* UTILITIES AND IMAGE VIEWER */
 .haptic-probe {
   position: fixed;
   left: -100px;
@@ -2966,45 +3084,6 @@ html:has(.sheet-overlay, #modal-ui.active) {
   pointer-events: none;
   width: 1px;
   height: 1px;
-}
-
-.friend-row.leaving {
-  opacity: 0;
-  height: 0 !important;
-  margin: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-  overflow: hidden;
-  border-width: 0;
-  transition: height 0.28s ease, opacity 0.2s ease, padding 0.28s ease, margin 0.28s ease;
-}
-
-.post-menu-btn {
-  background: none;
-  border: 0;
-  color: var(--text-soft);
-  width: 36px;
-  height: 36px;
-  margin: -6px -8px 0 auto;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.post-menu-btn .icon {
-  width: 20px;
-  height: 20px;
-}
-
-.post-menu-btn:active {
-  background: var(--surface-hover, rgba(128, 128, 128, 0.15));
-}
-
-.post-image {
-  pointer-events: auto;
-  cursor: zoom-in;
 }
 
 .image-viewer {
@@ -3015,13 +3094,13 @@ html:has(.sheet-overlay, #modal-ui.active) {
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: viewerIn 0.2s ease;
+  animation: viewerIn var(--dur-base) ease;
   touch-action: none;
 }
 
 .image-viewer.closing {
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity var(--dur-base) ease;
 }
 
 .image-viewer img {
@@ -3034,7 +3113,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
 }
 
 .image-viewer img.settling {
-  transition: transform 0.25s cubic-bezier(0.3, 1.2, 0.5, 1);
+  transition: transform var(--dur-slow) var(--ease-settle);
 }
 
 .image-viewer-close {
@@ -3044,18 +3123,15 @@ html:has(.sheet-overlay, #modal-ui.active) {
   color: #fff;
   background: rgba(0, 0, 0, 0.45);
   border-radius: 50%;
+  margin: 0;
 }
 
 @keyframes viewerIn {
   from { opacity: 0; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .image-viewer { animation: none; }
-}
 
-
-/* ---- Feel: numbers, headings, press feedback ---- */
+/* FEEL: NUMBERS, HEADINGS AND PRESS FEEDBACK */
 .char-counter,
 .action-btn,
 .stat-value,
@@ -3079,26 +3155,3 @@ html:has(.sheet-overlay, #modal-ui.active) {
   transform: scale(0.97);
 }
 
-.feed-sentinel {
-  height: 1px;
-}
-
-.modal-ui-message:empty {
-  display: none;
-}
-
-.toast {
-  width: max-content;
-}
-
-.toast.has-action span {
-  white-space: nowrap;
-}
-
-.modal-ui-actions.stacked .modal-ui-btn {
-  flex: none;
-}
-
-.image-viewer-close {
-  margin: 0;
-}

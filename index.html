@@ -21,42 +21,48 @@
     <link rel="preload" href="./typography/jost-600.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="./css/style.css" />
     <link rel="modulepreload" href="./js/app.js" />
-    <link rel="modulepreload" href="./js/post-card.js" />
+    <link rel="modulepreload" href="./js/icons.js" />
     <link rel="modulepreload" href="./js/utils.js" />
     <link rel="modulepreload" href="./js/api.js" />
+    <link rel="modulepreload" href="./js/post-card.js" />
     <link rel="manifest" href="./manifest.json" />
     <title>OnlyFrens</title>
   </head>
   <body>
     <header class="page-header" id="page-header"></header>
-    <main id="app"></main>
+    <main id="app">
+      <div class="loader" role="status" aria-label="Cargando">
+        <svg viewBox="0 0 100 100" aria-hidden="true">
+          <defs>
+            <clipPath id="loader-back"><rect x="0" y="0" width="100" height="50" /></clipPath>
+            <clipPath id="loader-front"><rect x="0" y="50" width="100" height="50" /></clipPath>
+          </defs>
+          <g transform="rotate(-18 50 50)">
+            <g clip-path="url(#loader-back)"><ellipse class="loader-ring" cx="50" cy="50" rx="46" ry="13" pathLength="100" /></g>
+            <circle class="loader-planet" cx="50" cy="50" r="22" />
+            <g clip-path="url(#loader-front)"><ellipse class="loader-ring" cx="50" cy="50" rx="46" ry="13" pathLength="100" /></g>
+          </g>
+        </svg>
+      </div>
+    </main>
 
-    <nav class="bottom-nav" id="bottom-nav">
+    <nav class="bottom-nav" id="bottom-nav" hidden>
       <div class="nav-brand" aria-hidden="true">OnlyFrens</div>
       <button class="nav-item active" data-screen="home" aria-label="Inicio">
-        <svg class="icon icon-outline" viewBox="0 0 256 256" aria-hidden="true"><path d="M40 138Q40 122 52 112L117 55Q128 46 139 55L204 112Q216 122 216 138V184Q216 216 184 216H72Q40 216 40 184Z" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/><path d="M104 216V174Q104 152 128 152Q152 152 152 174V216" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <svg class="icon icon-filled" viewBox="0 0 256 256" aria-hidden="true"><path d="M40 138Q40 122 52 112L117 55Q128 46 139 55L204 112Q216 122 216 138V184Q216 216 184 216H72Q40 216 40 184ZM104 216V174Q104 152 128 152Q152 152 152 174V216Z" fill-rule="evenodd" fill="currentColor" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span class="nav-label">Inicio</span>
       </button>
       <button class="nav-item" data-screen="friends" aria-label="Amigos">
-        <svg class="icon icon-outline" viewBox="0 0 256 256" aria-hidden="true"><circle cx="178" cy="94" r="28" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/><path d="M184 152C214 152 232 174 232 204Q232 216 220 216H196" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/><circle cx="96" cy="96" r="36" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/><path d="M32 208C32 174 58 154 96 154C134 154 160 174 160 208Q160 216 152 216H40Q32 216 32 208Z" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <svg class="icon icon-filled" viewBox="0 0 256 256" aria-hidden="true"><circle cx="178" cy="94" r="28" fill="currentColor"/><path d="M184 152C214 152 232 174 232 204Q232 216 220 216H196Z" fill="currentColor" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/><circle cx="96" cy="96" r="36" fill="currentColor"/><path d="M32 208C32 174 58 154 96 154C134 154 160 174 160 208Q160 216 152 216H40Q32 216 32 208Z" fill="currentColor" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span class="nav-label">Amigos</span>
       </button>
       <button class="nav-item" data-screen="notifications" aria-label="Notificaciones">
-        <svg class="icon icon-outline" viewBox="0 0 256 256" aria-hidden="true"><path d="M68 96A60 60 0 0 1 188 96C188 130 195 154 208 173Q214 186 199 186H57Q42 186 48 173C61 154 68 130 68 96Z" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/><path d="M102 212Q128 234 154 212" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <svg class="icon icon-filled" viewBox="0 0 256 256" aria-hidden="true"><path d="M68 96A60 60 0 0 1 188 96C188 130 195 154 208 173Q214 186 199 186H57Q42 186 48 173C61 154 68 130 68 96Z" fill="currentColor" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/><path d="M102 212Q128 234 154 212Z" fill="currentColor" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span class="nav-label">Notificaciones</span>
       </button>
       <button class="nav-item" data-screen="profile" aria-label="Perfil">
-        <svg class="icon icon-outline" viewBox="0 0 256 256" aria-hidden="true"><circle cx="128" cy="128" r="100" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/><circle cx="128" cy="104" r="32" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/><path d="M58 196C72 164 98 150 128 150C158 150 184 164 198 196" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <svg class="icon icon-filled" viewBox="0 0 256 256" aria-hidden="true"><path d="M128 20A108 108 0 1 1 128 236A108 108 0 1 1 128 20ZM128 74A30 30 0 1 0 128 134A30 30 0 1 0 128 74ZM51.2 192C68 160 98 148 128 148C158 148 188 160 204.8 192A100 100 0 0 1 51.2 192Z" fill="currentColor" fill-rule="evenodd"/></svg>
         <span class="nav-label">Perfil</span>
       </button>
     </nav>
 
-    <button class="fab" id="composer-fab" aria-label="Publicar">
-      <svg class="icon" viewBox="0 0 256 256" aria-hidden="true"><path d="M228,128a12,12,0,0,1-12,12H140v76a12,12,0,0,1-24,0V140H40a12,12,0,0,1,0-24h76V40a12,12,0,0,1,24,0v76h76A12,12,0,0,1,228,128Z"/></svg>
+    <button class="fab" id="composer-fab" aria-label="Publicar" hidden>
       <span class="fab-label">Publicar</span>
     </button>
 

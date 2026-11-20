@@ -12,6 +12,8 @@ const MAX_IMAGES = 2;
 const MAX_ANONYMOUS_TAGS = 5;
 
 let selectedFiles = [];
+// Files that are still being compressed; Publicar waits until it is empty.
+let pending = new Set();
 let onPublishedCallback = null;
 
 // Who may see the post ({ mode: "hide" | "only", ids }) and whether it is an anonymous hashtag post.
@@ -84,7 +86,7 @@ function renderImagePreviews(container) {
   container.innerHTML = selectedFiles
     .map(
       (file, index) => `
-        <div class="composer-image-preview">
+        <div class="composer-image-preview${pending.has(file) ? " processing" : ""}">
           <img src="${previewUrl(file)}" alt="" decoding="async" />
           <button class="remove-image-btn" data-index="${index}" aria-label="Quitar imagen">${icon("x", "bold")}</button>
         </div>
@@ -101,15 +103,39 @@ function renderImagePreviews(container) {
   });
 }
 
+// The preview shows the original right away and swaps in the compressed file when it is ready.
+function compressInBackground(file, container) {
+  const mine = pending;
+  mine.add(file);
+
+  compressImage(file)
+    .then((compressed) => {
+      const index = selectedFiles.indexOf(file);
+      if (index !== -1) selectedFiles[index] = compressed;
+    })
+    .catch(() => {
+      const index = selectedFiles.indexOf(file);
+      if (index !== -1) selectedFiles.splice(index, 1);
+      if (mine === pending) showToast("No se pudo procesar esa imagen", "error");
+    })
+    .finally(() => {
+      mine.delete(file);
+      if (mine !== pending) return;
+      renderImagePreviews(container);
+      updatePublishState();
+    });
+}
+
 function updatePublishState() {
   const textEl = document.getElementById("composer-text");
   const publishBtn = document.getElementById("composer-publish");
+  if (!textEl || !publishBtn) return;
   const text = textEl.value.trim();
   // Anonymous posts need at least one hashtag in the text; images are optional.
   const hasContent = anonymous
     ? extractHashtags(text).length > 0
     : text.length > 0 || selectedFiles.length > 0;
-  publishBtn.disabled = !hasContent;
+  publishBtn.disabled = !hasContent || pending.size > 0;
 }
 
 function closeComposer() {
@@ -117,6 +143,7 @@ function closeComposer() {
   document.removeEventListener("keydown", onComposerKey);
   document.getElementById("composer-fab")?.classList.remove("open");
   selectedFiles = [];
+  pending = new Set();
   releasePreviews();
   audience = null;
   anonymous = false;
@@ -191,7 +218,7 @@ async function handlePublish() {
     // Anonymous posts upload to a folder that doesn't carry the user id.
     const uploadedUrls = await Promise.all(
       selectedFiles.map(async (file) => {
-        const { url } = await uploadImage(await compressImage(file), { anonymous });
+        const { url } = await uploadImage(file, { anonymous });
         return url;
       }),
     );
@@ -228,6 +255,7 @@ export function openComposer(onPublished, { text = "", files = [], anonymous: st
   friendCount = 0;
   isVerified = false;
   selectedFiles = files.slice(0, MAX_IMAGES);
+  pending = new Set();
 
   document.body.insertAdjacentHTML("beforeend", composerHTML());
   document.getElementById("composer-fab")?.classList.add("open");
@@ -309,12 +337,14 @@ export function openComposer(onPublished, { text = "", files = [], anonymous: st
     const remaining = MAX_IMAGES - selectedFiles.length;
     const newFiles = Array.from(fileInput.files).slice(0, remaining);
     selectedFiles.push(...newFiles);
+    newFiles.forEach((file) => compressInBackground(file, imagesContainer));
     renderImagePreviews(imagesContainer);
     updatePublishState();
     fileInput.value = "";
   });
 
   textEl.value = text.slice(0, textLimit);
+  selectedFiles.forEach((file) => compressInBackground(file, imagesContainer));
   renderImagePreviews(imagesContainer);
   updateCounter();
   updateOptions();

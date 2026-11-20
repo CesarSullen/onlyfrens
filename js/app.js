@@ -1,9 +1,7 @@
-import { showToast, showConfirm, haptic } from "./utils.js";
+import { showToast, showConfirm, haptic, loadModule } from "./utils.js";
+import { icon } from "./icons.js";
 import { getToken, getProfile, addFriend, getFriends, getNotifications } from "./api.js";
 import { readAuthRedirect, startSession, getAuthUser } from "./auth.js";
-import { renderAuthScreen } from "./auth-screen.js";
-import { renderResetScreen } from "./password-reset.js";
-import { renderCompleteProfileScreen } from "./complete-profile.js";
 import { renderHome } from "./home.js";
 import { renderFriends } from "./friends.js";
 import { renderProfile } from "./profile.js";
@@ -11,12 +9,10 @@ import { renderNotifications } from "./notifications.js";
 import { renderUserProfile } from "./user-profile.js";
 import { OPEN_PROFILE_EVENT, OPEN_PAGE_EVENT } from "./navigation.js";
 import { renderRewards } from "./rewards.js";
-import { renderHashtagPage } from "./hashtag-page.js";
 import { startBadges, setNotificationsViewOpen } from "./badges.js";
 import { markAllNotificationsRead } from "./api.js";
 import { syncPush } from "./push.js";
 import { cacheDelete, cacheMarkStale, prefetch } from "./cache.js";
-import { openComposer } from "./composer.js";
 import { takeSharedContent } from "./share.js";
 import { initPullToRefresh } from "./pull-refresh.js";
 
@@ -24,6 +20,21 @@ const appEl = document.getElementById("app");
 const navButtons = document.querySelectorAll(".nav-item");
 const fab = document.getElementById("composer-fab");
 const pageHeader = document.getElementById("page-header");
+
+const NAV_ICONS = { home: "house", friends: "users", notifications: "bell", profile: "user" };
+
+navButtons.forEach((btn) => {
+  const name = NAV_ICONS[btn.dataset.screen];
+  btn.insertAdjacentHTML("afterbegin", icon(name, "regular", "icon-outline") + icon(name, "fill", "icon-filled"));
+});
+fab.insertAdjacentHTML("afterbegin", icon("plus", "bold"));
+
+function openComposerLazy(afterPublish, shared) {
+  loadModule(
+    () => import("./composer.js"),
+    ({ openComposer }) => openComposer(afterPublish, shared),
+  );
+}
 
 const SCREEN_TITLES = {
   home: "Inicio",
@@ -117,7 +128,7 @@ function goToScreen(screenName, { restore = false } = {}) {
     btn.classList.toggle("active", active);
   });
 
-  fab.style.display = screenName === "home" ? "flex" : "none";
+  fab.hidden = screenName !== "home";
 
   const render = SCREENS[screenName];
   if (render) render();
@@ -129,7 +140,7 @@ function showUserProfile(username) {
   leaveNotifications();
   slideIn(16);
   viewingUser = true;
-  fab.style.display = "none";
+  fab.hidden = true;
   pageHeader.textContent = SCREEN_TITLES.profile;
   history.pushState({ profile: username }, "");
   window.scrollTo(0, 0);
@@ -139,7 +150,14 @@ function showUserProfile(username) {
 // Rewards and hashtag pages reuse the "viewing someone" behavior: back returns to the tab.
 const SUB_PAGES = {
   rewards: { title: "Recompensas", render: () => renderRewards(appEl) },
-  hashtag: { title: "Hashtag", render: ({ tag }) => renderHashtagPage(appEl, tag) },
+  hashtag: {
+    title: "Hashtag",
+    render: ({ tag }) =>
+      loadModule(
+        () => import("./hashtag-page.js"),
+        ({ renderHashtagPage }) => renderHashtagPage(appEl, tag),
+      ),
+  },
 };
 
 window.addEventListener(OPEN_PAGE_EVENT, ({ detail }) => {
@@ -150,7 +168,7 @@ window.addEventListener(OPEN_PAGE_EVENT, ({ detail }) => {
   leaveNotifications();
   slideIn(16);
   viewingUser = true;
-  fab.style.display = "none";
+  fab.hidden = true;
   pageHeader.textContent = page.title;
   history.pushState({ page: detail.page }, "");
   window.scrollTo(0, 0);
@@ -184,7 +202,7 @@ function handleInviteLink() {
 
 function showApp() {
   document.body.classList.remove("auth");
-  bottomNav.style.display = "flex";
+  bottomNav.hidden = false;
   goToScreen("home");
   handleInviteLink();
   openFromHash();
@@ -195,7 +213,7 @@ function showApp() {
 
 async function openSharedPost() {
   const shared = await takeSharedContent();
-  if (shared) openComposer(afterPublish, shared);
+  if (shared) openComposerLazy(afterPublish, shared);
 }
 
 // Push notifications and the manifest shortcuts start the app on #<screen>, the share sheet on #share.
@@ -214,13 +232,13 @@ function openFromHash() {
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
     leaveNotifications({ keepalive: true });
-  } else if (currentScreen === "notifications" && !viewingUser && bottomNav.style.display === "flex") {
+  } else if (currentScreen === "notifications" && !viewingUser && !bottomNav.hidden) {
     goToScreen("notifications");
   }
 });
 
 navigator.serviceWorker?.addEventListener("message", ({ data }) => {
-  if (data?.type === "open-notifications" && bottomNav.style.display === "flex") {
+  if (data?.type === "open-notifications" && !bottomNav.hidden) {
     goToScreen("notifications");
   } else if (data?.type === "push-received" && currentScreen === "notifications" && !viewingUser) {
     cacheDelete("notifications");
@@ -269,13 +287,13 @@ function afterPublish() {
 
 fab.addEventListener("click", () => {
   haptic();
-  openComposer(afterPublish);
+  openComposerLazy(afterPublish);
 });
 
 initPullToRefresh({
   content: appEl,
   canPull: () =>
-    bottomNav.style.display === "flex" &&
+    !bottomNav.hidden &&
     !viewingUser &&
     !document.querySelector(".sheet-overlay, #modal-ui.active"),
   onRefresh: refreshCurrent,
@@ -296,13 +314,16 @@ history.pushState({ modal: false }, "");
 
 function hideNavigation() {
   document.body.classList.add("auth");
-  bottomNav.style.display = "none";
-  fab.style.display = "none";
+  bottomNav.hidden = true;
+  fab.hidden = true;
 }
 
 function showAuth() {
   hideNavigation();
-  renderAuthScreen(appEl, showApp);
+  loadModule(
+    () => import("./auth-screen.js"),
+    ({ renderAuthScreen }) => renderAuthScreen(appEl, showApp),
+  );
 }
 
 window.addEventListener("onlyfrens:session-expired", showAuth);
@@ -315,7 +336,11 @@ async function enterApp() {
       const user = await getAuthUser(getToken()).catch(() => null);
       const metadata = user?.user_metadata ?? {};
       hideNavigation();
-      renderCompleteProfileScreen(appEl, { displayName: metadata.full_name ?? metadata.name ?? "" }, showApp);
+      loadModule(
+        () => import("./complete-profile.js"),
+        ({ renderCompleteProfileScreen }) =>
+          renderCompleteProfileScreen(appEl, { displayName: metadata.full_name ?? metadata.name ?? "" }, showApp),
+      );
       return;
     }
   }
@@ -327,10 +352,14 @@ function initApp() {
 
   if (redirect?.type === "recovery") {
     hideNavigation();
-    renderResetScreen(appEl, redirect.session, (session) => {
-      startSession(session);
-      enterApp();
-    });
+    loadModule(
+      () => import("./password-reset.js"),
+      ({ renderResetScreen }) =>
+        renderResetScreen(appEl, redirect.session, (session) => {
+          startSession(session);
+          enterApp();
+        }),
+    );
     return;
   }
 

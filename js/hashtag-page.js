@@ -1,10 +1,9 @@
 import { getHashtag, followHashtag, unfollowHashtag, getProfile } from "./api.js";
-import { haptic, showToast, escapeHTML } from "./utils.js";
+import { haptic, showToast, escapeHTML, loadModule } from "./utils.js";
 import { icon } from "./icons.js";
 import { loaderHTML } from "./loader.js";
 import { loadWithCache } from "./cache.js";
 import { postCardHTML, attachPostCardListeners } from "./post-card.js";
-import { openComposer } from "./composer.js";
 
 function followLabel(following) {
   return following ? "Siguiendo" : "Seguir";
@@ -108,7 +107,11 @@ export async function renderHashtagPage(appEl, tag, { onPublished } = {}) {
       composeEl.innerHTML = `<button class="primary-btn" id="hashtag-publish">${icon("hash", "regular")}Publicar en #${escapeHTML(tag)}</button>`;
       document.getElementById("hashtag-publish").addEventListener("click", () => {
         haptic();
-        openComposer(() => renderHashtagPage(appEl, tag, { onPublished }), { text: `#${tag} `, anonymous: true });
+        loadModule(
+          () => import("./composer.js"),
+          ({ openComposer }) =>
+            openComposer(() => renderHashtagPage(appEl, tag, { onPublished }), { text: `#${tag} `, anonymous: true }),
+        );
       });
     }).catch(() => {});
   } catch (err) {

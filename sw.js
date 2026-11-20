@@ -1,4 +1,4 @@
-const CACHE_NAME = "onlyfrens-v0.0.21";
+const CACHE_NAME = "onlyfrens-v0.0.22";
 const IMAGE_CACHE = "onlyfrens-images";
 const SHARE_CACHE = "onlyfrens-share";
 const MAX_IMAGES = 150;
@@ -40,6 +40,7 @@ const ASSETS = [
   "./js/icons.js",
   "./js/loader.js",
   "./js/notifications.js",
+  "./js/patch-list.js",
   "./js/post-card.js",
   "./js/profile.js",
   "./js/pull-refresh.js",

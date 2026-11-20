@@ -1,6 +1,6 @@
 import { createProfile } from "./api.js";
 import { signOut } from "./auth.js";
-import { showToast, profileFieldsError, escapeHTML } from "./utils.js";
+import { showToast, usernameError, displayNameError, showFieldError, escapeHTML } from "./utils.js";
 
 export function renderCompleteProfileScreen(appEl, { displayName = "" }, onDone) {
   appEl.innerHTML = `
@@ -9,8 +9,8 @@ export function renderCompleteProfileScreen(appEl, { displayName = "" }, onDone)
       <p class="auth-subtitle">Un último paso: elige cómo te verán tus amigos</p>
 
       <form id="complete-form" class="auth-form">
-        <input type="text" id="complete-username" placeholder="Username (sin @)" required autocomplete="off" autocapitalize="none" />
-        <input type="text" id="complete-display-name" placeholder="Nombre a mostrar" required maxlength="50" value="${escapeHTML(displayName)}" />
+        <input type="text" id="complete-username" placeholder="Username (sin @)" required maxlength="20" autocomplete="off" autocapitalize="none" spellcheck="false" />
+        <input type="text" id="complete-display-name" placeholder="Nombre a mostrar" required maxlength="50" autocomplete="name" value="${escapeHTML(displayName)}" />
         <button type="submit" class="primary-btn" id="complete-submit">Continuar</button>
       </form>
 
@@ -25,13 +25,18 @@ export function renderCompleteProfileScreen(appEl, { displayName = "" }, onDone)
 
   document.getElementById("complete-form").addEventListener("submit", async (e) => {
     e.preventDefault();
-    const username = document.getElementById("complete-username").value.trim().replace(/^@/, "").toLowerCase();
-    const name = document.getElementById("complete-display-name").value.trim();
+    const usernameInput = document.getElementById("complete-username");
+    const nameInput = document.getElementById("complete-display-name");
+    const username = usernameInput.value.trim().replace(/^@/, "").toLowerCase();
+    const name = nameInput.value.trim();
     const submitBtn = document.getElementById("complete-submit");
 
-    const error = profileFieldsError(username, name);
-    if (error) {
-      showToast(error, "error");
+    if (usernameError(username)) {
+      showFieldError(usernameInput, usernameError(username));
+      return;
+    }
+    if (displayNameError(name)) {
+      showFieldError(nameInput, displayNameError(name));
       return;
     }
 
