@@ -112,21 +112,4 @@ export function openFriendSearch(onChange) {
     if (e.target === overlay) focusInput();
   });
   setTimeout(focusInput, 450);
-
-  const viewport = window.visualViewport;
-  if (viewport && window.matchMedia("(max-width: 767px)").matches) {
-    const fit = () => {
-      overlay.style.height = `${viewport.height}px`;
-      overlay.style.top = `${viewport.offsetTop}px`;
-      overlay.style.bottom = "auto";
-    };
-    viewport.addEventListener("resize", fit);
-    viewport.addEventListener("scroll", fit);
-    overlay.addEventListener("animationend", (e) => {
-      if (e.target === overlay && overlay.classList.contains("closing")) {
-        viewport.removeEventListener("resize", fit);
-        viewport.removeEventListener("scroll", fit);
-      }
-    });
-  }
 }

@@ -131,8 +131,9 @@ function resetModal() {
   modalUI.querySelectorAll(".modal-ui-fields, .modal-ui-error").forEach((el) => el.remove());
 }
 
-function openModal({ sheet = false, focusEl = null } = {}) {
+function openModal({ sheet = false, focusEl = null, dismissible = false } = {}) {
   modalOpener = document.activeElement;
+  modalUI.dataset.dismissible = dismissible;
   modalUI.classList.toggle("as-sheet", sheet);
   modalUI.classList.add("active");
   focusEl?.focus({ preventScroll: true });
@@ -147,6 +148,10 @@ function closeModalUI() {
   if (modalOpener?.isConnected) modalOpener.focus({ preventScroll: true });
   modalOpener = null;
 }
+
+modalUI.addEventListener("click", (e) => {
+  if (e.target === modalUI && modalUI.dataset.dismissible === "true") closeModalUI();
+});
 
 function modalButton(label, className, onClick) {
   const button = document.createElement("button");
@@ -185,7 +190,7 @@ function showActions(items) {
     );
   });
   modalActions.append(modalButton("Cancelar", "cancel", closeModalUI));
-  openModal({ sheet: true });
+  openModal({ sheet: true, dismissible: true });
 }
 
 function showForm({ title, fields, validate, onConfirm }) {
@@ -317,6 +322,7 @@ function openSheet({ title, bodyHTML = "", footerHTML = "", footerClass = "", on
   document.addEventListener("keydown", onKey);
   overlay.querySelector(".sheet-close").addEventListener("click", close);
   enableSheetDrag(overlay, close);
+  fitToVisualViewport(overlay);
 
   return {
     overlay,
@@ -324,6 +330,25 @@ function openSheet({ title, bodyHTML = "", footerHTML = "", footerClass = "", on
     footer: overlay.querySelector(".sheet-footer"),
     close,
   };
+}
+
+// On phones the sheet follows the visible area so the on-screen keyboard never pushes it out of place.
+function fitToVisualViewport(overlay) {
+  const viewport = window.visualViewport;
+  if (!viewport || !phoneQuery.matches) return;
+  const fit = () => {
+    overlay.style.height = `${viewport.height}px`;
+    overlay.style.top = `${viewport.offsetTop}px`;
+    overlay.style.bottom = "auto";
+  };
+  viewport.addEventListener("resize", fit);
+  viewport.addEventListener("scroll", fit);
+  new MutationObserver((_, observer) => {
+    if (overlay.isConnected) return;
+    viewport.removeEventListener("resize", fit);
+    viewport.removeEventListener("scroll", fit);
+    observer.disconnect();
+  }).observe(document.body, { childList: true });
 }
 
 // On phones the header can be dragged down to close the sheet; a quick flick closes it too.

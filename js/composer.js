@@ -3,11 +3,12 @@ import { loadWithCache } from "./cache.js";
 import { showToast, haptic, closeSheet, enableSheetDrag } from "./utils.js";
 import { compressImage } from "./compress.js";
 import { icon } from "./icons.js";
-import { extractHashtags } from "./hashtags.js";
+import { extractHashtags, highlightHashtags } from "./hashtags.js";
 import { openAudiencePicker, HIDE_MIN_FRIENDS } from "./audience-picker.js";
 
 const MAX_TEXT_LENGTH = 200;
-const MAX_TEXT_LENGTH_VERIFIED = 500;
+// Longest text per verified tier: none and blue 200, gold 500, purple 1000.
+const TEXT_LIMIT_BY_TIER = [200, 200, 500, 1000];
 const MAX_IMAGES = 2;
 const MAX_ANONYMOUS_TAGS = 5;
 
@@ -32,12 +33,15 @@ function composerHTML() {
           <button class="text-btn primary" id="composer-publish" disabled>Publicar</button>
         </div>
 
-        <textarea
-          class="composer-textarea post-text"
-          id="composer-text"
-          placeholder="¿Qué está pasando?"
-          maxlength="${MAX_TEXT_LENGTH}"
-        ></textarea>
+        <div class="composer-field">
+          <div class="composer-textarea post-text composer-mirror" id="composer-mirror" aria-hidden="true"></div>
+          <textarea
+            class="composer-textarea post-text"
+            id="composer-text"
+            placeholder="¿Qué está pasando?"
+            maxlength="${MAX_TEXT_LENGTH}"
+          ></textarea>
+        </div>
 
         <div class="composer-images" id="composer-images"></div>
 
@@ -52,6 +56,9 @@ function composerHTML() {
             </button>
             <button class="icon-btn toggle-btn" id="composer-repostable" type="button" aria-label="Permitir reposts" aria-pressed="true">
               ${icon("arrows-clockwise", "regular")}
+            </button>
+            <button class="icon-btn toggle-btn" id="composer-downloadable" type="button" aria-label="Permitir descargar fotos" aria-pressed="true" hidden>
+              ${icon("download-simple", "regular")}
             </button>
             <button class="icon-btn toggle-btn" id="composer-anonymous" type="button" aria-label="Publicar en hashtags" aria-pressed="false" hidden>
               ${icon("hash", "regular")}
@@ -101,6 +108,8 @@ function renderImagePreviews(container) {
       updatePublishState();
     });
   });
+
+  document.getElementById("composer-downloadable")?.toggleAttribute("hidden", selectedFiles.length === 0);
 }
 
 // The preview shows the original right away and swaps in the compressed file when it is ready.
@@ -209,6 +218,7 @@ async function handleAudience() {
 async function handlePublish() {
   const textEl = document.getElementById("composer-text");
   const repostable = document.getElementById("composer-repostable").getAttribute("aria-pressed") === "true";
+  const downloadable = document.getElementById("composer-downloadable").getAttribute("aria-pressed") === "true";
   const publishBtn = document.getElementById("composer-publish");
 
   publishBtn.disabled = true;
@@ -233,6 +243,7 @@ async function handlePublish() {
       image_url: uploadedUrls[0],
       image_url_2: uploadedUrls[1],
       is_repostable: anonymous ? false : repostable,
+      allow_download: selectedFiles.length ? downloadable : undefined,
       audience: audience && !anonymous ? { mode: audience.mode, user_ids: audience.ids } : undefined,
       anonymous: anonymous || undefined,
     });
@@ -263,12 +274,14 @@ export function openComposer(onPublished, { text = "", files = [], anonymous: st
   document.addEventListener("keydown", onComposerKey);
 
   const textEl = document.getElementById("composer-text");
+  const mirrorEl = document.getElementById("composer-mirror");
   const counterEl = document.getElementById("char-counter");
   const imagesContainer = document.getElementById("composer-images");
   const fileInput = document.getElementById("composer-file-input");
 
   const anonymousEl = document.getElementById("composer-anonymous");
   const repostableEl = document.getElementById("composer-repostable");
+  const downloadableEl = document.getElementById("composer-downloadable");
 
   let textLimit = MAX_TEXT_LENGTH;
 
@@ -276,14 +289,25 @@ export function openComposer(onPublished, { text = "", files = [], anonymous: st
     counterEl.textContent = `${textEl.value.length}/${textLimit}`;
   }
 
+  // The visible text lives in the mirror so hashtags can be styled while the textarea keeps the caret.
+  function renderMirror() {
+    mirrorEl.innerHTML = highlightHashtags(textEl.value);
+    mirrorEl.scrollTop = textEl.scrollTop;
+  }
+
   textEl.addEventListener("input", () => {
+    renderMirror();
     updateCounter();
     updatePublishState();
   });
 
-  // Starts at the normal limit and rises to the verified one as soon as the profile says so.
+  textEl.addEventListener("scroll", () => {
+    mirrorEl.scrollTop = textEl.scrollTop;
+  });
+
+  // Starts at the normal limit and rises to the one of the user's tier as soon as the profile says so.
   loadWithCache("profile", getProfile, ({ profile }) => {
-    textLimit = profile.verified ? MAX_TEXT_LENGTH_VERIFIED : MAX_TEXT_LENGTH;
+    textLimit = TEXT_LIMIT_BY_TIER[profile.verified_tier ?? 0] ?? MAX_TEXT_LENGTH;
     textEl.maxLength = textLimit;
     friendCount = profile.friend_count ?? 0;
     isVerified = !!profile.verified;
@@ -320,6 +344,11 @@ export function openComposer(onPublished, { text = "", files = [], anonymous: st
     showToast(flip(repostableEl) ? "Reposts permitidos" : "Reposts desactivados");
   });
 
+  downloadableEl.addEventListener("click", () => {
+    haptic();
+    showToast(flip(downloadableEl) ? "Descarga de fotos permitida" : "Descarga de fotos desactivada");
+  });
+
   document.getElementById("composer-audience").addEventListener("click", () => {
     haptic();
     handleAudience();
@@ -344,6 +373,7 @@ export function openComposer(onPublished, { text = "", files = [], anonymous: st
   });
 
   textEl.value = text.slice(0, textLimit);
+  renderMirror();
   selectedFiles.forEach((file) => compressInBackground(file, imagesContainer));
   renderImagePreviews(imagesContainer);
   updateCounter();

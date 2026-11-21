@@ -9,6 +9,8 @@ import { openRewards } from "./navigation.js";
 const REWARD_META = {
   verified_blue: { title: "Insignia azul de verificado", text: "Aparece junto a tu nombre en todas partes.", icon: "verified", weight: "fill" },
   long_posts: { title: "Publicaciones largas", text: "Escribe hasta 500 caracteres en vez de 200.", icon: "text-lines" },
+  very_long_posts: { title: "Publicaciones muy largas", text: "Escribe hasta 1000 caracteres.", icon: "text-lines" },
+  photo_downloads: { title: "Descargar fotos", text: "Guarda las fotos de las publicaciones que lo permitan.", icon: "download-simple" },
   suggestions: { title: "Sugerencias de amigos", text: "Tres personas al día que quizás conoces.", icon: "sparkle" },
   anonymous_hashtags: { title: "Publicar en hashtags", text: "Comparte de forma anónima en los hashtags.", icon: "hash" },
   hide_friends: { title: "Ocultar publicaciones", text: "Elige amigos que no verán una publicación.", icon: "eye-slash" },
@@ -24,7 +26,7 @@ const TIERS = [
 ];
 
 // Small icons shown on the profile; the verified badge already sits next to the name.
-const STRIP_IDS = ["long_posts", "suggestions", "anonymous_hashtags", "hide_friends", "only_friends"];
+const STRIP_IDS = ["long_posts", "suggestions", "anonymous_hashtags", "photo_downloads", "hide_friends", "only_friends"];
 
 // Badges strip on a profile. On your own profile it opens the rewards page.
 export function rewardStripHTML(rewardIds = [], { own = false } = {}) {
@@ -55,8 +57,10 @@ export function bindRewardStrip() {
 
 // The tier a reward belongs to is fixed by the catalog the backend sent last time;
 // until the page loads, the thresholds below are only used to color the chips.
+const REWARD_TIER = { verified_gold: 2, long_posts: 2, only_friends: 2, verified_purple: 3, very_long_posts: 3 };
+
 function rewardTier(id) {
-  return id === "only_friends" || id === "verified_gold" ? 2 : id === "verified_purple" ? 3 : 1;
+  return REWARD_TIER[id] ?? 1;
 }
 
 function rewardRowHTML(reward, friendCount, index) {

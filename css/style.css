@@ -36,8 +36,9 @@
   --warm-bg: #fee9c1;
   --warm-text: #c27400;
   --tier-gold: #e09a00;
-  --tier-purple: #8b5cf6;
+  --tier-purple: #9d00ff;
   --danger: #ef4444;
+  --toast-shadow: 0 6px 20px rgba(11, 11, 15, 0.12);
   --radius-xs: 8px;
   --radius-sm: 10px;
   --radius-md: 12px;
@@ -84,7 +85,8 @@
     --warm-bg: rgba(254, 233, 193, 0.16);
     --warm-text: #f6b866;
     --tier-gold: #f5b83d;
-    --tier-purple: #a78bfa;
+    --tier-purple: #b84dff;
+    --toast-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
   }
 }
 
@@ -1912,6 +1914,13 @@ button:focus-visible {
   color: var(--muted);
 }
 
+.composer-field {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 120px;
+}
+
 .composer-textarea {
   flex: 1;
   border: none;
@@ -1920,7 +1929,27 @@ button:focus-visible {
   line-height: 1.5;
   resize: none;
   min-height: 120px;
+  scrollbar-width: none;
 }
+
+.composer-textarea::-webkit-scrollbar {
+  display: none;
+}
+
+.composer-field textarea {
+  position: relative;
+  color: transparent;
+  caret-color: var(--text);
+}
+
+.composer-mirror {
+  position: absolute;
+  inset: 0;
+  font-size: 16px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 
 .composer-images {
   display: flex;
@@ -2052,19 +2081,24 @@ button:focus-visible {
 }
 
 .toast {
-  background: var(--text);
-  color: var(--bg);
-  border-radius: var(--radius-sm);
-  padding: 0.7rem 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  width: max-content;
+  max-width: 85vw;
+  padding: 0.6rem 1.2rem;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 24px;
   font-size: var(--fs-base);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
+  font-weight: 600;
+  text-align: center;
+  box-shadow: var(--toast-shadow);
   opacity: 0;
-  transform: translateY(14px) scale(0.96);
+  transform: translateY(20px);
   transition: opacity var(--dur-base) ease, transform var(--dur-base) ease;
   pointer-events: none;
-  max-width: 85vw;
-  text-align: center;
-  width: max-content;
 }
 
 @media (min-width: 768px) {
@@ -2075,36 +2109,25 @@ button:focus-visible {
 
 .toast.toast-visible {
   opacity: 1;
-  transform: translateY(0) scale(1);
-  transition: opacity var(--dur-slow) ease, transform var(--dur-slow) var(--ease-spring);
+  transform: translateY(0);
+  transition: opacity var(--dur-slow) ease, transform var(--dur-slow) var(--ease-out);
 }
 
 .toast.toast-error {
-  background: var(--danger);
-  color: #ffffff;
+  color: var(--danger);
+  border-color: var(--danger);
 }
 
 .toast.has-action {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
   pointer-events: auto;
-  padding-right: 0.6rem;
 }
 
 .toast-action {
+  padding: 0.2rem 0.3rem;
   background: none;
   border: 0;
-  color: inherit;
+  color: var(--primary);
   font-weight: 700;
-  padding: 0.4rem 0.7rem;
-  border-radius: var(--radius-sm);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.toast.has-action span {
-  white-space: nowrap;
 }
 
 html:has(.sheet-overlay, #modal-ui.active) {
@@ -2320,6 +2343,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
 
 .verified-badge.tier-3 {
   color: var(--tier-purple);
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--tier-purple) 55%, transparent));
 }
 
 .reward-strip {
@@ -2601,11 +2625,13 @@ html:has(.sheet-overlay, #modal-ui.active) {
   color: var(--muted);
 }
 
-.hashtag {
+.hashtag,
+.hashtag-live {
   padding: 0;
   border: none;
   background: none;
   color: var(--primary);
+  -webkit-text-stroke: 0.6px currentColor;
   font: inherit;
   text-align: inherit;
   cursor: pointer;
@@ -3116,14 +3142,22 @@ html:has(.sheet-overlay, #modal-ui.active) {
   transition: transform var(--dur-slow) var(--ease-settle);
 }
 
-.image-viewer-close {
+.image-viewer-close,
+.image-viewer-download {
   position: absolute;
   top: calc(env(safe-area-inset-top) + 12px);
-  right: 12px;
   color: #fff;
   background: rgba(0, 0, 0, 0.45);
   border-radius: 50%;
   margin: 0;
+}
+
+.image-viewer-close {
+  right: 12px;
+}
+
+.image-viewer-download {
+  left: 12px;
 }
 
 @keyframes viewerIn {

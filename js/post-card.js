@@ -5,6 +5,7 @@ import { verifiedBadgeHTML } from "./verified.js";
 import { avatarSrc } from "./avatar.js";
 import { linkifyHashtags } from "./hashtags.js";
 import { openHashtag, openUserProfile } from "./navigation.js";
+import { cacheGet } from "./cache.js";
 
 function isBirthdayToday(profile) {
   if (!profile?.birthday_day || !profile?.birthday_month) return false;
@@ -82,7 +83,7 @@ export function postCardHTML(post) {
       : "";
 
   return `
-    <article class="post-card fade-in" data-post-id="${post.id}" data-sig="${signature}" data-is-repost="${post.is_repost}" data-anonymous="${anonymous}" data-mine="${Boolean(post.is_mine)}" data-stats="${hasStats}">
+    <article class="post-card fade-in" data-post-id="${post.id}" data-sig="${signature}" data-is-repost="${post.is_repost}" data-anonymous="${anonymous}" data-downloadable="${content.allow_download !== false}" data-mine="${Boolean(post.is_mine)}" data-stats="${hasStats}">
       ${birthdayPill}
       ${anonymousPill}
       ${repostPill}
@@ -228,7 +229,9 @@ function onCardClick(e) {
     haptic();
     openHashtag(el.dataset.tag);
   } else if ((el = hit(".post-image"))) {
-    import("./image-viewer.js").then(({ openImageViewer }) => openImageViewer(el.currentSrc || el.src));
+    // Only verified accounts (blue tier or higher) can download, and only when the author allows it.
+    const download = card.dataset.downloadable === "true" && (cacheGet("profile")?.profile?.verified_tier ?? 0) >= 1;
+    import("./image-viewer.js").then(({ openImageViewer }) => openImageViewer(el.currentSrc || el.src, { download }));
   }
 }
 

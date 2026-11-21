@@ -249,6 +249,7 @@ navigator.serviceWorker?.addEventListener("message", ({ data }) => {
 const PREFETCH = {
   friends: () => prefetch("friends", getFriends),
   notifications: () => prefetch("notifications", getNotifications),
+  profile: () => prefetch("profile", getProfile),
 };
 
 // When the tab opens the data is usually already there.

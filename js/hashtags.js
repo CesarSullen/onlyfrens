@@ -22,3 +22,18 @@ export function linkifyHashtags(text) {
 
   return html + escapeHTML(text.slice(last));
 }
+
+// Escapes the text and wraps every #tag in a span, for the mirror layer behind the composer.
+export function highlightHashtags(text) {
+  let html = "";
+  let last = 0;
+
+  for (const match of text.matchAll(HASHTAG_REGEX)) {
+    html += escapeHTML(text.slice(last, match.index));
+    html += `<span class="hashtag-live">${escapeHTML(match[0])}</span>`;
+    last = match.index + match[0].length;
+  }
+
+  // The zero-width space keeps a trailing line break from collapsing.
+  return `${html}${escapeHTML(text.slice(last))}\u200b`;
+}

@@ -18,6 +18,10 @@ function write(key, data) {
   } catch {}
 }
 
+export function cacheGet(key) {
+  return read(key)?.data ?? null;
+}
+
 export function cacheDelete(...keys) {
   keys.forEach((key) => {
     if (!key.endsWith("*")) {
