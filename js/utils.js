@@ -333,16 +333,24 @@ function openSheet({ title, bodyHTML = "", footerHTML = "", footerClass = "", on
 }
 
 // On phones the sheet follows the visible area so the on-screen keyboard never pushes it out of place.
-function fitToVisualViewport(overlay) {
+export function fitToVisualViewport(overlay) {
   const viewport = window.visualViewport;
   if (!viewport || !phoneQuery.matches) return;
   const fit = () => {
+    // iOS may scroll the page to reveal the focused input; keep it pinned so the app behind never shows
+    if (window.scrollY) window.scrollTo(0, 0);
+    overlay.classList.toggle("keyboard", viewport.height < window.innerHeight - 80);
     overlay.style.height = `${viewport.height}px`;
     overlay.style.top = `${viewport.offsetTop}px`;
     overlay.style.bottom = "auto";
   };
   viewport.addEventListener("resize", fit);
   viewport.addEventListener("scroll", fit);
+  overlay.addEventListener("focusin", () => {
+    fit();
+    setTimeout(fit, 150);
+    setTimeout(fit, 400);
+  });
   new MutationObserver((_, observer) => {
     if (overlay.isConnected) return;
     viewport.removeEventListener("resize", fit);

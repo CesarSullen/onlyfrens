@@ -10,7 +10,7 @@ const REWARD_META = {
   verified_blue: { title: "Insignia azul de verificado", text: "Aparece junto a tu nombre en todas partes.", icon: "verified", weight: "fill" },
   long_posts: { title: "Publicaciones largas", text: "Escribe hasta 500 caracteres en vez de 200.", icon: "text-lines" },
   very_long_posts: { title: "Publicaciones muy largas", text: "Escribe hasta 1000 caracteres.", icon: "text-lines" },
-  photo_downloads: { title: "Descargar fotos", text: "Guarda las fotos de las publicaciones que lo permitan.", icon: "download-simple" },
+  photo_downloads: { title: "Descargar fotos", text: "Guarda como imagen las publicaciones con foto que lo permitan.", icon: "download-simple" },
   anonymous_hashtags: { title: "Publicar en hashtags", text: "Comparte de forma anónima en los hashtags.", icon: "hash" },
   hide_friends: { title: "Ocultar publicaciones", text: "Elige amigos que no verán una publicación.", icon: "eye-slash" },
   verified_gold: { title: "Insignia dorada de verificado", text: "Tu insignia cambia a dorado.", icon: "verified", weight: "fill" },

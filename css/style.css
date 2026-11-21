@@ -938,6 +938,10 @@ button:focus-visible {
   transform: scale(0.85);
 }
 
+.download-btn {
+  margin-left: auto;
+}
+
 .action-count {
   font-size: var(--fs-base);
   color: var(--text-soft);
@@ -1699,6 +1703,11 @@ button:focus-visible {
   animation: sheet-in var(--dur-slow) var(--ease-out);
 }
 
+/* With the keyboard open any gap around the sheet is painted with its own background, not the app */
+.sheet-overlay.keyboard {
+  box-shadow: 0 0 0 100vmax var(--bg);
+}
+
 @keyframes sheet-in {
   from { transform: translateY(100%); }
 }
@@ -1950,6 +1959,35 @@ button:focus-visible {
   pointer-events: none;
 }
 
+
+.tag-suggest {
+  display: flex;
+  gap: 8px;
+  padding: 6px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tag-suggest[hidden] {
+  display: none;
+}
+
+.tag-suggest-chip {
+  flex-shrink: 0;
+  height: 34px;
+  padding: 0 14px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--tint);
+  color: var(--primary);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  animation: chip-pop var(--dur-base) var(--ease-spring) both;
+}
+
+.tag-suggest-chip:active {
+  transform: scale(0.96);
+}
 
 .composer-images {
   display: flex;
@@ -3170,8 +3208,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
   transition: transform var(--dur-slow) var(--ease-settle);
 }
 
-.image-viewer-close,
-.image-viewer-download {
+.image-viewer-close {
   position: absolute;
   top: calc(env(safe-area-inset-top) + 12px);
   color: #fff;
@@ -3182,10 +3219,6 @@ html:has(.sheet-overlay, #modal-ui.active) {
 
 .image-viewer-close {
   right: 12px;
-}
-
-.image-viewer-download {
-  left: 12px;
 }
 
 @keyframes viewerIn {

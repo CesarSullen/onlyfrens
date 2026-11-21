@@ -1,7 +1,8 @@
 import { createPost, uploadImage, deleteUploadedImage, getProfile, getFriends } from "./api.js";
 import { loadWithCache } from "./cache.js";
-import { showToast, haptic, closeSheet, enableSheetDrag } from "./utils.js";
+import { showToast, haptic, closeSheet, enableSheetDrag, fitToVisualViewport } from "./utils.js";
 import { compressImage } from "./compress.js";
+import { setupHashtagSuggest } from "./hashtag-suggest.js";
 import { icon } from "./icons.js";
 import { extractHashtags, highlightHashtags } from "./hashtags.js";
 import { openAudiencePicker, HIDE_MIN_FRIENDS } from "./audience-picker.js";
@@ -44,6 +45,8 @@ function composerHTML() {
             maxlength="${MAX_TEXT_LENGTH}"
           ></textarea>
         </div>
+
+        <div class="tag-suggest" id="composer-tag-suggest" hidden></div>
 
         <div class="composer-images" id="composer-images"></div>
 
@@ -290,6 +293,7 @@ export function openComposer(onPublished, { text = "", files = [], anonymous: st
   document.body.insertAdjacentHTML("beforeend", composerHTML());
   document.getElementById("composer-fab")?.classList.add("open");
   enableSheetDrag(document.getElementById("composer-overlay"), closeComposer);
+  fitToVisualViewport(document.getElementById("composer-overlay"));
   document.addEventListener("keydown", onComposerKey);
 
   const textEl = document.getElementById("composer-text");
@@ -319,6 +323,8 @@ export function openComposer(onPublished, { text = "", files = [], anonymous: st
     updateCounter();
     updatePublishState();
   });
+
+  setupHashtagSuggest(textEl, document.getElementById("composer-tag-suggest"), () => textEl.dispatchEvent(new Event("input")));
 
   textEl.addEventListener("scroll", () => {
     mirrorEl.scrollTop = textEl.scrollTop;

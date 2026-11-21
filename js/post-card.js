@@ -6,6 +6,7 @@ import { avatarSrc } from "./avatar.js";
 import { linkifyHashtags } from "./hashtags.js";
 import { openHashtag, openUserProfile } from "./navigation.js";
 import { cacheGet } from "./cache.js";
+import { downloadPostCard } from "./post-capture.js";
 
 function isBirthdayToday(profile) {
   if (!profile?.birthday_day || !profile?.birthday_month) return false;
@@ -66,6 +67,12 @@ export function postCardHTML(post) {
       })
     : "";
 
+  // Only verified accounts (blue tier or higher) can download, and only when the author allows it.
+  const canDownload = images.length > 0 && content.allow_download !== false && (cacheGet("profile")?.profile?.verified_tier ?? 0) >= 1;
+  const downloadButton = canDownload
+    ? `<button class="action-btn download-btn" aria-label="Descargar publicación"><span class="action-icon">${icon("download-simple", "regular")}</span></button>`
+    : "";
+
   const isContentOwner = content.author_id
     ? content.author_id === getUserId()
     : post.is_mine && !post.is_repost;
@@ -83,7 +90,7 @@ export function postCardHTML(post) {
       : "";
 
   return `
-    <article class="post-card fade-in" data-post-id="${post.id}" data-sig="${signature}" data-is-repost="${post.is_repost}" data-anonymous="${anonymous}" data-downloadable="${content.allow_download !== false}" data-mine="${Boolean(post.is_mine)}" data-stats="${hasStats}">
+    <article class="post-card fade-in" data-post-id="${post.id}" data-sig="${signature}" data-is-repost="${post.is_repost}" data-anonymous="${anonymous}" data-mine="${Boolean(post.is_mine)}" data-stats="${hasStats}">
       ${birthdayPill}
       ${anonymousPill}
       ${repostPill}
@@ -101,6 +108,7 @@ export function postCardHTML(post) {
         ${actionButtonHTML({ cls: "like-btn", label: "Me gusta", name: "heart", active: post.liked_by_me, count: post.like_count })}
         ${actionButtonHTML({ cls: "comment-btn", label: "Respuestas", name: "chat-circle", active: false, count: post.comment_count })}
         ${repostButton}
+        ${downloadButton}
       </div>
     </article>
   `;
@@ -219,6 +227,8 @@ function onCardClick(e) {
         anonymous: card.dataset.anonymous === "true",
       }),
     );
+  } else if (hit(".download-btn")) {
+    downloadPostCard(card);
   } else if (hit(".post-menu-btn")) {
     haptic();
     openPostMenu(card, postId);
@@ -229,9 +239,7 @@ function onCardClick(e) {
     haptic();
     openHashtag(el.dataset.tag);
   } else if ((el = hit(".post-image"))) {
-    // Only verified accounts (blue tier or higher) can download, and only when the author allows it.
-    const download = card.dataset.downloadable === "true" && (cacheGet("profile")?.profile?.verified_tier ?? 0) >= 1;
-    import("./image-viewer.js").then(({ openImageViewer }) => openImageViewer(el.currentSrc || el.src, { download }));
+    import("./image-viewer.js").then(({ openImageViewer }) => openImageViewer(el.currentSrc || el.src));
   }
 }
 
