@@ -1,4 +1,5 @@
-import { signUp, signIn } from "./auth.js";
+import { signUp, signIn, signUpWithPhone, signInWithPhone } from "./auth.js";
+import { normalizePhone, PHONE_HINT } from "./contact.js";
 import { createProfile } from "./api.js";
 import { showToast, haptic, usernameError, displayNameError, showFieldError } from "./utils.js";
 import { passwordFieldHTML, setupPasswordToggle } from "./password-field.js";
@@ -6,6 +7,11 @@ import { oauthButtonsHTML, setupOAuthButtons } from "./oauth.js";
 import { renderForgotScreen } from "./password-reset.js";
 
 let mode = "login";
+
+// Anything without an @ is taken as a phone number.
+function isPhoneIdentifier(value) {
+  return !value.includes("@");
+}
 
 function authScreenHTML() {
   const isLogin = mode === "login";
@@ -16,15 +22,16 @@ function authScreenHTML() {
       <p class="auth-subtitle">${isLogin ? "Inicia sesión" : "Crea tu cuenta"}</p>
 
       <form id="auth-form" class="auth-form">
-        <input type="email" id="auth-email" placeholder="Email" required autocomplete="email" autocapitalize="none" spellcheck="false" />
+        <input type="text" id="auth-identifier" placeholder="Email o teléfono (+34 600 000 000)" required autocomplete="username" autocapitalize="none" spellcheck="false" />
         ${passwordFieldHTML({ id: "auth-password", placeholder: "Contraseña", autocomplete: isLogin ? "current-password" : "new-password", withToggle: true })}
         ${
           isLogin
             ? `<button type="button" class="text-btn forgot-link" id="auth-forgot">¿Olvidaste tu contraseña?</button>`
             : `
           ${passwordFieldHTML({ id: "auth-password-confirm", placeholder: "Repite la contraseña", autocomplete: "new-password", checkLength: false })}
-          <input type="text" id="auth-username" placeholder="Username (sin @)" required maxlength="20" autocapitalize="none" autocomplete="username" spellcheck="false" />
+          <input type="text" id="auth-username" placeholder="Username (sin @)" required maxlength="20" autocapitalize="none" autocomplete="nickname" spellcheck="false" />
           <input type="text" id="auth-display-name" placeholder="Nombre a mostrar" required maxlength="50" autocomplete="name" />
+          <p class="auth-hint auth-phone-note" id="auth-phone-note" hidden>Tu número se mostrará en tu perfil a tus amigos para que puedan escribirte. Para recuperar la contraseña tendrás que añadir un correo en tu perfil.</p>
         `
         }
         <button type="submit" class="primary-btn" id="auth-submit">
@@ -44,15 +51,23 @@ function authScreenHTML() {
 async function handleSubmit(e, onAuthenticated) {
   e.preventDefault();
 
-  const email = document.getElementById("auth-email").value.trim();
+  const identifierInput = document.getElementById("auth-identifier");
+  const isPhone = isPhoneIdentifier(identifierInput.value);
   const password = document.getElementById("auth-password").value;
   const submitBtn = document.getElementById("auth-submit");
 
+  const identifier = isPhone ? normalizePhone(identifierInput.value) : identifierInput.value.trim().toLowerCase();
+  if (isPhone && !identifier) {
+    showFieldError(identifierInput, PHONE_HINT);
+    return;
+  }
+
   submitBtn.disabled = true;
+  let askForEmail = false;
 
   try {
     if (mode === "login") {
-      await signIn(email, password);
+      await (isPhone ? signInWithPhone(identifier, password) : signIn(identifier, password));
     } else {
       const confirmInput = document.getElementById("auth-password-confirm");
       if (password !== confirmInput.value) {
@@ -77,18 +92,30 @@ async function handleSubmit(e, onAuthenticated) {
         return;
       }
 
-      const result = await signUp(email, password);
+      if (isPhone) {
+        await signUpWithPhone(identifier, password);
+        askForEmail = true;
+      } else {
+        const result = await signUp(identifier, password);
 
-      if (result.needsConfirmation) {
-        showToast("Revisa tu email para confirmar la cuenta");
-        submitBtn.disabled = false;
-        return;
+        if (result.needsConfirmation) {
+          showToast("Revisa tu email para confirmar la cuenta");
+          submitBtn.disabled = false;
+          return;
+        }
       }
 
       await createProfile({ username, display_name: displayName });
     }
 
     onAuthenticated();
+
+    if (askForEmail) {
+      showToast("Añade un correo en tu perfil para poder recuperar tu contraseña", "success", 8000, {
+        label: "Añadir",
+        onClick: () => document.querySelector('.nav-item[data-screen="profile"]')?.click(),
+      });
+    }
   } catch (err) {
     showToast(err.message, "error");
     submitBtn.disabled = false;
@@ -103,6 +130,13 @@ export function renderAuthScreen(appEl, onAuthenticated) {
 
   setupPasswordToggle(form);
   setupOAuthButtons(appEl);
+
+  // The phone notice only shows while the field holds something that is not an email.
+  const identifierInput = document.getElementById("auth-identifier");
+  const phoneNote = document.getElementById("auth-phone-note");
+  identifierInput.addEventListener("input", () => {
+    if (phoneNote) phoneNote.hidden = !identifierInput.value.trim() || !isPhoneIdentifier(identifierInput.value);
+  });
 
   document.getElementById("auth-forgot")?.addEventListener("click", () => {
     haptic();

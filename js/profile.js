@@ -1,4 +1,4 @@
-import { getProfile, updateProfile, getOwnPosts, uploadImage } from "./api.js";
+import { getProfile, updateProfile, getOwnPosts, uploadImage, setAccountEmail } from "./api.js";
 import { showToast, showForm, showConfirm, haptic, profileFieldsError, emptyStateHTML, loadModule } from "./utils.js";
 import { renderPosts } from "./post-card.js";
 import { signOut, requestEmailChange } from "./auth.js";
@@ -31,6 +31,8 @@ function handleEditProfile(profile) {
     profile.birthday_day && profile.birthday_month
       ? `${profile.birthday_day}/${profile.birthday_month}`
       : "";
+  // Phone accounts start with no real email, which the password recovery needs.
+  const needsRecoveryEmail = !profile.email;
 
   showForm({
     title: "Editar perfil",
@@ -64,7 +66,7 @@ function handleEditProfile(profile) {
       {
         name: "email",
         label: "Correo",
-        placeholder: "tu@correo.com",
+        placeholder: needsRecoveryEmail ? "Añade un correo para recuperar tu contraseña" : "tu@correo.com",
         value: profile.email ?? "",
         type: "email",
         autocomplete: "email",
@@ -125,9 +127,14 @@ function handleEditProfile(profile) {
 
       try {
         await updateProfile(updates);
-        if (emailChanged) {
+        if (emailChanged && needsRecoveryEmail) {
+          await setAccountEmail(newEmail);
+          showToast("Correo añadido. Ya puedes recuperar tu contraseña", "success", 5000);
+        } else if (emailChanged) {
           await requestEmailChange(newEmail);
           showToast("Te enviamos un enlace para confirmar el nuevo correo", "success", 5000);
+        } else if (updates.phone === "" && profile.phone) {
+          showToast("Perfil actualizado. Ya no podrás entrar con ese teléfono", "success", 5000);
         } else {
           showToast("Perfil actualizado");
         }

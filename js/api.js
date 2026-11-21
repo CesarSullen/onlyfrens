@@ -269,6 +269,11 @@ function createProfile(body) {
   return apiFetch("/profile", { method: "POST", body: JSON.stringify(body) });
 }
 
+// Phone accounts add a real email here: the usual confirmation link can't reach their internal one.
+function setAccountEmail(email) {
+  return apiFetch("/auth/email", { method: "PUT", body: JSON.stringify({ email }) });
+}
+
 function getProfile() {
   return apiFetch("/profile", { method: "GET" });
 }
@@ -403,6 +408,7 @@ export {
   removeFriend,
   getProfile,
   createProfile,
+  setAccountEmail,
   getOwnPosts,
   updateProfile,
   likePost,

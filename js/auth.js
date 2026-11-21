@@ -1,4 +1,4 @@
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
+import { API_BASE_URL, SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 import { setSession, clearToken, getToken } from "./api.js";
 import { clearCache } from "./cache.js";
 
@@ -68,6 +68,47 @@ export async function signUp(email, password) {
 
 export async function signIn(email, password) {
   const data = await supabaseAuthFetch("/token?grant_type=password", { email, password });
+  startSession(data);
+  return { userId: data.user.id };
+}
+
+// Phone accounts are stored under an email built from the number; the backend uses the same rule.
+function phoneToEmail(phone) {
+  return `${phone.replace(/\D/g, "")}@phone.onlyfrens.invalid`;
+}
+
+// Called without a session, so it skips apiFetch, which would treat a 401 as an expired session.
+async function backendAuthFetch(path, body) {
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new Error("No hay conexión con el servidor");
+  }
+
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(data?.error ?? GENERIC_AUTH_ERROR);
+  return data;
+}
+
+export async function signUpWithPhone(phone, password) {
+  await backendAuthFetch("/auth/phone-signup", { phone, password });
+  return signIn(phoneToEmail(phone), password);
+}
+
+export async function signInWithPhone(phone, password) {
+  try {
+    return await signIn(phoneToEmail(phone), password);
+  } catch (err) {
+    if (err.message !== AUTH_ERRORS.invalid_credentials) throw err;
+  }
+
+  // The account may have swapped the internal email for a real one.
+  const data = await backendAuthFetch("/auth/phone-login", { phone, password });
   startSession(data);
   return { userId: data.user.id };
 }

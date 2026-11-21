@@ -1562,6 +1562,15 @@ button:focus-visible {
   text-align: center;
 }
 
+.auth-phone-note {
+  font-size: var(--fs-sm);
+  text-align: left;
+}
+
+.auth-phone-note[hidden] {
+  display: none;
+}
+
 #forgot-body {
   width: 100%;
   max-width: 340px;
