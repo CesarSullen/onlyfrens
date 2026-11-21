@@ -36,8 +36,6 @@ export function postCardHTML(post) {
 
   // Anonymous posts: replies are open (and anonymous), but no reposts and no list of who liked them.
   const anonymous = content.anonymous === true;
-  // Regular posts seen from a hashtag by someone who is not a friend of the author: counters only.
-  const readOnly = content.read_only === true;
 
   const anonymousPill = anonymous && !post.is_repost
     ? `<div class="pill pill-anonymous">${icon("eye-slash", "regular")}Anónimo</div>`
@@ -107,8 +105,8 @@ export function postCardHTML(post) {
       ${textHTML}
       ${imagesHTML}
       <div class="post-actions">
-        ${actionButtonHTML({ cls: "like-btn", label: "Me gusta", name: "heart", active: post.liked_by_me, count: post.like_count, extra: readOnly ? "disabled" : "" })}
-        ${actionButtonHTML({ cls: "comment-btn", label: "Respuestas", name: "chat-circle", active: false, count: post.comment_count, extra: readOnly ? "disabled" : "" })}
+        ${actionButtonHTML({ cls: "like-btn", label: "Me gusta", name: "heart", active: post.liked_by_me, count: post.like_count })}
+        ${actionButtonHTML({ cls: "comment-btn", label: "Respuestas", name: "chat-circle", active: false, count: post.comment_count })}
         ${repostButton}
         ${downloadButton}
       </div>
