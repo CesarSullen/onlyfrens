@@ -883,6 +883,10 @@ button:focus-visible {
   color: var(--primary);
 }
 
+.action-btn:disabled {
+  cursor: default;
+}
+
 .action-icon {
   position: relative;
   width: 26px;

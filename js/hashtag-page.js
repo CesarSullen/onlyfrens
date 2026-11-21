@@ -15,7 +15,7 @@ function postsHTML(posts) {
       <div class="empty-state">
         <div class="empty-state-icon">${icon("hash", "regular")}</div>
         <p class="empty-state-title">Aún no hay nada por aquí</p>
-        <p class="empty-state-text">Las publicaciones anónimas de este hashtag aparecerán aquí durante 24 horas.</p>
+        <p class="empty-state-text">Las publicaciones con este hashtag aparecerán aquí durante 24 horas.</p>
       </div>`;
   }
   return `<div class="feed-list">${posts.map(postCardHTML).join("")}</div>`;
@@ -46,7 +46,7 @@ export async function renderHashtagPage(appEl, tag, { onPublished } = {}) {
         <span class="hashtag-mark">${icon("hash", "regular")}</span>
         <div class="hashtag-title">
           <h1>${escapeHTML(tag)}</h1>
-          <p>${data.posts.length === 1 ? "1 publicación anónima" : `${data.posts.length} publicaciones anónimas`}</p>
+          <p>${data.posts.length === 1 ? "1 publicación" : `${data.posts.length} publicaciones`}</p>
         </div>
         <button class="outline-btn follow-btn${following ? " following" : ""}" id="follow-btn">${followLabel(following)}</button>
       </header>
@@ -54,7 +54,7 @@ export async function renderHashtagPage(appEl, tag, { onPublished } = {}) {
         <span>Mostrar en mi feed</span>
         <input type="checkbox" id="feed-toggle"${data.in_feed ? " checked" : ""} />
       </label>
-      <p class="sheet-note">Aquí nadie sabe quién publica. Puedes dar me gusta y responder, también de forma anónima.</p>
+      <p class="sheet-note">Solo tus amigos ven quién publica; el resto aparece como anónimo. Puedes dar me gusta y responder en las publicaciones anónimas.</p>
       <div id="hashtag-compose"></div>
       <div id="hashtag-posts">${postsHTML(data.posts)}</div>
     `;

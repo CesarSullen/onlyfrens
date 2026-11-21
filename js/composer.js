@@ -54,6 +54,10 @@ function composerHTML() {
           Siempre es anónimo: sin tu nombre ni tu foto. Escribe de 1 a 5 #hashtags.
         </p>
 
+        <p class="composer-note" id="composer-tag-note" hidden>
+          Con #hashtags, quien no es tu amigo verá tu texto sin tu nombre ni tu foto.
+        </p>
+
         <div class="composer-footer">
           <div class="composer-actions">
             <button class="icon-btn" id="composer-add-image" type="button" aria-label="Agregar imagen">
@@ -166,6 +170,9 @@ function updatePublishState() {
     ? extractHashtags(text).length > 0
     : text.length > 0 || selectedFiles.length > 0;
   publishBtn.disabled = !hasContent || pending.size > 0;
+
+  // Regular posts with hashtags also show up in those hashtags, except when meant only for chosen friends.
+  document.getElementById("composer-tag-note").hidden = anonymous || audience?.mode === "only" || extractHashtags(text).length === 0;
 }
 
 function closeComposer() {
