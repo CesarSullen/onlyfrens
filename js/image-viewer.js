@@ -10,7 +10,7 @@ async function downloadImage(src) {
     const blob = await response.blob();
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `onlyfrens-${Date.now()}.${blob.type.split("/")[1] || "webp"}`;
+    link.download = `onlyfrens-${Date.now()}.${blob.type === "image/webp" ? "webp" : blob.type === "image/png" ? "png" : "jpg"}`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);
     showToast("Foto descargada");

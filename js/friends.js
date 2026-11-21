@@ -1,6 +1,5 @@
 import {
   getFriends,
-  getProfile,
   getSuggestions,
   addFriend,
   acceptFriendRequest,
@@ -212,21 +211,14 @@ export async function renderFriends(appEl) {
   // Only the list repaints after a change, so the screen does not flash a loader.
   const refreshList = () => getFriends().then(showList).catch(() => {});
 
-  // Only verified accounts get suggestions: the profile tells which one this is.
-  let suggestionsStarted = false;
-  loadWithCache("profile", getProfile, ({ profile }) => {
-    if (!profile.verified || suggestionsStarted || !suggestionsEl.isConnected) return;
-    suggestionsStarted = true;
-
-    loadWithCache(
-      "suggestions",
-      getSuggestions,
-      ({ suggestions }) => {
-        if (suggestionsEl.isConnected) showSuggestions(suggestionsEl, suggestions);
-      },
-      10 * 60_000,
-    ).catch(() => {});
-  }).catch(() => {});
+  loadWithCache(
+    "suggestions",
+    getSuggestions,
+    ({ suggestions }) => {
+      if (suggestionsEl.isConnected) showSuggestions(suggestionsEl, suggestions);
+    },
+    10 * 60_000,
+  ).catch(() => {});
 
   screenEl.addEventListener("click", (event) => {
     const target = event.target.closest(

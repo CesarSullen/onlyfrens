@@ -355,6 +355,10 @@ function uploadImage(file, { anonymous = false } = {}) {
   });
 }
 
+function deleteUploadedImage(url) {
+  return apiFetch("/upload", { method: "DELETE", body: JSON.stringify({ url }) });
+}
+
 function getNotifications() {
   return apiFetch("/notifications", { method: "GET" });
 }
@@ -410,6 +414,7 @@ export {
   undoRepost,
   getRepostCount,
   uploadImage,
+  deleteUploadedImage,
   getNotifications,
   markNotificationRead,
 };

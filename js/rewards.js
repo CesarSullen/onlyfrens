@@ -11,7 +11,6 @@ const REWARD_META = {
   long_posts: { title: "Publicaciones largas", text: "Escribe hasta 500 caracteres en vez de 200.", icon: "text-lines" },
   very_long_posts: { title: "Publicaciones muy largas", text: "Escribe hasta 1000 caracteres.", icon: "text-lines" },
   photo_downloads: { title: "Descargar fotos", text: "Guarda las fotos de las publicaciones que lo permitan.", icon: "download-simple" },
-  suggestions: { title: "Sugerencias de amigos", text: "Tres personas al día que quizás conoces.", icon: "sparkle" },
   anonymous_hashtags: { title: "Publicar en hashtags", text: "Comparte de forma anónima en los hashtags.", icon: "hash" },
   hide_friends: { title: "Ocultar publicaciones", text: "Elige amigos que no verán una publicación.", icon: "eye-slash" },
   verified_gold: { title: "Insignia dorada de verificado", text: "Tu insignia cambia a dorado.", icon: "verified", weight: "fill" },
@@ -26,17 +25,17 @@ const TIERS = [
 ];
 
 // Small icons shown on the profile; the verified badge already sits next to the name.
-const STRIP_IDS = ["long_posts", "suggestions", "anonymous_hashtags", "photo_downloads", "hide_friends", "only_friends"];
+const STRIP_IDS = ["long_posts", "anonymous_hashtags", "photo_downloads", "hide_friends", "only_friends"];
 
 // Badges strip on a profile. On your own profile it opens the rewards page.
 export function rewardStripHTML(rewardIds = [], { own = false } = {}) {
   const chips = STRIP_IDS.filter((id) => rewardIds.includes(id)).map((id, i) => {
     const meta = REWARD_META[id];
-    return `<span class="reward-chip tier-${rewardTier(id)}" style="--i: ${i}" title="${escapeHTML(meta.title)}">${icon(meta.icon, "regular")}</span>`;
+    return `<span class="reward-tile reward-chip tier-${rewardTier(id)}" style="--i: ${i}" title="${escapeHTML(meta.title)}">${icon(meta.icon, "regular")}</span>`;
   });
 
   if (own) {
-    const content = chips.length ? chips.join("") : `<span class="reward-chip empty">${icon("medal", "regular")}</span>`;
+    const content = chips.length ? chips.join("") : `<span class="reward-tile reward-chip locked">${icon("medal", "regular")}</span>`;
     return `
       <button class="reward-strip tappable" id="rewards-btn" aria-label="Ver recompensas">
         ${content}
@@ -74,7 +73,7 @@ function rewardRowHTML(reward, friendCount, index) {
 
   return `
     <li class="reward-row ${unlocked ? "unlocked" : "locked"}" style="--i: ${index}">
-      <span class="reward-icon">${icon(unlocked ? meta.icon : "lock", unlocked ? meta.weight ?? "regular" : "regular")}</span>
+      <span class="reward-tile reward-icon tier-${reward.tier}${unlocked ? "" : " locked"}${unlocked && meta.icon === "verified" ? " verified" : ""}">${icon(unlocked ? meta.icon : "lock", unlocked ? meta.weight ?? "regular" : "regular")}</span>
       <div class="reward-info">
         <p class="reward-title">${meta.title}</p>
         <p class="reward-text">${unlocked ? meta.text : `${meta.text} · ${reward.friends} amigos`}</p>

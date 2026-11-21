@@ -19,7 +19,7 @@ function loadImage(file) {
 
 function canvasToBlob(canvas, quality) {
   return new Promise((resolve) => {
-    canvas.toBlob((blob) => resolve(blob), "image/webp", quality);
+    canvas.toBlob((blob) => resolve(blob), "image/jpeg", quality);
   });
 }
 
@@ -32,6 +32,9 @@ export async function compressImage(file, maxWidth = MAX_WIDTH) {
   canvas.height = Math.round(img.height * scale);
 
   const ctx = canvas.getContext("2d");
+  // JPEG has no transparency: without a background, transparent areas turn black.
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
   URL.revokeObjectURL(img.src);
 
@@ -45,5 +48,5 @@ export async function compressImage(file, maxWidth = MAX_WIDTH) {
     attempts += 1;
   }
 
-  return new File([blob], "post-image.webp", { type: "image/webp" });
+  return new File([blob], "post-image.jpg", { type: "image/jpeg" });
 }

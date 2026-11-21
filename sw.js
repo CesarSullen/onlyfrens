@@ -1,4 +1,4 @@
-const CACHE_NAME = "onlyfrens-v0.0.23";
+const CACHE_NAME = "onlyfrens-v0.0.24";
 const IMAGE_CACHE = "onlyfrens-images";
 const SHARE_CACHE = "onlyfrens-share";
 const MAX_IMAGES = 150;
@@ -46,6 +46,10 @@ const ASSETS = [
   "./js/pull-refresh.js",
   "./js/share.js",
   "./js/utils.js",
+  "./assets/rewards/tile-blue.svg",
+  "./assets/rewards/tile-gold.svg",
+  "./assets/rewards/tile-purple.svg",
+  "./assets/rewards/tile-locked.svg",
   "./assets/shortcuts/friends.png",
   "./assets/shortcuts/notifications.png",
   "./assets/shortcuts/profile.png",

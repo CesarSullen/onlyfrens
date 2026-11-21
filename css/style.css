@@ -2361,40 +2361,79 @@ html:has(.sheet-overlay, #modal-ui.active) {
   font-weight: 500;
 }
 
+/* REWARD TILES */
+.reward-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: url("../assets/rewards/tile-blue.svg") center / contain no-repeat;
+  color: #1b1b2f;
+}
+
+.reward-tile.tier-2 {
+  background-image: url("../assets/rewards/tile-gold.svg");
+}
+
+.reward-tile.tier-3 {
+  background-image: url("../assets/rewards/tile-purple.svg");
+}
+
+.reward-tile.locked {
+  background-image: url("../assets/rewards/tile-locked.svg");
+  color: #9aa0ab;
+}
+
+.reward-tile .icon * {
+  stroke: currentColor;
+  stroke-linejoin: round;
+}
+
+.reward-tile .icon path:not([stroke]) {
+  stroke-width: 10;
+}
+
+.reward-tile .icon [stroke] {
+  stroke-width: 22;
+}
+
+.reward-tile.verified .icon path:first-child {
+  fill: #fff;
+  stroke: #1b1b2f;
+  stroke-width: 12;
+}
+
+.reward-tile.verified .icon path + path {
+  fill: none;
+  stroke: #1b1b2f !important;
+  stroke-width: 24;
+}
+
 .reward-strip.static {
   padding-right: 4px;
 }
 
 .reward-chip {
-  --tier-color: var(--primary);
-  width: 26px;
-  height: 26px;
-  border-radius: var(--radius-full);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: color-mix(in srgb, var(--tier-color) 16%, transparent);
-  color: var(--tier-color);
+  width: 30px;
+  height: 30px;
   animation: chip-pop var(--dur-long) var(--ease-spring) both;
   animation-delay: calc(var(--i, 0) * 50ms + 120ms);
 }
 
 .reward-chip .icon {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
 }
 
-.reward-chip.tier-2 {
-  --tier-color: var(--tier-gold);
+.reward-chip + .reward-chip {
+  margin-left: -9px;
 }
 
-.reward-chip.tier-3 {
-  --tier-color: var(--tier-purple);
+.reward-chip:nth-child(odd) {
+  rotate: -7deg;
 }
 
-.reward-chip.empty {
-  background: var(--line);
-  color: var(--muted);
+.reward-chip:nth-child(even) {
+  rotate: 7deg;
 }
 
 .reward-strip-label {
@@ -2563,25 +2602,14 @@ html:has(.sheet-overlay, #modal-ui.active) {
 }
 
 .reward-icon {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   flex-shrink: 0;
-  border-radius: var(--radius-md);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: color-mix(in srgb, var(--tier-color) 16%, transparent);
-  color: var(--tier-color);
 }
 
 .reward-icon .icon {
-  width: 22px;
-  height: 22px;
-}
-
-.reward-row.locked .reward-icon {
-  background: var(--line);
-  color: var(--muted);
+  width: 24px;
+  height: 24px;
 }
 
 .reward-row.locked .reward-info {

@@ -1,4 +1,4 @@
-import { createPost, uploadImage, getProfile, getFriends } from "./api.js";
+import { createPost, uploadImage, deleteUploadedImage, getProfile, getFriends } from "./api.js";
 import { loadWithCache } from "./cache.js";
 import { showToast, haptic, closeSheet, enableSheetDrag } from "./utils.js";
 import { compressImage } from "./compress.js";
@@ -15,6 +15,8 @@ const MAX_ANONYMOUS_TAGS = 5;
 let selectedFiles = [];
 // Files that are still being compressed; Publicar waits until it is empty.
 let pending = new Set();
+// Photos start uploading once compressed; publishing reuses the uploaded url.
+let uploads = new Map();
 let onPublishedCallback = null;
 
 // Who may see the post ({ mode: "hide" | "only", ids }) and whether it is an anonymous hashtag post.
@@ -103,13 +105,27 @@ function renderImagePreviews(container) {
 
   container.querySelectorAll(".remove-image-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
-      selectedFiles.splice(Number(btn.dataset.index), 1);
+      const [removed] = selectedFiles.splice(Number(btn.dataset.index), 1);
+      discardUpload(removed);
       renderImagePreviews(container);
       updatePublishState();
     });
   });
 
   document.getElementById("composer-downloadable")?.toggleAttribute("hidden", selectedFiles.length === 0);
+}
+
+function startUpload(file) {
+  const upload = uploadImage(file).then(({ url }) => url);
+  uploads.set(file, upload);
+  upload.catch(() => uploads.delete(file));
+}
+
+// A photo that was uploaded but will not be published is deleted from Storage.
+function discardUpload(file) {
+  const upload = uploads.get(file);
+  uploads.delete(file);
+  upload?.then((url) => deleteUploadedImage(url)).catch(() => {});
 }
 
 // The preview shows the original right away and swaps in the compressed file when it is ready.
@@ -120,7 +136,9 @@ function compressInBackground(file, container) {
   compressImage(file)
     .then((compressed) => {
       const index = selectedFiles.indexOf(file);
-      if (index !== -1) selectedFiles[index] = compressed;
+      if (index === -1) return;
+      selectedFiles[index] = compressed;
+      startUpload(compressed);
     })
     .catch(() => {
       const index = selectedFiles.indexOf(file);
@@ -151,8 +169,10 @@ function closeComposer() {
   closeSheet(document.getElementById("composer-overlay"));
   document.removeEventListener("keydown", onComposerKey);
   document.getElementById("composer-fab")?.classList.remove("open");
+  selectedFiles.forEach(discardUpload);
   selectedFiles = [];
   pending = new Set();
+  uploads = new Map();
   releasePreviews();
   audience = null;
   anonymous = false;
@@ -225,12 +245,8 @@ async function handlePublish() {
   publishBtn.textContent = "Publicando...";
 
   try {
-    // Anonymous posts upload to a folder that doesn't carry the user id.
     const uploadedUrls = await Promise.all(
-      selectedFiles.map(async (file) => {
-        const { url } = await uploadImage(file, { anonymous });
-        return url;
-      }),
+      selectedFiles.map((file) => uploads.get(file) ?? uploadImage(file).then(({ url }) => url)),
     );
 
     const text = textEl.value.trim();
@@ -250,6 +266,8 @@ async function handlePublish() {
 
     haptic("success");
     showToast("Publicado");
+    // The photos belong to the post now, so closing must not delete them.
+    uploads.clear();
     closeComposer();
     if (onPublishedCallback) onPublishedCallback();
   } catch (err) {
@@ -267,6 +285,7 @@ export function openComposer(onPublished, { text = "", files = [], anonymous: st
   isVerified = false;
   selectedFiles = files.slice(0, MAX_IMAGES);
   pending = new Set();
+  uploads = new Map();
 
   document.body.insertAdjacentHTML("beforeend", composerHTML());
   document.getElementById("composer-fab")?.classList.add("open");
