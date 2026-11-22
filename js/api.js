@@ -376,8 +376,17 @@ function markNotificationRead(notificationId) {
   );
 }
 
+// Visit counter shared with the other projects. Failures never reach the person.
+function trackProjectActivity(projectName) {
+  apiFetch("/track", {
+    method: "POST",
+    body: JSON.stringify({ projectName }),
+  }).catch(() => {});
+}
+
 export {
   getToken,
+  trackProjectActivity,
   getUserId,
   getInteractions,
   getBadges,

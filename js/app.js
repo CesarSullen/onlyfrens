@@ -1,6 +1,6 @@
 import { showToast, showConfirm, haptic, loadModule } from "./utils.js";
 import { icon } from "./icons.js";
-import { getToken, getProfile, addFriend, getFriends, getNotifications } from "./api.js";
+import { getToken, getProfile, addFriend, getFriends, getNotifications, trackProjectActivity } from "./api.js";
 import { readAuthRedirect, startSession, getAuthUser } from "./auth.js";
 import { renderHome } from "./home.js";
 import { renderFriends } from "./friends.js";
@@ -380,6 +380,7 @@ function initApp() {
 }
 
 initApp();
+trackProjectActivity("OnlyFrens");
 
 if ("serviceWorker" in navigator) {
   const hadController = Boolean(navigator.serviceWorker.controller);
