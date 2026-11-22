@@ -72,9 +72,15 @@ export async function signIn(email, password) {
   return { userId: data.user.id };
 }
 
+const PHONE_EMAIL_DOMAIN = "phone.onlyfrens.invalid";
+
 // Phone accounts are stored under an email built from the number; the backend uses the same rule.
 function phoneToEmail(phone) {
-  return `${phone.replace(/\D/g, "")}@phone.onlyfrens.invalid`;
+  return `${phone.replace(/\D/g, "")}@${PHONE_EMAIL_DOMAIN}`;
+}
+
+export function isPhoneEmail(email) {
+  return Boolean(email) && email.endsWith(`@${PHONE_EMAIL_DOMAIN}`);
 }
 
 // Called without a session, so it skips apiFetch, which would treat a 401 as an expired session.

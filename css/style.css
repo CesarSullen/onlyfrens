@@ -1567,6 +1567,10 @@ button:focus-visible {
   text-align: left;
 }
 
+.complete-avatar {
+  align-self: center;
+}
+
 .auth-phone-note[hidden] {
   display: none;
 }

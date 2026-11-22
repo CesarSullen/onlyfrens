@@ -1,7 +1,7 @@
 import { showToast, showConfirm, haptic, loadModule } from "./utils.js";
 import { icon } from "./icons.js";
 import { getToken, getProfile, addFriend, getFriends, getNotifications, trackProjectActivity } from "./api.js";
-import { readAuthRedirect, startSession, getAuthUser } from "./auth.js";
+import { readAuthRedirect, startSession, getAuthUser, isPhoneEmail } from "./auth.js";
 import { renderHome } from "./home.js";
 import { renderFriends } from "./friends.js";
 import { renderProfile } from "./profile.js";
@@ -12,7 +12,7 @@ import { renderRewards } from "./rewards.js";
 import { startBadges, setNotificationsViewOpen } from "./badges.js";
 import { markAllNotificationsRead } from "./api.js";
 import { syncPush } from "./push.js";
-import { cacheDelete, cacheMarkStale, prefetch } from "./cache.js";
+import { cacheDelete, cacheMarkStale, prefetch, loadWithCache } from "./cache.js";
 import { takeSharedContent } from "./share.js";
 import { initPullToRefresh } from "./pull-refresh.js";
 
@@ -323,12 +323,21 @@ function showAuth() {
   hideNavigation();
   loadModule(
     () => import("./auth-screen.js"),
-    ({ renderAuthScreen }) => renderAuthScreen(appEl, showApp),
+    ({ renderAuthScreen }) => renderAuthScreen(appEl, enterApp),
   );
 }
 
 window.addEventListener("onlyfrens:session-expired", showAuth);
 
+// Phone accounts have no real email yet, and password recovery needs one.
+function askForRecoveryEmail() {
+  showToast("Añade un correo en tu perfil para poder recuperar tu contraseña", "success", 8000, {
+    label: "Añadir",
+    onClick: () => document.querySelector('.nav-item[data-screen="profile"]')?.click(),
+  });
+}
+
+// Every new account, whatever its sign up method, finishes its profile before entering.
 async function enterApp() {
   try {
     await getProfile();
@@ -336,16 +345,31 @@ async function enterApp() {
     if (err.status === 404) {
       const user = await getAuthUser(getToken()).catch(() => null);
       const metadata = user?.user_metadata ?? {};
+      const phoneAccount = isPhoneEmail(user?.email);
       hideNavigation();
       loadModule(
         () => import("./complete-profile.js"),
         ({ renderCompleteProfileScreen }) =>
-          renderCompleteProfileScreen(appEl, { displayName: metadata.full_name ?? metadata.name ?? "" }, showApp),
+          renderCompleteProfileScreen(
+            appEl,
+            { displayName: metadata.full_name ?? metadata.name ?? "", phoneAccount },
+            () => {
+              showApp();
+              if (phoneAccount) askForRecoveryEmail();
+            },
+          ),
       );
       return;
     }
   }
   showApp();
+}
+
+// Someone who left during the last step of sign up has an account but no profile yet.
+function resumeProfileSetup() {
+  loadWithCache("profile", getProfile, () => {}).catch((err) => {
+    if (err.status === 404) enterApp();
+  });
 }
 
 function initApp() {
@@ -374,6 +398,7 @@ function initApp() {
 
   if (getToken()) {
     showApp();
+    resumeProfileSetup();
   } else {
     showAuth();
   }

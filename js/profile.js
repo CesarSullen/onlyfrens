@@ -1,11 +1,11 @@
-import { getProfile, updateProfile, getOwnPosts, uploadImage, setAccountEmail } from "./api.js";
+import { getProfile, updateProfile, getOwnPosts, setAccountEmail } from "./api.js";
 import { showToast, showForm, showConfirm, haptic, profileFieldsError, emptyStateHTML, loadModule } from "./utils.js";
 import { renderPosts } from "./post-card.js";
 import { signOut, requestEmailChange } from "./auth.js";
 import { isEmail, normalizePhone, PHONE_HINT } from "./contact.js";
 import { disablePush } from "./push.js";
 import { icon } from "./icons.js";
-import { compressImage } from "./compress.js";
+import { uploadAvatar } from "./avatar.js";
 import { loaderHTML, removeLoader } from "./loader.js";
 import { loadWithCache, livePosts } from "./cache.js";
 import { bindRewardStrip } from "./rewards.js";
@@ -148,11 +148,7 @@ function handleEditProfile(profile) {
 
 async function handleAvatarChange(file) {
   try {
-    const compressed = await compressImage(file, 256);
-    const { url } = await uploadImage(compressed);
-    await updateProfile({
-      avatar_url: `${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`,
-    });
+    await uploadAvatar(file);
     showToast("Foto actualizada");
     renderProfile(document.getElementById("app"));
   } catch (err) {

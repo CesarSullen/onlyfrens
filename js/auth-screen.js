@@ -1,7 +1,6 @@
 import { signUp, signIn, signUpWithPhone, signInWithPhone } from "./auth.js";
 import { normalizePhone, PHONE_HINT } from "./contact.js";
-import { createProfile } from "./api.js";
-import { showToast, haptic, usernameError, displayNameError, showFieldError } from "./utils.js";
+import { showToast, haptic, showFieldError } from "./utils.js";
 import { passwordFieldHTML, setupPasswordToggle } from "./password-field.js";
 import { oauthButtonsHTML, setupOAuthButtons } from "./oauth.js";
 import { renderForgotScreen } from "./password-reset.js";
@@ -29,8 +28,6 @@ function authScreenHTML() {
             ? `<button type="button" class="text-btn forgot-link" id="auth-forgot">¿Olvidaste tu contraseña?</button>`
             : `
           ${passwordFieldHTML({ id: "auth-password-confirm", placeholder: "Repite la contraseña", autocomplete: "new-password", checkLength: false })}
-          <input type="text" id="auth-username" placeholder="Username (sin @)" required maxlength="20" autocapitalize="none" autocomplete="nickname" spellcheck="false" />
-          <input type="text" id="auth-display-name" placeholder="Nombre a mostrar" required maxlength="50" autocomplete="name" />
           <p class="auth-hint auth-phone-note" id="auth-phone-note" hidden>Tu número se mostrará en tu perfil a tus amigos para que puedan escribirte. Para recuperar la contraseña tendrás que añadir un correo en tu perfil.</p>
         `
         }
@@ -63,7 +60,6 @@ async function handleSubmit(e, onAuthenticated) {
   }
 
   submitBtn.disabled = true;
-  let askForEmail = false;
 
   try {
     if (mode === "login") {
@@ -76,25 +72,8 @@ async function handleSubmit(e, onAuthenticated) {
         return;
       }
 
-      const usernameInput = document.getElementById("auth-username");
-      const displayNameInput = document.getElementById("auth-display-name");
-      const username = usernameInput.value.trim().replace(/^@/, "").toLowerCase();
-      const displayName = displayNameInput.value.trim();
-
-      const fieldError = usernameError(username)
-        ? [usernameInput, usernameError(username)]
-        : displayNameError(displayName)
-          ? [displayNameInput, displayNameError(displayName)]
-          : null;
-      if (fieldError) {
-        showFieldError(...fieldError);
-        submitBtn.disabled = false;
-        return;
-      }
-
       if (isPhone) {
         await signUpWithPhone(identifier, password);
-        askForEmail = true;
       } else {
         const result = await signUp(identifier, password);
 
@@ -104,18 +83,9 @@ async function handleSubmit(e, onAuthenticated) {
           return;
         }
       }
-
-      await createProfile({ username, display_name: displayName });
     }
 
     onAuthenticated();
-
-    if (askForEmail) {
-      showToast("Añade un correo en tu perfil para poder recuperar tu contraseña", "success", 8000, {
-        label: "Añadir",
-        onClick: () => document.querySelector('.nav-item[data-screen="profile"]')?.click(),
-      });
-    }
   } catch (err) {
     showToast(err.message, "error");
     submitBtn.disabled = false;
