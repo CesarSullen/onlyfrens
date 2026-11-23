@@ -1,10 +1,11 @@
-import { getComments, createComment, likeComment, unlikeComment, getProfile } from "./api.js";
+import { getPost, getComments, createComment, likeComment, unlikeComment, getProfile } from "./api.js";
 import { loadWithCache } from "./cache.js";
-import { showToast, formatRelativeTime, haptic, openSheet, escapeHTML, emptyLabelHTML } from "./utils.js";
+import { showToast, formatRelativeTime, haptic, escapeHTML, emptyLabelHTML, emptyStateHTML, backBarHTML } from "./utils.js";
 import { icon } from "./icons.js";
 import { loaderHTML, removeLoader } from "./loader.js";
 import { verifiedBadgeHTML } from "./verified.js";
 import { avatarSrc } from "./avatar.js";
+import { postCardHTML, attachPostCardListeners, adjustCount } from "./post-card.js";
 
 function commentRowHTML(comment, { className = "", delay = 0 } = {}) {
   const likes = comment.like_count ?? 0;
@@ -29,20 +30,52 @@ function commentRowHTML(comment, { className = "", delay = 0 } = {}) {
   `;
 }
 
-export function openComments(postId, onCountChange, { anonymous = false } = {}) {
-  const { body, footer } = openSheet({
-    title: "Respuestas",
-    bodyHTML: `
-      <p class="sheet-note">${anonymous ? "Las respuestas en hashtags son anónimas." : "Solo ves las respuestas de tus amigos."}</p>
-      <div class="comments-list">${loaderHTML()}</div>`,
-    footerHTML: `
-      <input type="text" placeholder="Escribe una respuesta" maxlength="500" autocomplete="off" />
-      <button class="send-btn" aria-label="Enviar" disabled>${icon("paper-plane-right", "fill")}</button>`,
+function unavailableHTML(err) {
+  if (err.status === 404) {
+    return emptyStateHTML("chat-circle", "Esta publicación ya no está disponible", "Las publicaciones duran 24 horas.");
+  }
+  return emptyLabelHTML(escapeHTML(err.message), "error");
+}
+
+export async function renderPostPage(appEl, postId) {
+  appEl.innerHTML = `${backBarHTML()}<div class="post-page fade-in" data-post-page>${loaderHTML()}</div>`;
+  const pageEl = appEl.querySelector(".post-page");
+
+  appEl.querySelector(".back-btn").addEventListener("click", () => {
+    haptic();
+    history.back();
   });
 
-  const listEl = body.querySelector(".comments-list");
-  const inputEl = footer.querySelector("input");
-  const sendBtn = footer.querySelector(".send-btn");
+  // Both requests start together, so the replies are usually ready when the post shows up.
+  const commentsRequest = getComments(postId);
+  commentsRequest.catch(() => {});
+
+  let post;
+  try {
+    ({ post } = await getPost(postId));
+  } catch (err) {
+    if (pageEl.isConnected) pageEl.innerHTML = unavailableHTML(err);
+    return;
+  }
+  if (!pageEl.isConnected) return;
+
+  const anonymous = post.post_content.anonymous === true;
+
+  pageEl.innerHTML = `
+    ${postCardHTML(post)}
+    <div class="reply-box">
+      <input class="reply-input" type="text" placeholder="Escribe una respuesta" maxlength="500" autocomplete="off" />
+      <button class="send-btn" aria-label="Enviar" disabled>${icon("paper-plane-right", "fill")}</button>
+    </div>
+    <p class="sheet-note">${anonymous ? "Las respuestas en hashtags son anónimas." : "Solo ves las respuestas de tus amigos."}</p>
+    <div class="comments-list">${loaderHTML()}</div>
+  `;
+  attachPostCardListeners(pageEl);
+
+  const listEl = pageEl.querySelector(".comments-list");
+  const inputEl = pageEl.querySelector(".reply-input");
+  const sendBtn = pageEl.querySelector(".send-btn");
+  const commentBtn = pageEl.querySelector(".comment-btn");
   const shown = new Set();
   let loadedOnce = false;
   let me = null;
@@ -62,15 +95,19 @@ export function openComments(postId, onCountChange, { anonymous = false } = {}) 
     return { className: isNew ? " fresh" : "" };
   }
 
+  function showComments(comments, options) {
+    const firstLoad = !loadedOnce;
+    loadedOnce = true;
+    listEl.innerHTML = comments.length
+      ? comments.map((comment, i) => commentRowHTML(comment, animationFor(comment, i, { firstLoad, ...options }))).join("")
+      : emptyLabelHTML("Aún no hay respuestas visibles");
+  }
+
   // quiet: syncing after your own reply, so nothing animates again.
   async function loadComments({ quiet = false } = {}) {
     try {
-      const { comments } = await getComments(postId);
-      const firstLoad = !loadedOnce;
-      loadedOnce = true;
-      listEl.innerHTML = comments.length
-        ? comments.map((comment, i) => commentRowHTML(comment, animationFor(comment, i, { firstLoad, quiet }))).join("")
-        : emptyLabelHTML("Aún no hay respuestas visibles");
+      const { comments } = await (quiet ? getComments(postId) : commentsRequest);
+      if (listEl.isConnected) showComments(comments, { quiet });
     } catch (err) {
       removeLoader(listEl);
       showToast(err.message, "error");
@@ -81,10 +118,7 @@ export function openComments(postId, onCountChange, { anonymous = false } = {}) 
     listEl.querySelector(".empty-label, .loader")?.remove();
     listEl.insertAdjacentHTML(
       "beforeend",
-      commentRowHTML(
-        { profiles: me, text_content: text, created_at: new Date().toISOString() },
-        { className: " fresh" },
-      ),
+      commentRowHTML({ profiles: me, text_content: text, created_at: new Date().toISOString() }, { className: " fresh" }),
     );
     const row = listEl.lastElementChild;
     row.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -102,7 +136,7 @@ export function openComments(postId, onCountChange, { anonymous = false } = {}) 
 
     try {
       await createComment(postId, text);
-      onCountChange(1);
+      if (commentBtn) adjustCount(commentBtn, 1);
       await loadComments({ quiet: true });
     } catch (err) {
       row?.remove();

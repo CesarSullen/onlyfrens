@@ -5,6 +5,7 @@ import { loaderHTML, removeLoader } from "./loader.js";
 import { loadWithCache } from "./cache.js";
 import { canAskForPush, needsInstallForPush, enablePush } from "./push.js";
 import { patchKeyed } from "./patch-list.js";
+import { openPost } from "./navigation.js";
 
 const MESSAGE_BY_TYPE = {
   like: (name) => [`A ${name} le gustó`, "tu publicación."],
@@ -33,6 +34,12 @@ const ANONYMOUS_MESSAGE_BY_TYPE = {
   comment_like: ["A alguien le gustó", "tu respuesta."],
 };
 
+// These notifications open the post they are about.
+const POST_TYPES = new Set(["like", "comment", "comment_like", "repost"]);
+
+// These ones take you to the friends screen.
+const FRIEND_TYPES = new Set(["friend_request", "friend_accepted"]);
+
 function notificationRowHTML(notification) {
   const anonymous = !notification.actor && ANONYMOUS_MESSAGE_BY_TYPE[notification.type];
   const actorName = notification.actor?.display_name ?? "Alguien";
@@ -40,9 +47,10 @@ function notificationRowHTML(notification) {
     ? ANONYMOUS_MESSAGE_BY_TYPE[notification.type]
     : MESSAGE_BY_TYPE[notification.type]?.(actorName) ?? ["Nueva notificación.", ""];
   const [iconName, iconWeight] = ICON_BY_TYPE[notification.type] ?? ["bell", "fill"];
+  const postAttr = notification.post_id && POST_TYPES.has(notification.type) ? ` data-post-id="${escapeHTML(notification.post_id)}"` : "";
 
   return `
-    <div class="notification-row${notification.read ? "" : " unread"}" data-key="${notification.id}" data-notification-id="${notification.id}">
+    <div class="notification-row${notification.read ? "" : " unread"}" data-key="${notification.id}" data-notification-id="${notification.id}"${postAttr}${FRIEND_TYPES.has(notification.type) ? " data-friends" : ""}>
       <div class="notification-icon">${icon(iconName, iconWeight)}</div>
       <p class="notification-message">${escapeHTML(head)}<span class="notification-tail">${escapeHTML(tail)}</span></p>
       <div class="notification-meta">
@@ -53,6 +61,19 @@ function notificationRowHTML(notification) {
 }
 
 async function handleRowClick(row) {
+  // Leaving this screen marks everything as read, so the post only needs to be opened.
+  if (row.dataset.postId) {
+    haptic();
+    openPost(row.dataset.postId);
+    return;
+  }
+
+  if (row.hasAttribute("data-friends")) {
+    haptic();
+    document.querySelector('.nav-item[data-screen="friends"]')?.click();
+    return;
+  }
+
   if (!row.classList.contains("unread")) return;
   row.classList.remove("unread");
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = "onlyfrens-v0.0.30";
+const CACHE_NAME = "onlyfrens-v0.0.31";
 const IMAGE_CACHE = "onlyfrens-images";
 const SHARE_CACHE = "onlyfrens-share";
 const MAX_IMAGES = 150;
@@ -24,7 +24,7 @@ const ASSETS = [
   "./js/password-field.js",
   "./js/password-reset.js",
   "./js/complete-profile.js",
-  "./js/comments-sheet.js",
+  "./js/post-page.js",
   "./js/compress.js",
   "./js/composer.js",
   "./js/audience-picker.js",
@@ -170,6 +170,7 @@ self.addEventListener("push", (event) => {
         body: data.body,
         tag: data.tag,
         renotify: Boolean(data.tag),
+        data: { postId: data.post_id ?? null },
         icon: "./assets/opengraph/icon-192.png",
         badge: "./assets/opengraph/icon-192.png",
       });
@@ -182,15 +183,16 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+  const postId = event.notification.data?.postId;
 
   event.waitUntil(
     (async () => {
       const windows = await clients.matchAll({ type: "window", includeUncontrolled: true });
       if (windows.length > 0) {
         await windows[0].focus();
-        windows[0].postMessage({ type: "open-notifications" });
+        windows[0].postMessage(postId ? { type: "open-post", postId } : { type: "open-notifications" });
       } else {
-        await clients.openWindow(`${self.registration.scope}#notifications`);
+        await clients.openWindow(`${self.registration.scope}#${postId ? `post=${postId}` : "notifications"}`);
       }
     })(),
   );

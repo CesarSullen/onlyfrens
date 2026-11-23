@@ -7,7 +7,7 @@ import { renderFriends } from "./friends.js";
 import { renderProfile } from "./profile.js";
 import { renderNotifications } from "./notifications.js";
 import { renderUserProfile } from "./user-profile.js";
-import { OPEN_PROFILE_EVENT, OPEN_PAGE_EVENT } from "./navigation.js";
+import { OPEN_PROFILE_EVENT, OPEN_PAGE_EVENT, openPost } from "./navigation.js";
 import { renderRewards } from "./rewards.js";
 import { startBadges, setNotificationsViewOpen } from "./badges.js";
 import { markAllNotificationsRead } from "./api.js";
@@ -147,7 +147,7 @@ function showUserProfile(username) {
   renderUserProfile(appEl, username, { onSelf: () => goToScreen("profile") });
 }
 
-// Rewards and hashtag pages reuse the "viewing someone" behavior: back returns to the tab.
+// Rewards, hashtag and post pages reuse the "viewing someone" behavior: back returns to the tab.
 const SUB_PAGES = {
   rewards: { title: "Recompensas", render: () => renderRewards(appEl) },
   hashtag: {
@@ -156,6 +156,14 @@ const SUB_PAGES = {
       loadModule(
         () => import("./hashtag-page.js"),
         ({ renderHashtagPage }) => renderHashtagPage(appEl, tag),
+      ),
+  },
+  post: {
+    title: "Publicación",
+    render: ({ postId }) =>
+      loadModule(
+        () => import("./post-page.js"),
+        ({ renderPostPage }) => renderPostPage(appEl, postId),
       ),
   },
 };
@@ -216,13 +224,18 @@ async function openSharedPost() {
   if (shared) openComposerLazy(afterPublish, shared);
 }
 
-// Push notifications and the manifest shortcuts start the app on #<screen>, the share sheet on #share.
+const POST_HASH = /^post=([0-9a-f-]{36})$/;
+
+// Push notifications and the manifest shortcuts start the app on #<screen> or #post=<id>, the share sheet on #share.
 function openFromHash() {
   const target = location.hash.slice(1);
-  if (target !== "share" && !Object.hasOwn(SCREENS, target)) return;
+  const post = target.match(POST_HASH);
+  if (!post && target !== "share" && !Object.hasOwn(SCREENS, target)) return;
   history.replaceState(null, "", location.pathname + location.search);
 
-  if (target === "share") {
+  if (post) {
+    openPost(post[1]);
+  } else if (target === "share") {
     openSharedPost();
   } else {
     goToScreen(target);
@@ -240,6 +253,8 @@ document.addEventListener("visibilitychange", () => {
 navigator.serviceWorker?.addEventListener("message", ({ data }) => {
   if (data?.type === "open-notifications" && !bottomNav.hidden) {
     goToScreen("notifications");
+  } else if (data?.type === "open-post" && !bottomNav.hidden) {
+    openPost(data.postId);
   } else if (data?.type === "push-received" && currentScreen === "notifications" && !viewingUser) {
     cacheDelete("notifications");
     SCREENS.notifications?.();

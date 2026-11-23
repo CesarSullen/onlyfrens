@@ -221,6 +221,10 @@ function getFeed(before) {
   return apiFetch(`/posts${query}`, { method: "GET" });
 }
 
+function getPost(postId) {
+  return apiFetch(`/posts/${postId}`, { method: "GET" });
+}
+
 function deletePost(postId, options = {}) {
   return mutate(
     `/posts/${postId}`,
@@ -409,6 +413,7 @@ export {
   setSession,
   clearToken,
   getFeed,
+  getPost,
   createPost,
   deletePost,
   getFriends,

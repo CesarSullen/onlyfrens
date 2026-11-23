@@ -4,7 +4,7 @@ import { icon } from "./icons.js";
 import { verifiedBadgeHTML } from "./verified.js";
 import { avatarSrc } from "./avatar.js";
 import { linkifyHashtags } from "./hashtags.js";
-import { openHashtag, openUserProfile } from "./navigation.js";
+import { openHashtag, openPost, openUserProfile } from "./navigation.js";
 import { cacheGet } from "./cache.js";
 import { downloadPostCard } from "./post-capture.js";
 
@@ -122,7 +122,7 @@ export function postCardHTML(post) {
   `;
 }
 
-function adjustCount(btn, delta) {
+export function adjustCount(btn, delta) {
   const countEl = btn.querySelector(".action-count");
   countEl.textContent = Math.max(0, Number(countEl.textContent) + delta);
   countEl.dataset.dir = delta > 0 ? "up" : "down";
@@ -183,8 +183,10 @@ function handleDelete(card, postId) {
     hide: () => hideCard(card),
     restore: () => showCard(card),
     commit: async (options) => {
+      const onPostPage = card.isConnected && card.closest("[data-post-page]") !== null;
       await deletePost(postId, options);
       card.remove();
+      if (onPostPage) history.back();
     },
   });
 }
@@ -229,12 +231,10 @@ function onCardClick(e) {
     handleToggle(el, postId, { add: likePost, remove: unlikePost });
   } else if ((el = hit(".repost-btn"))) {
     handleToggle(el, postId, { add: repost, remove: undoRepost });
-  } else if ((el = hit(".comment-btn"))) {
-    import("./comments-sheet.js").then(({ openComments }) =>
-      openComments(postId, (delta) => adjustCount(el, delta), {
-        anonymous: card.dataset.anonymous === "true",
-      }),
-    );
+  } else if (hit(".comment-btn")) {
+    const pageEl = card.closest("[data-post-page]");
+    if (pageEl) pageEl.querySelector(".reply-input")?.focus();
+    else openPost(postId);
   } else if (hit(".download-btn")) {
     downloadPostCard(card);
   } else if (hit(".post-menu-btn")) {
@@ -248,6 +248,9 @@ function onCardClick(e) {
     openHashtag(el.dataset.tag);
   } else if ((el = hit(".post-image"))) {
     import("./image-viewer.js").then(({ openImageViewer }) => openImageViewer(el.currentSrc || el.src));
+  } else if (!card.closest("[data-post-page]") && !window.getSelection()?.toString()) {
+    haptic();
+    openPost(postId);
   }
 }
 

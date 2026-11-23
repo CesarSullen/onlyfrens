@@ -744,6 +744,7 @@ button:focus-visible {
   gap: 14px;
   padding: 14px 0 14px;
   border-bottom: 1px solid var(--line);
+  cursor: pointer;
 }
 
 @media (min-width: 768px) {
@@ -1350,6 +1351,11 @@ button:focus-visible {
   border-bottom: 1px solid var(--line);
 }
 
+.notification-row[data-post-id],
+.notification-row[data-friends] {
+  cursor: pointer;
+}
+
 .notification-icon {
   width: 54px;
   height: 54px;
@@ -1890,7 +1896,8 @@ button:focus-visible {
   border-top: 1px solid var(--line);
 }
 
-.sheet-footer input {
+.sheet-footer input,
+.reply-input {
   flex: 1;
   height: 46px;
   padding: 0 16px;
@@ -1899,7 +1906,8 @@ button:focus-visible {
   background: var(--surface);
 }
 
-.sheet-footer input:focus {
+.sheet-footer input:focus,
+.reply-input:focus {
   border-color: var(--primary);
 }
 
@@ -1917,6 +1925,39 @@ button:focus-visible {
 
 .send-btn:disabled {
   opacity: 0.45;
+}
+
+/* POST PAGE */
+.post-page {
+  padding: 0 var(--page-padding) 32px;
+}
+
+.post-page .post-card {
+  border-bottom: none;
+  cursor: default;
+}
+
+@media (min-width: 768px) {
+  .post-page .post-card {
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+
+  .post-page .post-card:hover {
+    background: none;
+  }
+}
+
+.post-page .comment-row {
+  scroll-margin-bottom: calc(var(--nav-total) + 16px);
+}
+
+.reply-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
 }
 
 .composer-sheet {
