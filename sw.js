@@ -1,4 +1,4 @@
-const CACHE_NAME = "onlyfrens-v0.0.29";
+const CACHE_NAME = "onlyfrens-v0.0.30";
 const IMAGE_CACHE = "onlyfrens-images";
 const SHARE_CACHE = "onlyfrens-share";
 const MAX_IMAGES = 150;
@@ -50,10 +50,16 @@ const ASSETS = [
   "./js/share.js",
   "./js/utils.js",
   "./assets/opengraph/logo-blue.svg",
-  "./assets/rewards/tile-blue.svg",
-  "./assets/rewards/tile-gold.svg",
-  "./assets/rewards/tile-purple.svg",
-  "./assets/rewards/tile-locked.svg",
+  "./assets/rewards/verified_blue.svg",
+  "./assets/rewards/verified_gold.svg",
+  "./assets/rewards/verified_purple.svg",
+  "./assets/rewards/photo_downloads.svg",
+  "./assets/rewards/anonymous_hashtags.svg",
+  "./assets/rewards/hide_friends.svg",
+  "./assets/rewards/only_friends.svg",
+  "./assets/rewards/long_posts.svg",
+  "./assets/rewards/very_long_posts.svg",
+  "./assets/rewards/lock.svg",
   "./assets/shortcuts/friends.png",
   "./assets/shortcuts/notifications.png",
   "./assets/shortcuts/profile.png",
@@ -63,10 +69,11 @@ const ASSETS = [
   "./typography/jost-700.woff2",
 ];
 
+// Bypass the browser HTTP cache so an update never mixes old and new modules.
 self.addEventListener("install", (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) =>
-      Promise.all(ASSETS.map((asset) => cache.add(asset).catch(() => {})))
+      Promise.all(ASSETS.map((asset) => cache.add(new Request(asset, { cache: "reload" })).catch(() => {})))
     )
   );
   self.skipWaiting();
@@ -138,7 +145,7 @@ self.addEventListener("fetch", (e) => {
   e.respondWith(
     caches.open(CACHE_NAME).then(async (cache) => {
       const cached = await cache.match(e.request);
-      const network = fetch(e.request)
+      const network = fetch(e.request, { cache: "no-cache" })
         .then((response) => {
           if (response.ok) cache.put(e.request, response.clone());
           return response;

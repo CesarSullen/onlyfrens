@@ -112,25 +112,36 @@ export async function renderUserProfile(appEl, username, { onSelf }) {
     history.back();
   });
 
-  try {
-    await loadWithCache(
-      `user:${username}`,
-      () => getUserProfile(username),
-      (data) => {
-        if (!cardEl.isConnected) return;
-        if (data.relation === "self") {
-          onSelf();
-          return;
-        }
-        showUserProfile(cardEl, data, () => renderUserProfile(appEl, username, { onSelf }));
+  // Posts only show for friends: they load when the relation becomes friend and clear when it stops being one.
+  function applyData(data) {
+    if (!cardEl.isConnected) return;
+    if (data.relation === "self") {
+      onSelf();
+      return;
+    }
+    showUserProfile(cardEl, data, refresh);
 
-        if (data.relation === "friend" && !postsStarted) {
-          postsStarted = true;
-          loadUserPosts(postsEl, username);
-        }
-      },
-      60_000,
-    );
+    if (data.relation === "friend") {
+      if (!postsStarted) {
+        postsStarted = true;
+        loadUserPosts(postsEl, username);
+      }
+    } else if (postsStarted) {
+      postsStarted = false;
+      postsEl.innerHTML = "";
+    }
+  }
+
+  function load() {
+    return loadWithCache(`user:${username}`, () => getUserProfile(username), applyData, 60_000);
+  }
+
+  function refresh() {
+    load().catch((err) => showToast(err.message, "error"));
+  }
+
+  try {
+    await load();
   } catch (err) {
     removeLoader(cardEl);
     cardEl.innerHTML = `<p class="empty-label profile-error">${escapeHTML(err.message)}</p>`;

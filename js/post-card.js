@@ -79,7 +79,15 @@ export function postCardHTML(post) {
 
   const hasStats = isContentOwner && !anonymous;
   const hasMenu = post.is_mine || hasStats || Boolean(content.text_content);
-  const signature = [post.like_count, post.comment_count, post.repost_count, post.liked_by_me, post.reposted_by_me].join("|");
+  const signature = [
+    post.like_count,
+    post.comment_count,
+    post.repost_count,
+    post.liked_by_me,
+    post.reposted_by_me,
+    author.display_name,
+    author.avatar_url,
+  ].join("|");
 
   const profileAttr = anonymous
     ? ""
@@ -90,7 +98,7 @@ export function postCardHTML(post) {
       : "";
 
   return `
-    <article class="post-card fade-in" data-post-id="${post.id}" data-sig="${signature}" data-is-repost="${post.is_repost}" data-anonymous="${anonymous}" data-mine="${Boolean(post.is_mine)}" data-stats="${hasStats}">
+    <article class="post-card fade-in" data-post-id="${post.id}" data-sig="${escapeHTML(signature)}" data-is-repost="${post.is_repost}" data-anonymous="${anonymous}" data-mine="${Boolean(post.is_mine)}" data-stats="${hasStats}">
       ${birthdayPill}
       ${anonymousPill}
       ${repostPill}

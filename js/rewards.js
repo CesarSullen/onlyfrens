@@ -7,15 +7,15 @@ import { openRewards } from "./navigation.js";
 // Presentation of each reward. Thresholds come from the backend (GET /rewards),
 // so this file only knows how a reward looks, not when it unlocks.
 const REWARD_META = {
-  verified_blue: { title: "Insignia azul de verificado", text: "Aparece junto a tu nombre en todas partes.", icon: "verified", weight: "fill" },
-  long_posts: { title: "Publicaciones largas", text: "Escribe hasta 500 caracteres en vez de 200.", icon: "text-lines" },
-  very_long_posts: { title: "Publicaciones muy largas", text: "Escribe hasta 1000 caracteres.", icon: "text-lines" },
-  photo_downloads: { title: "Descargar fotos", text: "Guarda como imagen las publicaciones con foto que lo permitan.", icon: "download-simple" },
-  anonymous_hashtags: { title: "Publicar en hashtags", text: "Comparte de forma anónima en los hashtags.", icon: "hash" },
-  hide_friends: { title: "Ocultar publicaciones", text: "Elige amigos que no verán una publicación.", icon: "eye-slash" },
-  verified_gold: { title: "Insignia dorada de verificado", text: "Tu insignia cambia a dorado.", icon: "verified", weight: "fill" },
-  only_friends: { title: "Mostrar solo a algunos", text: "Elige quiénes ven una publicación.", icon: "eye" },
-  verified_purple: { title: "Insignia morada de verificado", text: "El nivel más alto: tu insignia pasa a morado.", icon: "verified", weight: "fill" },
+  verified_blue: { title: "Insignia azul de verificado", text: "Aparece junto a tu nombre en todas partes." },
+  long_posts: { title: "Publicaciones largas", text: "Escribe hasta 500 caracteres en vez de 200." },
+  very_long_posts: { title: "Publicaciones muy largas", text: "Escribe hasta 1000 caracteres." },
+  photo_downloads: { title: "Descargar fotos", text: "Guarda como imagen las publicaciones con foto que lo permitan." },
+  anonymous_hashtags: { title: "Publicar en hashtags", text: "Comparte de forma anónima en los hashtags." },
+  hide_friends: { title: "Ocultar publicaciones", text: "Elige amigos que no verán una publicación." },
+  verified_gold: { title: "Insignia dorada de verificado", text: "Tu insignia cambia a dorado." },
+  only_friends: { title: "Mostrar solo a algunos", text: "Elige quiénes ven una publicación." },
+  verified_purple: { title: "Insignia morada de verificado", text: "El nivel más alto: tu insignia pasa a morado." },
 };
 
 const TIERS = [
@@ -27,15 +27,18 @@ const TIERS = [
 // Small icons shown on the profile; the verified badge already sits next to the name.
 const STRIP_IDS = ["long_posts", "anonymous_hashtags", "photo_downloads", "hide_friends", "only_friends"];
 
+function badgeHTML(id) {
+  return `<img class="reward-badge" src="assets/rewards/${id}.svg" alt="" />`;
+}
+
 // Badges strip on a profile. On your own profile it opens the rewards page.
 export function rewardStripHTML(rewardIds = [], { own = false } = {}) {
   const chips = STRIP_IDS.filter((id) => rewardIds.includes(id)).map((id, i) => {
-    const meta = REWARD_META[id];
-    return `<span class="reward-tile reward-chip tier-${rewardTier(id)}" style="--i: ${i}" title="${escapeHTML(meta.title)}">${icon(meta.icon, "regular")}</span>`;
+    return `<span class="reward-chip" style="--i: ${i}" title="${escapeHTML(REWARD_META[id].title)}">${badgeHTML(id)}</span>`;
   });
 
   if (own) {
-    const content = chips.length ? chips.join("") : `<span class="reward-tile reward-chip locked">${icon("medal", "regular")}</span>`;
+    const content = chips.length ? chips.join("") : `<span class="reward-chip locked">${badgeHTML("verified_blue")}</span>`;
     return `
       <button class="reward-strip tappable" id="rewards-btn" aria-label="Ver recompensas">
         ${content}
@@ -54,14 +57,6 @@ export function bindRewardStrip() {
   });
 }
 
-// The tier a reward belongs to is fixed by the catalog the backend sent last time;
-// until the page loads, the thresholds below are only used to color the chips.
-const REWARD_TIER = { verified_gold: 2, long_posts: 2, only_friends: 2, verified_purple: 3, very_long_posts: 3 };
-
-function rewardTier(id) {
-  return REWARD_TIER[id] ?? 1;
-}
-
 function rewardRowHTML(reward, friendCount, index) {
   const meta = REWARD_META[reward.id];
   const unlocked = friendCount >= reward.friends;
@@ -73,7 +68,7 @@ function rewardRowHTML(reward, friendCount, index) {
 
   return `
     <li class="reward-row ${unlocked ? "unlocked" : "locked"}" style="--i: ${index}">
-      <span class="reward-tile reward-icon tier-${reward.tier}${unlocked ? "" : " locked"}${unlocked && meta.icon === "verified" ? " verified" : ""}">${icon(unlocked ? meta.icon : "lock", unlocked ? meta.weight ?? "regular" : "regular")}</span>
+      <span class="reward-icon${unlocked ? "" : " locked"}">${badgeHTML(reward.id)}</span>
       <div class="reward-info">
         <p class="reward-title">${meta.title}</p>
         <p class="reward-text">${unlocked ? meta.text : `${meta.text} · ${reward.friends} amigos`}</p>

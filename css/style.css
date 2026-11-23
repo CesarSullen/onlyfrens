@@ -1687,6 +1687,7 @@ button:focus-visible {
 
 .liker-row {
   animation: fade-in var(--dur-slow) ease both;
+  animation-delay: calc(var(--i, 0) * 40ms);
 }
 
 .liker-row:last-child {
@@ -2416,51 +2417,18 @@ html:has(.sheet-overlay, #modal-ui.active) {
   font-weight: 500;
 }
 
-/* REWARD TILES */
-.reward-tile {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: url("../assets/rewards/tile-blue.svg") center / contain no-repeat;
-  color: #1b1b2f;
+/* REWARD BADGES */
+.reward-badge {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
-.reward-tile.tier-2 {
-  background-image: url("../assets/rewards/tile-gold.svg");
-}
-
-.reward-tile.tier-3 {
-  background-image: url("../assets/rewards/tile-purple.svg");
-}
-
-.reward-tile.locked {
-  background-image: url("../assets/rewards/tile-locked.svg");
-  color: #9aa0ab;
-}
-
-.reward-tile .icon * {
-  stroke: currentColor;
-  stroke-linejoin: round;
-}
-
-.reward-tile .icon path:not([stroke]) {
-  stroke-width: 10;
-}
-
-.reward-tile .icon [stroke] {
-  stroke-width: 22;
-}
-
-.reward-tile.verified .icon path:first-child {
-  fill: #fff;
-  stroke: #1b1b2f;
-  stroke-width: 12;
-}
-
-.reward-tile.verified .icon path + path {
-  fill: none;
-  stroke: #1b1b2f !important;
-  stroke-width: 24;
+.reward-chip.locked .reward-badge,
+.reward-icon.locked .reward-badge {
+  filter: grayscale(1);
+  opacity: 0.55;
 }
 
 .reward-strip.static {
@@ -2468,27 +2436,11 @@ html:has(.sheet-overlay, #modal-ui.active) {
 }
 
 .reward-chip {
-  width: 30px;
-  height: 30px;
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
   animation: chip-pop var(--dur-long) var(--ease-spring) both;
   animation-delay: calc(var(--i, 0) * 50ms + 120ms);
-}
-
-.reward-chip .icon {
-  width: 16px;
-  height: 16px;
-}
-
-.reward-chip + .reward-chip {
-  margin-left: -9px;
-}
-
-.reward-chip:nth-child(odd) {
-  rotate: -7deg;
-}
-
-.reward-chip:nth-child(even) {
-  rotate: 7deg;
 }
 
 .reward-strip-label {
@@ -2657,14 +2609,22 @@ html:has(.sheet-overlay, #modal-ui.active) {
 }
 
 .reward-icon {
-  width: 48px;
-  height: 48px;
+  position: relative;
+  width: 52px;
+  height: 52px;
   flex-shrink: 0;
 }
 
-.reward-icon .icon {
-  width: 24px;
-  height: 24px;
+.reward-icon.locked::after {
+  content: "";
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--muted) url("../assets/rewards/lock.svg") center / 62% no-repeat;
+  box-shadow: 0 0 0 2px var(--surface);
 }
 
 .reward-row.locked .reward-info {

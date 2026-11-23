@@ -138,7 +138,7 @@ function handleEditProfile(profile) {
         } else {
           showToast("Perfil actualizado");
         }
-        renderProfile(document.getElementById("app"));
+        reloadProfile();
       } catch (err) {
         showToast(err.message, "error");
       }
@@ -150,7 +150,7 @@ async function handleAvatarChange(file) {
   try {
     await uploadAvatar(file);
     showToast("Foto actualizada");
-    renderProfile(document.getElementById("app"));
+    reloadProfile();
   } catch (err) {
     showToast(err.message, "error");
   }
@@ -198,6 +198,36 @@ function showOwnPosts(listEl, posts) {
   renderPosts(listEl, posts, EMPTY_OWN_POSTS_HTML);
 }
 
+function loadCard(cardEl) {
+  return loadWithCache("profile", getProfile, ({ profile }) => {
+    if (cardEl.isConnected) showProfile(cardEl, profile);
+  });
+}
+
+function loadOwnPosts(listEl) {
+  return loadWithCache(
+    "ownPosts",
+    getOwnPosts,
+    ({ posts }, { cached }) => {
+      if (listEl.isConnected) showOwnPosts(listEl, cached ? livePosts(posts) : posts);
+    },
+    30_000,
+  );
+}
+
+// Refreshes the card and the list in place, so the scroll and the rest of the screen stay as they are.
+function reloadProfile() {
+  const cardEl = document.getElementById("profile-card");
+  const listEl = document.getElementById("own-posts");
+  if (cardEl) loadCard(cardEl).catch((err) => showToast(err.message, "error"));
+  if (listEl) loadOwnPosts(listEl).catch((err) => showToast(err.message, "error"));
+}
+
+function reloadOwnPosts() {
+  const listEl = document.getElementById("own-posts");
+  if (listEl) loadOwnPosts(listEl).catch((err) => showToast(err.message, "error"));
+}
+
 export async function renderProfile(appEl) {
   appEl.innerHTML = `
     <div class="profile-screen fade-in" id="profile-card">${loaderHTML()}</div>
@@ -213,7 +243,7 @@ export async function renderProfile(appEl) {
     haptic();
     loadModule(
       () => import("./composer.js"),
-      ({ openComposer }) => openComposer(() => renderProfile(appEl)),
+      ({ openComposer }) => openComposer(reloadOwnPosts),
     );
   });
 
@@ -231,20 +261,11 @@ export async function renderProfile(appEl) {
   });
 
   await Promise.all([
-    loadWithCache("profile", getProfile, ({ profile }) => {
-      if (cardEl.isConnected) showProfile(cardEl, profile);
-    }).catch((err) => {
+    loadCard(cardEl).catch((err) => {
       removeLoader(cardEl);
       showToast(err.message, "error");
     }),
-    loadWithCache(
-      "ownPosts",
-      getOwnPosts,
-      ({ posts }, { cached }) => {
-        if (listEl.isConnected) showOwnPosts(listEl, cached ? livePosts(posts) : posts);
-      },
-      30_000,
-    ).catch((err) => {
+    loadOwnPosts(listEl).catch((err) => {
       removeLoader(listEl);
       showToast(err.message, "error");
     }),
