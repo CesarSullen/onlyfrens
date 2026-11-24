@@ -68,7 +68,7 @@ export function postCardHTML(post) {
     : "";
 
   // Only verified accounts (blue tier or higher) can download, and only when the author allows it.
-  const canDownload = images.length > 0 && content.allow_download !== false && (cacheGet("profile")?.profile?.verified_tier ?? 0) >= 1;
+  const canDownload = content.allow_download !== false && (cacheGet("profile")?.profile?.verified_tier ?? 0) >= 1;
   const downloadButton = canDownload
     ? `<button class="action-btn download-btn" aria-label="Descargar publicación"><span class="action-icon">${icon("download-simple", "regular")}</span></button>`
     : "";
