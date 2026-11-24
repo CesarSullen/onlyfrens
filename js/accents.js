@@ -1,13 +1,13 @@
 // Colors live in the CSS ([data-accent]); here only names and the community size that unlocks each one.
 export const ACCENTS = [
   { id: "oceano", name: "Océano", users: 0 },
-  { id: "bosque", name: "Bosque", users: 50 },
-  { id: "cerezo", name: "Cerezo", users: 50 },
-  { id: "coral", name: "Coral", users: 100 },
-  { id: "volcan", name: "Volcán", users: 100 },
-  { id: "desierto", name: "Desierto", users: 250 },
-  { id: "pantano", name: "Pantano", users: 250 },
-  { id: "cueva", name: "Cueva", users: 500 },
+  { id: "musgo", name: "Musgo", users: 50 },
+  { id: "cerezo", name: "Cerezo", users: 100 },
+  { id: "coral", name: "Coral", users: 150 },
+  { id: "aurora", name: "Aurora", users: 200 },
+  { id: "brasa", name: "Brasa", users: 250 },
+  { id: "cosmos", name: "Cosmos", users: 400 },
+  { id: "eclipse", name: "Eclipse", users: 500 },
 ];
 
 const DEFAULT_ACCENT = "oceano";

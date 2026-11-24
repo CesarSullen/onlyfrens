@@ -102,7 +102,7 @@
   --primary: #0b8afe;
 }
 
-[data-accent="bosque"] {
+[data-accent="musgo"] {
   --primary: #1f9d55;
 }
 
@@ -114,21 +114,21 @@
   --primary: #ef5340;
 }
 
-[data-accent="volcan"] {
-  --primary: #dc2f3f;
-}
-
-[data-accent="desierto"] {
+[data-accent="aurora"] {
   --primary: #fdd835;
   --primary-text: #1a1400;
   --primary-ink: #8f5700;
 }
 
-[data-accent="pantano"] {
+[data-accent="brasa"] {
+  --primary: #dc2f3f;
+}
+
+[data-accent="cosmos"] {
   --primary: #7c3aed;
 }
 
-[data-accent="cueva"] {
+[data-accent="eclipse"] {
   --primary: #3a3f4b;
 }
 
@@ -137,15 +137,15 @@
     --tint: color-mix(in srgb, var(--primary) 14%, transparent);
   }
 
-  [data-accent="desierto"] {
+  [data-accent="aurora"] {
     --primary-ink: var(--primary);
   }
 
-  [data-accent="pantano"] {
+  [data-accent="cosmos"] {
     --primary: #9461ff;
   }
 
-  [data-accent="cueva"] {
+  [data-accent="eclipse"] {
     --primary: #e5e7eb;
     --primary-text: #0b0b0f;
   }
@@ -2517,7 +2517,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
 .reward-strip {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
   width: fit-content;
   margin-top: 12px;
   padding: 4px 12px 4px 4px;
@@ -2556,12 +2556,13 @@ html:has(.sheet-overlay, #modal-ui.active) {
 }
 
 .reward-strip-label {
-  margin-left: 2px;
+  margin-left: 6px;
 }
 
 .reward-strip-caret {
   display: flex;
   align-items: center;
+  margin-left: 4px;
 }
 
 .reward-strip-caret .icon {
@@ -2877,7 +2878,9 @@ html:has(.sheet-overlay, #modal-ui.active) {
   color: var(--muted);
 }
 
-.settings-logout {
+.outline-btn.settings-logout {
+  flex: none;
+  height: 48px;
   margin-top: 20px;
 }
 
@@ -2948,6 +2951,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
 .accent-text {
   display: flex;
   flex-direction: column;
+  line-height: 1.15;
 }
 
 .accent-name {
