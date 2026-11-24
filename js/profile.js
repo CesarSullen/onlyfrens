@@ -1,14 +1,13 @@
-import { getProfile, updateProfile, getOwnPosts, setAccountEmail } from "./api.js";
-import { showToast, showForm, showConfirm, haptic, profileFieldsError, emptyStateHTML, loadModule } from "./utils.js";
+import { getProfile, updateProfile, getOwnPosts } from "./api.js";
+import { showToast, showForm, haptic, profileFieldsError, emptyStateHTML, loadModule } from "./utils.js";
 import { renderPosts } from "./post-card.js";
-import { signOut, requestEmailChange } from "./auth.js";
-import { isEmail, normalizePhone, PHONE_HINT } from "./contact.js";
-import { disablePush } from "./push.js";
+import { normalizePhone, PHONE_HINT } from "./contact.js";
 import { icon } from "./icons.js";
 import { uploadAvatar } from "./avatar.js";
 import { loaderHTML, removeLoader } from "./loader.js";
 import { loadWithCache, livePosts } from "./cache.js";
 import { bindRewardStrip } from "./rewards.js";
+import { openSettings } from "./navigation.js";
 import {
   profileCardHTML,
   shareProfile,
@@ -18,22 +17,11 @@ import {
   socialsError,
 } from "./profile-view.js";
 
-// The email can be changed but not removed; the phone is optional. Both must look valid.
-function contactError({ email, phone }, profile) {
-  if (profile.email && !email.trim()) return "No puedes quitar tu correo, solo cambiarlo";
-  if (email.trim() && !isEmail(email)) return "El correo no es válido";
-  if (phone.trim() && !normalizePhone(phone)) return PHONE_HINT;
-  return null;
-}
-
 function handleEditProfile(profile) {
   const currentBirthday =
     profile.birthday_day && profile.birthday_month
       ? `${profile.birthday_day}/${profile.birthday_month}`
       : "";
-  // Phone accounts start with no real email, which the password recovery needs.
-  const needsRecoveryEmail = !profile.email;
-
   showForm({
     title: "Editar perfil",
     fields: [
@@ -64,14 +52,6 @@ function handleEditProfile(profile) {
         value: currentBirthday,
       },
       {
-        name: "email",
-        label: "Correo",
-        placeholder: needsRecoveryEmail ? "Añade un correo para recuperar tu contraseña" : "tu@correo.com",
-        value: profile.email ?? "",
-        type: "email",
-        autocomplete: "email",
-      },
-      {
         name: "phone",
         label: "Teléfono para que te escriban (con código de país)",
         placeholder: "+34 600 000 000",
@@ -92,14 +72,14 @@ function handleEditProfile(profile) {
         value: profile.x_username ?? "",
       },
     ],
-    validate: ({ name, username, birthday, email, phone, instagram, x }) =>
+    validate: ({ name, username, birthday, phone, instagram, x }) =>
       profileFieldsError(cleanUsername(username), name.trim() || profile.display_name) ||
       (birthday.trim() && !parseBirthday(birthday)
         ? "Usa el formato día/mes, por ejemplo 15/5"
         : null) ||
-      contactError({ email, phone }, profile) ||
+      (phone.trim() && !normalizePhone(phone) ? PHONE_HINT : null) ||
       socialsError({ instagram: cleanHandle(instagram), x_username: cleanHandle(x) }),
-    onConfirm: async ({ name, username, bio, birthday, email, phone, instagram, x }) => {
+    onConfirm: async ({ name, username, bio, birthday, phone, instagram, x }) => {
       const updates = { bio: bio.trim() };
 
       if (name.trim()) updates.display_name = name.trim();
@@ -122,18 +102,9 @@ function handleEditProfile(profile) {
       const newPhone = phone.trim() ? normalizePhone(phone) : "";
       if (newPhone !== (profile.phone ?? "")) updates.phone = newPhone;
 
-      const newEmail = email.trim().toLowerCase();
-      const emailChanged = newEmail && newEmail !== (profile.email ?? "").toLowerCase();
-
       try {
         await updateProfile(updates);
-        if (emailChanged && needsRecoveryEmail) {
-          await setAccountEmail(newEmail);
-          showToast("Correo añadido. Ya puedes recuperar tu contraseña", "success", 5000);
-        } else if (emailChanged) {
-          await requestEmailChange(newEmail);
-          showToast("Te enviamos un enlace para confirmar el nuevo correo", "success", 5000);
-        } else if (updates.phone === "" && profile.phone) {
+        if (updates.phone === "" && profile.phone) {
           showToast("Perfil actualizado. Ya no podrás entrar con ese teléfono", "success", 5000);
         } else {
           showToast("Perfil actualizado");
@@ -162,6 +133,7 @@ function showProfile(cardEl, profile) {
     actionsHTML: `
       <button class="outline-btn large" id="edit-profile-btn">Editar</button>
       <button class="outline-btn large" id="share-profile-btn">Compartir</button>`,
+    topActionHTML: `<button class="settings-btn" id="settings-btn" aria-label="Ajustes">${icon("gear-six", "regular")}</button>`,
   });
 
   bindRewardStrip();
@@ -183,6 +155,11 @@ function showProfile(cardEl, profile) {
   document.getElementById("share-profile-btn").addEventListener("click", () => {
     haptic();
     shareProfile(profile);
+  });
+
+  document.getElementById("settings-btn").addEventListener("click", () => {
+    haptic();
+    openSettings();
   });
 }
 
@@ -232,7 +209,6 @@ export async function renderProfile(appEl) {
   appEl.innerHTML = `
     <div class="profile-screen fade-in" id="profile-card">${loaderHTML()}</div>
     <div class="feed-list" id="own-posts">${loaderHTML()}</div>
-    <button class="outline-btn danger large profile-logout" id="logout-btn">Cerrar sesión</button>
   `;
 
   const cardEl = document.getElementById("profile-card");
@@ -244,19 +220,6 @@ export async function renderProfile(appEl) {
     loadModule(
       () => import("./composer.js"),
       ({ openComposer }) => openComposer(reloadOwnPosts),
-    );
-  });
-
-  document.getElementById("logout-btn").addEventListener("click", () => {
-    haptic();
-    showConfirm(
-      "¿Cerrar sesión?",
-      async () => {
-        await disablePush();
-        signOut();
-        window.location.reload();
-      },
-      true,
     );
   });
 

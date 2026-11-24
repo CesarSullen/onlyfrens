@@ -9,12 +9,13 @@ export function openUserProfile(username) {
   window.dispatchEvent(new CustomEvent(OPEN_PROFILE_EVENT, { detail: { username } }));
 }
 
-// Secondary pages that sit on top of the current tab: { page: "rewards" }, { page: "hashtag", tag } or { page: "post", postId }.
+// Secondary pages that sit on top of the current tab: { page: "rewards" }, { page: "settings" }, { page: "hashtag", tag } or { page: "post", postId }.
 function openPage(detail) {
   closeModalUI();
   window.dispatchEvent(new CustomEvent(OPEN_PAGE_EVENT, { detail }));
 }
 
 export const openRewards = () => openPage({ page: "rewards" });
+export const openSettings = () => openPage({ page: "settings" });
 export const openHashtag = (tag) => openPage({ page: "hashtag", tag });
 export const openPost = (postId) => openPage({ page: "post", postId });

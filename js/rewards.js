@@ -3,6 +3,7 @@ import { haptic, showToast, escapeHTML } from "./utils.js";
 import { icon } from "./icons.js";
 import { loaderHTML } from "./loader.js";
 import { openRewards } from "./navigation.js";
+import { ACCENTS } from "./accents.js";
 
 // Presentation of each reward. Thresholds come from the backend (GET /rewards),
 // so this file only knows how a reward looks, not when it unlocks.
@@ -17,6 +18,10 @@ const REWARD_META = {
   only_friends: { title: "Mostrar solo a algunos", text: "Elige quiénes ven una publicación." },
   verified_purple: { title: "Insignia morada de verificado", text: "El nivel más alto: tu insignia pasa a morado." },
 };
+
+// Accents that the community unlocks, in the order they unlock.
+const COMMUNITY_ACCENTS = ACCENTS.filter((accent) => accent.users > 0);
+const listFormat = new Intl.ListFormat("es", { style: "long", type: "conjunction" });
 
 const TIERS = [
   { tier: 1, name: "Nivel azul", badge: "verified_blue" },
@@ -96,21 +101,87 @@ function tierHTML({ tier, name, badge }, rewards, friendCount, order) {
     </section>`;
 }
 
-function heroHTML(rewards, friendCount) {
-  const next = rewards.filter((r) => r.friends > friendCount).sort((a, b) => a.friends - b.friends)[0];
-  const missing = next ? next.friends - friendCount : 0;
-  const progress = next ? Math.min(1, friendCount / next.friends) : 1;
-  const nextText = next
-    ? `${missing === 1 ? "Te falta 1 amigo" : `Te faltan ${missing} amigos`} para <b>${REWARD_META[next.id].title.toLowerCase()}</b>`
-    : "Lo has desbloqueado todo. ¡Eres leyenda!";
-
+function heroHTML({ count, one, many, progress, nextText }) {
   return `
     <section class="rewards-hero">
-      <p class="rewards-count"><span>${friendCount}</span> ${friendCount === 1 ? "amigo" : "amigos"}</p>
+      <p class="rewards-count"><span>${count}</span> ${count === 1 ? one : many}</p>
       <div class="rewards-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(progress * 100)}">
         <i style="--progress: ${progress}"></i>
       </div>
       <p class="rewards-next">${nextText}</p>
+    </section>`;
+}
+
+function friendsHeroHTML(rewards, friendCount) {
+  const next = rewards.filter((r) => r.friends > friendCount).sort((a, b) => a.friends - b.friends)[0];
+  const missing = next ? next.friends - friendCount : 0;
+  const nextText = next
+    ? `${missing === 1 ? "Te falta 1 amigo" : `Te faltan ${missing} amigos`} para <b>${REWARD_META[next.id].title.toLowerCase()}</b>`
+    : "Lo has desbloqueado todo. ¡Eres leyenda!";
+
+  return heroHTML({
+    count: friendCount,
+    one: "amigo",
+    many: "amigos",
+    progress: next ? Math.min(1, friendCount / next.friends) : 1,
+    nextText,
+  });
+}
+
+function communityHeroHTML(userCount) {
+  const next = COMMUNITY_ACCENTS.find((accent) => accent.users > userCount);
+  let nextText = "La comunidad ya desbloqueó todos los acentos.";
+
+  if (next) {
+    const missing = next.users - userCount;
+    const names = COMMUNITY_ACCENTS.filter((accent) => accent.users === next.users).map((accent) => `<b>${accent.name}</b>`);
+    nextText = `${missing === 1 ? "Falta 1 usuario" : `Faltan ${missing} usuarios`} para ${names.length === 1 ? "el acento" : "los acentos"} ${listFormat.format(names)}`;
+  }
+
+  return heroHTML({
+    count: userCount,
+    one: "usuario",
+    many: "usuarios",
+    progress: next ? Math.min(1, userCount / next.users) : 1,
+    nextText,
+  });
+}
+
+function communityRowHTML(accent, userCount, index) {
+  const unlocked = userCount >= accent.users;
+  const missing = accent.users - userCount;
+  const text = "Cambia el color de la app en Ajustes.";
+
+  const status = unlocked
+    ? `<span class="reward-status ok">${icon("check", "regular")}</span>`
+    : `<span class="reward-status">${missing === 1 ? "Falta 1" : `Faltan ${missing}`}</span>`;
+
+  return `
+    <li class="reward-row ${unlocked ? "unlocked" : "locked"}" style="--i: ${index}">
+      <span class="reward-icon${unlocked ? "" : " locked"}"><span class="reward-swatch" data-accent="${accent.id}"></span></span>
+      <div class="reward-info">
+        <p class="reward-title">Acento ${accent.name}</p>
+        <p class="reward-text">${unlocked ? text : `${text} · ${accent.users} usuarios`}</p>
+      </div>
+      ${status}
+    </li>`;
+}
+
+function communityHTML(userCount, order) {
+  const unlockedCount = COMMUNITY_ACCENTS.filter((accent) => userCount >= accent.users).length;
+  const allUnlocked = unlockedCount === COMMUNITY_ACCENTS.length;
+
+  return `
+    <section class="tier-card community" style="--i: ${order}">
+      <header class="tier-head">
+        <span class="tier-badge">${icon("users", "fill")}</span>
+        <div>
+          <h2 class="tier-name">Comunidad</h2>
+          <p class="tier-sub">Se desbloquea para todos</p>
+        </div>
+        <span class="tier-state${allUnlocked ? " ok" : ""}">${unlockedCount}/${COMMUNITY_ACCENTS.length}</span>
+      </header>
+      <ul class="reward-list">${COMMUNITY_ACCENTS.map((accent, i) => communityRowHTML(accent, userCount, order * 4 + i)).join("")}</ul>
     </section>`;
 }
 
@@ -130,13 +201,20 @@ export async function renderRewards(appEl) {
   const pageEl = document.getElementById("rewards-page");
 
   try {
-    const { friend_count, rewards } = await getRewards();
+    const { friend_count, rewards, user_count } = await getRewards();
     if (!pageEl.isConnected) return;
 
+    // Older backends do not send the user count yet, so the community parts stay hidden.
+    const hasCommunity = Number.isFinite(user_count);
+
     pageEl.innerHTML = `
-      ${heroHTML(rewards, friend_count)}
+      <div class="rewards-heroes">
+        ${friendsHeroHTML(rewards, friend_count)}
+        ${hasCommunity ? communityHeroHTML(user_count) : ""}
+      </div>
       ${TIERS.map((tier, i) => tierHTML(tier, rewards, friend_count, i)).join("")}
-      <p class="rewards-footnote">Los niveles se calculan con tus amigos actuales: si pierdes amigos, pierdes lo que dependa de ellos.</p>
+      ${hasCommunity ? communityHTML(user_count, TIERS.length) : ""}
+      <p class="rewards-footnote">Los niveles se calculan con tus amigos actuales: si pierdes amigos, pierdes lo que dependa de ellos.${hasCommunity ? " Lo que desbloquea la comunidad no se pierde." : ""}</p>
     `;
   } catch (err) {
     pageEl.innerHTML = `<p class="empty-label profile-error">${escapeHTML(err.message)}</p>`;

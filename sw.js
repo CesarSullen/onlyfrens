@@ -1,4 +1,4 @@
-const CACHE_NAME = "onlyfrens-v0.0.31";
+const CACHE_NAME = "onlyfrens-v0.0.32";
 const IMAGE_CACHE = "onlyfrens-images";
 const SHARE_CACHE = "onlyfrens-share";
 const MAX_IMAGES = 150;
@@ -7,6 +7,7 @@ const ASSETS = [
   "./index.html",
   "./manifest.json",
   "./css/style.css",
+  "./js/accents.js",
   "./js/app.js",
   "./js/api.js",
   "./js/auth.js",
@@ -47,6 +48,7 @@ const ASSETS = [
   "./js/image-viewer.js",
   "./js/profile.js",
   "./js/pull-refresh.js",
+  "./js/settings.js",
   "./js/share.js",
   "./js/utils.js",
   "./assets/opengraph/logo-blue.svg",

@@ -132,6 +132,10 @@ export async function updatePassword(accessToken, password) {
   await supabaseAuthFetch("/user", { password }, { method: "PUT", token: accessToken });
 }
 
+export async function changePassword(password) {
+  await supabaseAuthFetch("/user", { password }, { method: "PUT", token: getToken() });
+}
+
 // Supabase emails a confirmation link; the address only changes once it is opened.
 export async function requestEmailChange(email) {
   const redirectTo = encodeURIComponent(location.origin + location.pathname);

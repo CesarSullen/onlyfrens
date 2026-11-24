@@ -1,3 +1,4 @@
+import "./accents.js";
 import { showToast, showConfirm, haptic, loadModule } from "./utils.js";
 import { icon } from "./icons.js";
 import { getToken, getProfile, addFriend, getFriends, getNotifications, trackProjectActivity } from "./api.js";
@@ -147,9 +148,17 @@ function showUserProfile(username) {
   renderUserProfile(appEl, username, { onSelf: () => goToScreen("profile") });
 }
 
-// Rewards, hashtag and post pages reuse the "viewing someone" behavior: back returns to the tab.
+// Rewards, settings, hashtag and post pages reuse the "viewing someone" behavior: back returns to the tab.
 const SUB_PAGES = {
   rewards: { title: "Recompensas", render: () => renderRewards(appEl) },
+  settings: {
+    title: "Ajustes",
+    render: () =>
+      loadModule(
+        () => import("./settings.js"),
+        ({ renderSettings }) => renderSettings(appEl),
+      ),
+  },
   hashtag: {
     title: "Hashtag",
     render: ({ tag }) =>

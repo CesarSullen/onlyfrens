@@ -86,7 +86,7 @@ function socialLinksHTML(profile) {
   }).join("");
 }
 
-export function profileCardHTML(profile, { actionsHTML, avatarEditable = false, divider = true }) {
+export function profileCardHTML(profile, { actionsHTML, topActionHTML = "", avatarEditable = false, divider = true }) {
   const avatarUrl = avatarSrc(profile);
 
   const avatarHTML = avatarEditable
@@ -108,6 +108,7 @@ export function profileCardHTML(profile, { actionsHTML, avatarEditable = false, 
         <h1 class="profile-name">${escapeHTML(profile.display_name)}${verifiedBadgeHTML(profile)}</h1>
         <p class="profile-username">@${escapeHTML(profile.username)}</p>
       </div>
+      ${topActionHTML}
     </div>
     ${rewardStripHTML(profile.reward_ids, { own: avatarEditable })}
     ${profile.bio ? `<p class="profile-bio post-text">${escapeHTML(profile.bio)}</p>` : ""}
