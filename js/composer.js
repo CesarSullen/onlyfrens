@@ -66,7 +66,7 @@ function composerHTML() {
             <button class="icon-btn toggle-btn" id="composer-repostable" type="button" aria-label="Permitir reposts" aria-pressed="true">
               ${icon("arrows-clockwise", "regular")}
             </button>
-            <button class="icon-btn toggle-btn" id="composer-downloadable" type="button" aria-label="Permitir descargar fotos" aria-pressed="true" hidden>
+            <button class="icon-btn toggle-btn" id="composer-downloadable" type="button" aria-label="Permitir descargar la publicación" aria-pressed="true">
               ${icon("download-simple", "regular")}
             </button>
             <button class="icon-btn toggle-btn" id="composer-anonymous" type="button" aria-label="Publicar en hashtags" aria-pressed="false" hidden>
@@ -118,8 +118,6 @@ function renderImagePreviews(container) {
       updatePublishState();
     });
   });
-
-  document.getElementById("composer-downloadable")?.toggleAttribute("hidden", selectedFiles.length === 0);
 }
 
 function startUpload(file) {
@@ -269,7 +267,7 @@ async function handlePublish() {
       image_url: uploadedUrls[0],
       image_url_2: uploadedUrls[1],
       is_repostable: anonymous ? false : repostable,
-      allow_download: selectedFiles.length ? downloadable : undefined,
+      allow_download: downloadable,
       audience: audience && !anonymous ? { mode: audience.mode, user_ids: audience.ids } : undefined,
       anonymous: anonymous || undefined,
     });
@@ -378,7 +376,7 @@ export function openComposer(onPublished, { text = "", files = [], anonymous: st
 
   downloadableEl.addEventListener("click", () => {
     haptic();
-    showToast(flip(downloadableEl) ? "Descarga de fotos permitida" : "Descarga de fotos desactivada");
+    showToast(flip(downloadableEl) ? "Descarga de la publicación permitida" : "Descarga de la publicación desactivada");
   });
 
   document.getElementById("composer-audience").addEventListener("click", () => {
