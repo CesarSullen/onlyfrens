@@ -86,6 +86,16 @@ function socialLinksHTML(profile) {
   }).join("");
 }
 
+// The last word and the badge stay together so the badge never wraps alone; a very long word may break instead.
+const MAX_TAIL_LENGTH = 14;
+
+function displayNameHTML(profile) {
+  const name = profile.display_name.trim();
+  const split = name.lastIndexOf(" ") + 1;
+  if (name.length - split > MAX_TAIL_LENGTH) return `${escapeHTML(name)}${verifiedBadgeHTML(profile)}`;
+  return `${escapeHTML(name.slice(0, split))}<span class="profile-name-tail">${escapeHTML(name.slice(split))}${verifiedBadgeHTML(profile)}</span>`;
+}
+
 export function profileCardHTML(profile, { actionsHTML, topActionHTML = "", avatarEditable = false, divider = true }) {
   const avatarUrl = escapeHTML(avatarSrc(profile));
 
@@ -105,7 +115,7 @@ export function profileCardHTML(profile, { actionsHTML, topActionHTML = "", avat
     <div class="profile-top">
       ${avatarHTML}
       <div class="profile-identity">
-        <h1 class="profile-name">${escapeHTML(profile.display_name)}${verifiedBadgeHTML(profile)}</h1>
+        <h1 class="profile-name">${displayNameHTML(profile)}</h1>
         <p class="profile-username">@${escapeHTML(profile.username)}</p>
       </div>
       ${topActionHTML}

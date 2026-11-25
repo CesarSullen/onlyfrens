@@ -1,4 +1,4 @@
-import { getRewards } from "./api.js";
+import { getRewards, claimStoxMac } from "./api.js";
 import { haptic, showToast, escapeHTML } from "./utils.js";
 import { icon } from "./icons.js";
 import { loaderHTML } from "./loader.js";
@@ -29,6 +29,8 @@ const TIERS = [
   { tier: 2, name: "Nivel topacio", badge: "verified_gold" },
   { tier: 3, name: "Nivel amatista", badge: "verified_purple" },
 ];
+
+const STOX_URL = "https://cesarsullen.github.io/getstox/";
 
 // Small icons shown on the profile; the verified badge already sits next to the name.
 const STRIP_IDS = ["long_posts", "anonymous_hashtags", "photo_downloads", "hide_friends", "only_friends"];
@@ -63,17 +65,25 @@ export function bindRewardStrip() {
   });
 }
 
-function rewardRowHTML(reward, friendCount, index) {
+function claimButtonHTML(reward, claimed) {
+  if (reward.id !== "stox_mac") return "";
+  return `<button class="reward-claim tappable" data-claim="${reward.id}">${claimed ? "Abrir STOX" : "Reclamar"}</button>`;
+}
+
+function rewardRowHTML(reward, friendCount, index, claimed = []) {
   const meta = REWARD_META[reward.id];
   const unlocked = friendCount >= reward.friends;
   const missing = reward.friends - friendCount;
 
-  const status = unlocked
-    ? `<span class="reward-status ok">${icon("check", "regular")}</span>`
-    : `<span class="reward-status">${missing === 1 ? "Falta 1 amigo" : `Faltan ${missing}`}</span>`;
+  const claim = unlocked ? claimButtonHTML(reward, claimed.includes(reward.id)) : "";
+  const status = claim
+    ? claim
+    : unlocked
+      ? `<span class="reward-status ok">${icon("check", "regular")}</span>`
+      : `<span class="reward-status">${missing === 1 ? "Falta 1 amigo" : `Faltan ${missing}`}</span>`;
 
   return `
-    <li class="reward-row ${unlocked ? "unlocked" : "locked"}" style="--i: ${index}">
+    <li class="reward-row ${unlocked ? "unlocked" : "locked"}" id="reward-${reward.id}" style="--i: ${index}">
       <span class="reward-icon${unlocked ? "" : " locked"}">${badgeHTML(reward.id)}</span>
       <div class="reward-info">
         <p class="reward-title">${meta.title}</p>
@@ -83,7 +93,7 @@ function rewardRowHTML(reward, friendCount, index) {
     </li>`;
 }
 
-function tierHTML({ tier, name, badge }, rewards, friendCount, order) {
+function tierHTML({ tier, name, badge }, rewards, friendCount, order, claimed) {
   const items = rewards.filter((r) => r.tier === tier);
   const threshold = rewards.find((r) => r.id === badge).friends;
   const unlocked = friendCount >= threshold;
@@ -98,7 +108,7 @@ function tierHTML({ tier, name, badge }, rewards, friendCount, order) {
         </div>
         <span class="tier-state${unlocked ? " ok" : ""}">${unlocked ? "Desbloqueado" : `${friendCount}/${threshold}`}</span>
       </header>
-      <ul class="reward-list">${items.map((r, i) => rewardRowHTML(r, friendCount, order * 4 + i)).join("")}</ul>
+      <ul class="reward-list">${items.map((r, i) => rewardRowHTML(r, friendCount, order * 4 + i, claimed)).join("")}</ul>
     </section>`;
 }
 
@@ -186,6 +196,30 @@ function communityHTML(userCount, order) {
     </section>`;
 }
 
+// The server decides everything; this only calls it and opens the STOX landing page.
+async function claimReward(button, rewards, friendCount, claimed) {
+  haptic();
+  const id = button.dataset.claim;
+
+  if (!claimed.includes(id)) {
+    button.disabled = true;
+    try {
+      await claimStoxMac();
+      claimed.push(id);
+      const reward = rewards.find((r) => r.id === id);
+      const row = document.getElementById(`reward-${id}`);
+      row.outerHTML = rewardRowHTML(reward, friendCount, 0, claimed).replace('style="--i: 0"', 'style="--i: 0; animation: none"');
+      showToast("Recompensa reclamada. Entra a STOX con la misma cuenta");
+    } catch (err) {
+      button.disabled = false;
+      showToast(err.message, "error");
+      return;
+    }
+  }
+
+  window.open(STOX_URL, "_blank", "noopener,noreferrer");
+}
+
 export async function renderRewards(appEl) {
   appEl.innerHTML = `
     <div class="user-profile-bar">
@@ -202,7 +236,7 @@ export async function renderRewards(appEl) {
   const pageEl = document.getElementById("rewards-page");
 
   try {
-    const { friend_count, rewards, user_count } = await getRewards();
+    const { friend_count, rewards, user_count, claimed = [] } = await getRewards();
     if (!pageEl.isConnected) return;
 
     // Older backends do not send the user count yet, so the community parts stay hidden.
@@ -213,10 +247,15 @@ export async function renderRewards(appEl) {
         ${friendsHeroHTML(rewards, friend_count)}
         ${hasCommunity ? communityHeroHTML(user_count) : ""}
       </div>
-      ${TIERS.map((tier, i) => tierHTML(tier, rewards, friend_count, i)).join("")}
+      ${TIERS.map((tier, i) => tierHTML(tier, rewards, friend_count, i, claimed)).join("")}
       ${hasCommunity ? communityHTML(user_count, TIERS.length) : ""}
       <p class="rewards-footnote">Los niveles se calculan con tus amigos actuales: si pierdes amigos, pierdes lo que dependa de ellos.${hasCommunity ? " Lo que desbloquea la comunidad no se pierde." : ""}</p>
     `;
+
+    pageEl.addEventListener("click", (e) => {
+      const button = e.target.closest("[data-claim]");
+      if (button) claimReward(button, rewards, friend_count, claimed);
+    });
   } catch (err) {
     pageEl.innerHTML = `<p class="empty-label profile-error">${escapeHTML(err.message)}</p>`;
     showToast(err.message, "error");

@@ -1172,7 +1172,7 @@ button:focus-visible {
   flex-shrink: 0;
   width: 44px;
   height: 44px;
-  margin-left: auto;
+  margin-left: -22px;
   margin-right: -10px;
   background: none;
   border: none;
@@ -1233,8 +1233,11 @@ button:focus-visible {
   font-size: var(--fs-xl);
   font-weight: 700;
   line-height: 1.15;
-  text-wrap: balance;
   overflow-wrap: anywhere;
+}
+
+.profile-name-tail {
+  white-space: nowrap;
 }
 
 .profile-username {
@@ -2780,6 +2783,20 @@ html:has(.sheet-overlay, #modal-ui.active) {
 
 .reward-status.ok {
   color: var(--tier-color);
+}
+
+.reward-claim {
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--tier-color);
+  color: #fff;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.reward-claim:disabled {
+  opacity: 0.6;
 }
 
 .reward-status .icon {

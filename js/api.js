@@ -171,6 +171,10 @@ function getRewards() {
   return apiFetch("/rewards");
 }
 
+function claimStoxMac() {
+  return apiFetch("/rewards/stox_mac/claim", { method: "POST" });
+}
+
 function searchHashtags(query) {
   return apiFetch(`/hashtags?q=${encodeURIComponent(query)}`);
 }
@@ -405,6 +409,7 @@ export {
   likeComment,
   unlikeComment,
   getRewards,
+  claimStoxMac,
   searchHashtags,
   getFollowedHashtags,
   getHashtag,
