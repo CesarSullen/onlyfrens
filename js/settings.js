@@ -7,6 +7,14 @@ import { signOut, requestEmailChange, changePassword } from "./auth.js";
 import { isEmail, normalizePhone, PHONE_HINT } from "./contact.js";
 import { disablePush } from "./push.js";
 import { cacheDelete } from "./cache.js";
+import { API_BASE_URL } from "./config.js";
+
+const ABOUT_LINKS = [
+  { label: "Acerca de la app", url: `${API_BASE_URL}/` },
+  { label: "Política de privacidad", url: `${API_BASE_URL}/privacy` },
+  { label: "Desarrollador", url: "https://cesarsullen.github.io/" },
+  { label: "Más apps del desarrollador", url: "https://cesarsullen.github.io/links.html" },
+];
 
 function accentHTML(accent, index, selectedId, userCount) {
   const unlocked = userCount >= accent.users;
@@ -58,6 +66,16 @@ function accountHTML(profile) {
       <span class="setting-value">Cambiar contraseña</span>
       ${icon("caret-right", "regular")}
     </button>`;
+}
+
+function aboutHTML() {
+  return ABOUT_LINKS.map(
+    ({ label, url }) => `
+    <a class="setting-row setting-link tappable" href="${url}" target="_blank" rel="noopener noreferrer">
+      <span class="setting-label">${label}</span>
+      ${icon("arrow-up-right", "regular")}
+    </a>`,
+  ).join("");
 }
 
 function changeEmail(profile, onDone) {
@@ -191,6 +209,8 @@ export async function renderSettings(appEl) {
       <h2 class="settings-title settings-section">Color de la app</h2>
       <p class="settings-sub">Se guarda en este dispositivo. Los colores nuevos se desbloquean cuando crece la comunidad.</p>
       <ul class="accent-grid" id="accent-grid">${gridHTML(getAccent(), userCount)}</ul>
+      <h2 class="settings-title settings-section">Acerca de</h2>
+      <div class="setting-list">${aboutHTML()}</div>
       <button class="outline-btn danger large settings-logout" id="logout-btn">Cerrar sesión</button>
     `;
 

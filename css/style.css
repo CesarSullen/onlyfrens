@@ -2881,6 +2881,14 @@ html:has(.sheet-overlay, #modal-ui.active) {
   border-bottom: none;
 }
 
+.setting-link {
+  text-decoration: none;
+}
+
+.setting-link .setting-label {
+  flex: 1;
+}
+
 .setting-label {
   flex: none;
   font-weight: 600;
