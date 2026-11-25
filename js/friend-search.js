@@ -18,7 +18,7 @@ function actionHTML(account) {
 function accountRowHTML(account, index) {
   return `
     <div class="account-row" data-username="${escapeHTML(account.username)}" data-friendship-id="${account.friendship_id ?? ""}" style="--i: ${index}">
-      <img class="avatar" src="${avatarSrc(account)}" alt="" loading="lazy" decoding="async" />
+      <img class="avatar" src="${escapeHTML(avatarSrc(account))}" alt="" loading="lazy" decoding="async" />
       <div class="account-info">
         <p class="account-name">${escapeHTML(account.display_name)}${verifiedBadgeHTML(account)}</p>
         <p class="account-user">@${escapeHTML(account.username)}</p>

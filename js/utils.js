@@ -135,6 +135,8 @@ function openModal({ sheet = false, focusEl = null, dismissible = false } = {}) 
   modalOpener = document.activeElement;
   modalUI.dataset.dismissible = dismissible;
   modalUI.classList.toggle("as-sheet", sheet);
+  // Force a reflow so the box starts from its closed state and the first open animates too.
+  void modalUI.offsetHeight;
   modalUI.classList.add("active");
   focusEl?.focus({ preventScroll: true });
 }

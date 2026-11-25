@@ -24,7 +24,7 @@ export function renderCompleteProfileScreen(appEl, { displayName = "", phoneAcco
 
       <form id="complete-form" class="auth-form">
         <button type="button" class="profile-avatar-btn complete-avatar" id="complete-avatar-btn" aria-label="Elegir foto de perfil">
-          <img class="profile-avatar" id="complete-avatar" src="${avatarSrc()}" alt="" />
+          <img class="profile-avatar" id="complete-avatar" src="${escapeHTML(avatarSrc())}" alt="" />
           <span class="avatar-edit-badge">${icon("camera", "fill")}</span>
         </button>
         <input type="file" id="complete-avatar-input" accept="image/*" hidden />

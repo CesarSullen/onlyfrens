@@ -8,15 +8,16 @@ import { ACCENTS } from "./accents.js";
 // Presentation of each reward. Thresholds come from the backend (GET /rewards),
 // so this file only knows how a reward looks, not when it unlocks.
 const REWARD_META = {
-  verified_blue: { title: "Insignia azul de verificado", text: "Aparece junto a tu nombre en todas partes." },
+  verified_blue: { title: "Insignia zafiro de verificado", text: "Aparece junto a tu nombre en todas partes." },
   long_posts: { title: "Publicaciones largas", text: "Escribe hasta 500 caracteres en vez de 200." },
   very_long_posts: { title: "Publicaciones muy largas", text: "Escribe hasta 1000 caracteres." },
   photo_downloads: { title: "Descargar fotos", text: "Guarda como imagen las publicaciones con foto que lo permitan." },
   anonymous_hashtags: { title: "Publicar en hashtags", text: "Comparte de forma anónima en los hashtags." },
   hide_friends: { title: "Ocultar publicaciones", text: "Elige amigos que no verán una publicación." },
-  verified_gold: { title: "Insignia dorada de verificado", text: "Tu insignia cambia a dorado." },
+  verified_gold: { title: "Insignia topacio de verificado", text: "Tu insignia cambia a topacio." },
   only_friends: { title: "Mostrar solo a algunos", text: "Elige quiénes ven una publicación." },
-  verified_purple: { title: "Insignia morada de verificado", text: "El nivel más alto: tu insignia pasa a morado." },
+  verified_purple: { title: "Insignia amatista de verificado", text: "El nivel más alto: tu insignia pasa a amatista." },
+  stox_mac: { title: "2 meses de STOX Mac", text: "Plan Mac de STOX gratis durante 2 meses." },
 };
 
 // Accents that the community unlocks, in the order they unlock.
@@ -24,9 +25,9 @@ const COMMUNITY_ACCENTS = ACCENTS.filter((accent) => accent.users > 0);
 const listFormat = new Intl.ListFormat("es", { style: "long", type: "conjunction" });
 
 const TIERS = [
-  { tier: 1, name: "Nivel azul", badge: "verified_blue" },
-  { tier: 2, name: "Nivel dorado", badge: "verified_gold" },
-  { tier: 3, name: "Nivel morado", badge: "verified_purple" },
+  { tier: 1, name: "Nivel zafiro", badge: "verified_blue" },
+  { tier: 2, name: "Nivel topacio", badge: "verified_gold" },
+  { tier: 3, name: "Nivel amatista", badge: "verified_purple" },
 ];
 
 // Small icons shown on the profile; the verified badge already sits next to the name.

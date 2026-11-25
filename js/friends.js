@@ -25,7 +25,7 @@ function rowHTML(
 ) {
   return `
     <div class="friend-row" data-key="${escapeHTML(requestId || profile.friendship_id || profile.username)}" data-request-id="${requestId}">
-      <img class="avatar${tappable ? " tappable" : ""}"${tappable ? ` data-profile="${escapeHTML(profile.username)}"` : ""} src="${avatarSrc(profile)}" alt="" loading="lazy" />
+      <img class="avatar${tappable ? " tappable" : ""}"${tappable ? ` data-profile="${escapeHTML(profile.username)}"` : ""} src="${escapeHTML(avatarSrc(profile))}" alt="" loading="lazy" />
       <div class="friend-info">
         <p class="friend-name${tappable ? " tappable" : ""}"${tappable ? ` data-profile="${escapeHTML(profile.username)}"` : ""}>${escapeHTML(profile.display_name)}${verifiedBadgeHTML(profile)}</p>
         ${subtitle ? `<span class="friend-sub">${subtitle}</span>` : ""}

@@ -9,7 +9,7 @@ import { avatarSrc } from "./avatar.js";
 function personRowHTML(profile, index) {
   return `
     <div class="friend-row liker-row tappable" data-profile="${escapeHTML(profile?.username ?? "")}" style="--i: ${Math.min(index, 8)}">
-      <img class="avatar" src="${avatarSrc(profile)}" alt="" loading="lazy" decoding="async" />
+      <img class="avatar" src="${escapeHTML(avatarSrc(profile))}" alt="" loading="lazy" decoding="async" />
       <div class="friend-info">
         <p class="friend-name">${escapeHTML(profile?.display_name ?? "Desconocido")}${verifiedBadgeHTML(profile)}</p>
         <span class="friend-sub">@${escapeHTML(profile?.username ?? "")}</span>

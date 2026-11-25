@@ -13,7 +13,7 @@ const MODE_NOTES = {
 function friendRowHTML(friend, selected) {
   return `
     <label class="pick-row" data-name="${escapeHTML(friend.display_name.toLowerCase())}">
-      <img class="avatar" src="${avatarSrc(friend)}" alt="" loading="lazy" decoding="async" />
+      <img class="avatar" src="${escapeHTML(avatarSrc(friend))}" alt="" loading="lazy" decoding="async" />
       <span class="pick-name">${escapeHTML(friend.display_name)}</span>
       <input type="checkbox" class="pick-check" value="${friend.id}"${selected ? " checked" : ""} />
       <span class="pick-box">${icon("check", "regular")}</span>

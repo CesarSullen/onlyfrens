@@ -52,7 +52,7 @@ export function postCardHTML(post) {
   const images = [content.image_url, content.image_url_2].filter(Boolean);
   const imagesHTML = images.length
     ? `<div class="post-images${images.length === 2 ? " two" : ""}">${images
-        .map((url) => `<img class="post-image" src="${url}" loading="lazy" decoding="async" alt="" />`)
+        .map((url) => `<img class="post-image" src="${escapeHTML(url)}" loading="lazy" decoding="async" alt="" />`)
         .join("")}</div>`
     : "";
 
@@ -63,7 +63,7 @@ export function postCardHTML(post) {
         name: "arrows-clockwise",
         active: post.reposted_by_me,
         count: post.repost_count,
-        extra: `data-content-id="${content.id}"`,
+        extra: `data-content-id="${escapeHTML(content.id)}"`,
       })
     : "";
 
@@ -98,12 +98,12 @@ export function postCardHTML(post) {
       : "";
 
   return `
-    <article class="post-card fade-in" data-post-id="${post.id}" data-sig="${escapeHTML(signature)}" data-is-repost="${post.is_repost}" data-anonymous="${anonymous}" data-mine="${Boolean(post.is_mine)}" data-stats="${hasStats}">
+    <article class="post-card fade-in" data-post-id="${escapeHTML(post.id)}" data-sig="${escapeHTML(signature)}" data-is-repost="${post.is_repost}" data-anonymous="${anonymous}" data-mine="${Boolean(post.is_mine)}" data-stats="${hasStats}">
       ${birthdayPill}
       ${anonymousPill}
       ${repostPill}
       <header class="post-header">
-        <img class="avatar${profileAttr ? " tappable" : ""}" ${profileAttr} src="${avatarSrc(author)}" alt="" loading="lazy" decoding="async" />
+        <img class="avatar${profileAttr ? " tappable" : ""}" ${profileAttr} src="${escapeHTML(avatarSrc(author))}" alt="" loading="lazy" decoding="async" />
         <div>
           <p class="post-author${profileAttr ? " tappable" : ""}" ${profileAttr}>${escapeHTML(author.display_name)}${verifiedBadgeHTML(author)}</p>
           <p class="post-time">${formatPostTime(post.created_at)}</p>

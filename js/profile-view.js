@@ -87,7 +87,7 @@ function socialLinksHTML(profile) {
 }
 
 export function profileCardHTML(profile, { actionsHTML, topActionHTML = "", avatarEditable = false, divider = true }) {
-  const avatarUrl = avatarSrc(profile);
+  const avatarUrl = escapeHTML(avatarSrc(profile));
 
   const avatarHTML = avatarEditable
     ? `
@@ -104,7 +104,7 @@ export function profileCardHTML(profile, { actionsHTML, topActionHTML = "", avat
   return `
     <div class="profile-top">
       ${avatarHTML}
-      <div>
+      <div class="profile-identity">
         <h1 class="profile-name">${escapeHTML(profile.display_name)}${verifiedBadgeHTML(profile)}</h1>
         <p class="profile-username">@${escapeHTML(profile.username)}</p>
       </div>

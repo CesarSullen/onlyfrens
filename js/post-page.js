@@ -16,7 +16,7 @@ function commentRowHTML(comment, { className = "", delay = 0 } = {}) {
     : `${escapeHTML(author.display_name)}${verifiedBadgeHTML(author)}`;
   return `
     <div class="comment-row${className}"${delay ? ` style="animation-delay: ${delay}ms"` : ""}>
-      <img class="avatar" src="${avatarSrc(author)}" alt="" loading="lazy" decoding="async" />
+      <img class="avatar" src="${escapeHTML(avatarSrc(author))}" alt="" loading="lazy" decoding="async" />
       <div>
         <p class="comment-author">${nameHTML}<span class="comment-time${comment.anonymous ? " alone" : ""}">${formatRelativeTime(comment.created_at)}</span></p>
         <p class="comment-text">${escapeHTML(comment.text_content)}</p>
