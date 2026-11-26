@@ -1,28 +1,26 @@
 import { haptic, showToast } from "./utils.js";
 
 const WIDTH = 390;
-const PADDING = 18;
+const OUTER = 20;
+const PADDING = 16;
 const SCALE = 2;
-const ACTION_ICON = 26;
+const CARD_RADIUS = 14;
+const AVATAR = 38;
+const LOGO_HEIGHT = 22;
 const IMAGE_GAP = 8;
 const MAX_IMAGE_HEIGHT = 460;
+const GAP = 12;
+const FOOTER = 16;
+const INK = "#1b1b22";
+const INK_SOFT = "rgba(27, 27, 34, 0.6)";
+const FALLBACK_COLORS = [
+  [11, 138, 254],
+  [160, 130, 240],
+];
+const LOGO_URL = "./assets/opengraph/logo-blue.svg";
+const LOGO_BASE_COLOR = "#0b8afe";
 
-// Colors and sizes mirror the post card so the capture looks like what is on screen.
-function readTheme() {
-  const css = getComputedStyle(document.documentElement);
-  const token = (name) => css.getPropertyValue(name).trim();
-  const rem = parseFloat(css.fontSize) || 16;
-  return {
-    bg: token("--bg"),
-    text: token("--text"),
-    soft: token("--text-soft"),
-    muted: token("--muted"),
-    primary: token("--primary"),
-    line: token("--line"),
-    token,
-    rem,
-  };
-}
+const token = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
 async function loadBitmap(url) {
   const response = await fetch(url);
@@ -39,19 +37,76 @@ function loadImage(url) {
   });
 }
 
+// The logo file is blue, so its color is swapped before it is drawn on the light card.
+async function loadLogo() {
+  const response = await fetch(LOGO_URL);
+  if (!response.ok) throw new Error("logo failed");
+  const markup = (await response.text()).replaceAll(LOGO_BASE_COLOR, INK);
+  return loadImage(URL.createObjectURL(new Blob([markup], { type: "image/svg+xml" })));
+}
+
 // Inline SVG icons keep their colors in CSS, so they are resolved before the markup is drawn as an image.
-function svgToImage(svgEl, theme, size) {
+function svgToImage(svgEl, size) {
   const clone = svgEl.cloneNode(true);
+  const color = getComputedStyle(svgEl).color;
   clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-  clone.setAttribute("fill", getComputedStyle(svgEl).color);
+  clone.setAttribute("fill", color);
   clone.setAttribute("width", size * SCALE);
   clone.setAttribute("height", size * SCALE);
-  const color = getComputedStyle(svgEl).color;
-  const markup = clone.outerHTML
-    .replace(/currentColor/g, color)
-    .replace(/var\((--[\w-]+)\)/g, (_, name) => theme.token(name));
+  const markup = clone.outerHTML.replace(/currentColor/g, color).replace(/var\((--[\w-]+)\)/g, (_, name) => token(name));
 
   return loadImage(URL.createObjectURL(new Blob([markup], { type: "image/svg+xml" })));
+}
+
+const mix = (a, b, amount) => a.map((value, i) => value + (b[i] - value) * amount);
+const toCss = (rgb) => `rgb(${rgb.map(Math.round).join(",")})`;
+const distance = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+
+// Picks the two most prominent colors of the image, favoring saturated ones over greys.
+function pickColors(bitmap) {
+  if (!bitmap) return FALLBACK_COLORS;
+  const size = 32;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(bitmap, 0, 0, size, size);
+  const { data } = ctx.getImageData(0, 0, size, size);
+
+  const buckets = new Map();
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] < 200) continue;
+    const key = ((data[i] >> 5) << 6) | ((data[i + 1] >> 5) << 3) | (data[i + 2] >> 5);
+    const bucket = buckets.get(key) ?? { r: 0, g: 0, b: 0, count: 0 };
+    bucket.r += data[i];
+    bucket.g += data[i + 1];
+    bucket.b += data[i + 2];
+    bucket.count += 1;
+    buckets.set(key, bucket);
+  }
+
+  const ranked = [...buckets.values()]
+    .map(({ r, g, b, count }) => {
+      const rgb = [r / count, g / count, b / count];
+      const max = Math.max(...rgb);
+      const saturation = max ? (max - Math.min(...rgb)) / max : 0;
+      const usable = max / 255 > 0.15 && !(max / 255 > 0.95 && saturation < 0.1);
+      return { rgb, weight: usable ? count * (0.2 + saturation) : 0 };
+    })
+    .filter((color) => color.weight > 0)
+    .sort((a, b) => b.weight - a.weight);
+
+  if (!ranked.length) return FALLBACK_COLORS;
+  const first = ranked[0].rgb;
+  const second = ranked.find((color) => distance(color.rgb, first) > 90)?.rgb ?? mix(first, FALLBACK_COLORS[1], 0.5);
+  return [first, second];
+}
+
+function fitText(ctx, text, maxWidth) {
+  if (ctx.measureText(text).width <= maxWidth) return text;
+  let cut = text.length;
+  while (cut > 1 && ctx.measureText(`${text.slice(0, cut)}…`).width > maxWidth) cut -= 1;
+  return `${text.slice(0, cut)}…`;
 }
 
 function wrapLines(ctx, text, maxWidth, fonts) {
@@ -59,17 +114,17 @@ function wrapLines(ctx, text, maxWidth, fonts) {
   for (const paragraph of text.split("\n")) {
     let line = [];
     let width = 0;
-    for (const token of paragraph.split(/(\s+)/).filter(Boolean)) {
-      ctx.font = token.startsWith("#") ? fonts.bold : fonts.regular;
-      const tokenWidth = ctx.measureText(token).width;
-      if (width + tokenWidth > maxWidth && line.length && token.trim()) {
+    for (const word of paragraph.split(/(\s+)/).filter(Boolean)) {
+      ctx.font = word.startsWith("#") ? fonts.bold : fonts.regular;
+      const wordWidth = ctx.measureText(word).width;
+      if (width + wordWidth > maxWidth && line.length && word.trim()) {
         lines.push(line);
         line = [];
         width = 0;
       }
-      if (!line.length && !token.trim()) continue;
-      line.push({ token, width: tokenWidth });
-      width += tokenWidth;
+      if (!line.length && !word.trim()) continue;
+      line.push({ word, width: wordWidth });
+      width += wordWidth;
     }
     lines.push(line);
   }
@@ -81,11 +136,11 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.roundRect(x, y, w, h, r);
 }
 
-function drawContained(ctx, bitmap, x, y, w, h, theme) {
+function drawContained(ctx, bitmap, x, y, w, h) {
   ctx.save();
-  roundRect(ctx, x, y, w, h, 12);
+  roundRect(ctx, x, y, w, h, 10);
   ctx.clip();
-  ctx.fillStyle = theme.line;
+  ctx.fillStyle = "rgba(0, 0, 0, 0.06)";
   ctx.fillRect(x, y, w, h);
   const ratio = Math.min(w / bitmap.width, h / bitmap.height);
   const dw = bitmap.width * ratio;
@@ -95,104 +150,125 @@ function drawContained(ctx, bitmap, x, y, w, h, theme) {
 }
 
 function readCard(card) {
-  const buttons = [...card.querySelectorAll(".post-actions .action-btn:not(.share-btn)")].map((btn) => {
-    const active = btn.classList.contains("active");
-    return {
-      svg: btn.querySelector(active ? ".icon-filled" : ".icon-outline"),
-      count: btn.querySelector(".action-count")?.textContent ?? "0",
-    };
-  });
-
   return {
     avatar: card.querySelector(".post-header .avatar")?.src,
     name: card.querySelector(".post-author")?.firstChild?.textContent.trim() ?? "",
     badge: card.querySelector(".post-author .verified-badge .icon"),
     time: card.querySelector(".post-time")?.textContent ?? "",
+    created: card.dataset.created,
     text: card.querySelector(".post-text")?.textContent ?? "",
     images: [...card.querySelectorAll(".post-image")].map((img) => img.currentSrc || img.src),
-    buttons,
   };
 }
 
-// Draws the post as a card (author, text, photos, counters) with the OnlyFrens mark where the download button is.
+function formatDate(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString("es", { day: "numeric", month: "short", year: "numeric" });
+}
+
+// Draws the post on a glass card over a gradient taken from its photo, with the planet and the app name as signature.
 async function renderCard(card) {
-  const theme = readTheme();
-  await Promise.all(["400", "500", "600"].map((w) => document.fonts.load(`${w} 16px Jost`)));
+  await Promise.all(["400", "600"].map((w) => document.fonts.load(`${w} 16px Jost`)));
+  const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
 
   const data = readCard(card);
-  const [avatar, logo, images, icons, badge] = await Promise.all([
+  const [avatar, logo, images, badge] = await Promise.all([
     data.avatar ? loadBitmap(data.avatar).catch(() => null) : null,
-    loadImage("./assets/opengraph/logo-blue.svg").catch(() => null),
+    loadLogo().catch(() => null),
     Promise.all(data.images.map(loadBitmap)),
-    Promise.all(data.buttons.map((b) => svgToImage(b.svg, theme, ACTION_ICON))),
-    data.badge ? svgToImage(data.badge, theme, 20) : null,
+    data.badge ? svgToImage(data.badge, 18) : null,
   ]);
 
+  const [colorA, colorB] = pickColors(images[0] ?? avatar);
+  const white = [255, 255, 255];
+  const gradientA = toCss(mix(colorA, white, 0.5));
+  const gradientB = toCss(mix(colorB, white, 0.5));
+
   const fonts = {
-    regular: `400 ${theme.rem * 1.1}px Jost, sans-serif`,
-    bold: `600 ${theme.rem * 1.1}px Jost, sans-serif`,
+    regular: `400 ${rem * 1.05}px Jost, sans-serif`,
+    bold: `600 ${rem * 1.05}px Jost, sans-serif`,
   };
-  const innerWidth = WIDTH - PADDING * 2;
+  const cardWidth = WIDTH - OUTER * 2;
+  const innerWidth = cardWidth - PADDING * 2;
   const measure = document.createElement("canvas").getContext("2d");
   const lines = data.text ? wrapLines(measure, data.text, innerWidth, fonts) : [];
-  const lineHeight = theme.rem * 1.1 * 1.45;
+  const lineHeight = rem * 1.05 * 1.45;
 
   const columns = images.length === 2 ? 2 : 1;
   const imageWidth = (innerWidth - IMAGE_GAP * (columns - 1)) / columns;
   const imageHeights = images.map((b) => Math.min(MAX_IMAGE_HEIGHT, (imageWidth * b.height) / b.width));
   const imagesHeight = images.length ? Math.max(...imageHeights) : 0;
 
-  const headerHeight = 50;
-  const gap = 14;
-  let height = PADDING + headerHeight;
-  if (lines.length) height += gap + lines.length * lineHeight;
-  if (imagesHeight) height += gap + imagesHeight;
-  height += gap + ACTION_ICON + PADDING;
+  let cardHeight = PADDING + AVATAR;
+  if (lines.length) cardHeight += GAP + lines.length * lineHeight;
+  if (imagesHeight) cardHeight += GAP + imagesHeight;
+  cardHeight += GAP + FOOTER + PADDING;
+  const height = Math.ceil(cardHeight + OUTER * 2);
 
   const canvas = document.createElement("canvas");
   canvas.width = WIDTH * SCALE;
-  canvas.height = Math.ceil(height) * SCALE;
+  canvas.height = height * SCALE;
   const ctx = canvas.getContext("2d");
   ctx.scale(SCALE, SCALE);
-  ctx.fillStyle = theme.bg;
-  ctx.fillRect(0, 0, WIDTH, height);
-  ctx.textBaseline = "middle";
 
-  let y = PADDING;
+  const gradient = ctx.createLinearGradient(0, 0, WIDTH, height);
+  gradient.addColorStop(0, gradientA);
+  gradient.addColorStop(1, gradientB);
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, WIDTH, height);
+
+  ctx.save();
+  ctx.shadowColor = "rgba(0, 0, 0, 0.12)";
+  ctx.shadowBlur = 24;
+  ctx.shadowOffsetY = 8;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
+  roundRect(ctx, OUTER, OUTER, cardWidth, cardHeight, CARD_RADIUS);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.textBaseline = "middle";
+  const left = OUTER + PADDING;
+  const right = OUTER + cardWidth - PADDING;
+  let y = OUTER + PADDING;
 
   // Header
   ctx.save();
   ctx.beginPath();
-  ctx.arc(PADDING + 25, y + 25, 25, 0, Math.PI * 2);
+  ctx.arc(left + AVATAR / 2, y + AVATAR / 2, AVATAR / 2, 0, Math.PI * 2);
   ctx.clip();
-  ctx.fillStyle = theme.line;
-  ctx.fillRect(PADDING, y, 50, 50);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+  ctx.fillRect(left, y, AVATAR, AVATAR);
   if (avatar) {
     const size = Math.min(avatar.width, avatar.height);
-    ctx.drawImage(avatar, (avatar.width - size) / 2, (avatar.height - size) / 2, size, size, PADDING, y, 50, 50);
+    ctx.drawImage(avatar, (avatar.width - size) / 2, (avatar.height - size) / 2, size, size, left, y, AVATAR, AVATAR);
   }
   ctx.restore();
 
-  const textX = PADDING + 50 + 13;
-  ctx.font = `600 ${theme.rem * 1.2}px Jost, sans-serif`;
-  ctx.fillStyle = theme.text;
-  ctx.fillText(data.name, textX, y + 14);
-  if (badge) ctx.drawImage(badge, textX + ctx.measureText(data.name).width + 5, y + 14 - 10, 20, 20);
-  ctx.font = `400 ${theme.rem * 0.95}px Jost, sans-serif`;
-  ctx.fillStyle = theme.muted;
-  ctx.fillText(data.time, textX, y + 38);
-  y += headerHeight;
+  const logoWidth = logo ? (logo.width / logo.height) * LOGO_HEIGHT : 0;
+  if (logo) ctx.drawImage(logo, right - logoWidth, y + 1, logoWidth, LOGO_HEIGHT);
+
+  const textX = left + AVATAR + 12;
+  const badgeSpace = badge ? 23 : 0;
+  const nameMax = right - logoWidth - 12 - textX - badgeSpace;
+  ctx.font = `600 ${rem * 1.1}px Jost, sans-serif`;
+  ctx.fillStyle = INK;
+  const name = fitText(ctx, data.name, nameMax);
+  ctx.fillText(name, textX, y + 11);
+  if (badge) ctx.drawImage(badge, textX + ctx.measureText(name).width + 5, y + 11 - 9, 18, 18);
+  ctx.font = `400 ${rem * 0.9}px Jost, sans-serif`;
+  ctx.fillStyle = INK_SOFT;
+  ctx.fillText(data.time, textX, y + 30);
+  y += AVATAR;
 
   // Text
   if (lines.length) {
-    y += gap;
+    y += GAP;
+    ctx.fillStyle = INK;
     lines.forEach((line, row) => {
-      let x = PADDING;
-      for (const { token, width } of line) {
-        const isTag = token.startsWith("#");
-        ctx.font = isTag ? fonts.bold : fonts.regular;
-        ctx.fillStyle = isTag ? theme.primary : theme.text;
-        ctx.fillText(token, x, y + row * lineHeight + lineHeight / 2);
+      let x = left;
+      for (const { word, width } of line) {
+        ctx.font = word.startsWith("#") ? fonts.bold : fonts.regular;
+        ctx.fillText(word, x, y + row * lineHeight + lineHeight / 2);
         x += width;
       }
     });
@@ -201,43 +277,23 @@ async function renderCard(card) {
 
   // Photos
   if (imagesHeight) {
-    y += gap;
+    y += GAP;
     images.forEach((bitmap, i) => {
-      drawContained(ctx, bitmap, PADDING + i * (imageWidth + IMAGE_GAP), y, imageWidth, imagesHeight, theme);
+      drawContained(ctx, bitmap, left + i * (imageWidth + IMAGE_GAP), y, imageWidth, imagesHeight);
     });
     y += imagesHeight;
   }
 
-  // Counters
-  y += gap;
-  let x = PADDING;
-  ctx.font = `400 ${theme.rem}px Jost, sans-serif`;
-  ctx.fillStyle = theme.soft;
-  icons.forEach((image, i) => {
-    ctx.drawImage(image, x, y, ACTION_ICON, ACTION_ICON);
-    ctx.textBaseline = "alphabetic";
-    const count = ctx.measureText(data.buttons[i].count);
-    ctx.fillText(data.buttons[i].count, x + ACTION_ICON + 9, y + ACTION_ICON / 2 + (count.actualBoundingBoxAscent - count.actualBoundingBoxDescent) / 2);
-    ctx.textBaseline = "middle";
-    x += ACTION_ICON + 9 + Math.max(14, ctx.measureText(data.buttons[i].count).width) + 38;
-  });
-
-  // Watermark where the share button sits
-  const markFont = `600 ${theme.rem}px Jost, sans-serif`;
-  ctx.font = markFont;
-  ctx.fillStyle = theme.primary;
+  // Footer
+  y += GAP;
+  ctx.font = `400 ${rem * 0.85}px Jost, sans-serif`;
+  ctx.fillStyle = INK_SOFT;
+  ctx.textAlign = "left";
+  ctx.fillText(formatDate(data.created), left, y + FOOTER / 2);
+  ctx.font = `600 ${rem}px Jost, sans-serif`;
+  ctx.fillStyle = INK;
   ctx.textAlign = "right";
-  ctx.textBaseline = "alphabetic";
-  const centerY = y + ACTION_ICON / 2;
-  const metrics = ctx.measureText("OnlyFrens");
-  const markWidth = metrics.width;
-  // The text is centered on the logo by its real glyph box instead of the font line box
-  ctx.fillText("OnlyFrens", WIDTH - PADDING, centerY + (metrics.actualBoundingBoxAscent - metrics.actualBoundingBoxDescent) / 2);
-  if (logo) {
-    const logoHeight = ACTION_ICON;
-    const logoWidth = (logo.width / logo.height) * logoHeight;
-    ctx.drawImage(logo, WIDTH - PADDING - markWidth - 6 - logoWidth, y, logoWidth, logoHeight);
-  }
+  ctx.fillText("onlyfrens", right, y + FOOTER / 2);
 
   return canvas;
 }
