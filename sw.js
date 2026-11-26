@@ -1,4 +1,4 @@
-const CACHE_NAME = "onlyfrens-v0.0.37";
+const CACHE_NAME = "onlyfrens-v0.0.38";
 const IMAGE_CACHE = "onlyfrens-images";
 const SHARE_CACHE = "onlyfrens-share";
 const MAX_IMAGES = 150;
@@ -49,6 +49,9 @@ const ASSETS = [
   "./js/profile.js",
   "./js/pull-refresh.js",
   "./js/settings.js",
+  "./js/tiers.js",
+  "./js/duration-picker.js",
+  "./js/post-editor.js",
   "./js/share.js",
   "./js/utils.js",
   "./assets/opengraph/logo-blue.svg",
@@ -62,6 +65,9 @@ const ASSETS = [
   "./assets/rewards/only_friends.svg",
   "./assets/rewards/long_posts.svg",
   "./assets/rewards/very_long_posts.svg",
+  "./assets/rewards/long_lifetime_48h.svg",
+  "./assets/rewards/long_lifetime_72h.svg",
+  "./assets/rewards/edit_posts.svg",
   "./assets/rewards/lock.svg",
   "./assets/shortcuts/friends.png",
   "./assets/shortcuts/notifications.png",

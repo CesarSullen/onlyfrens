@@ -7,6 +7,7 @@ import { linkifyHashtags } from "./hashtags.js";
 import { openHashtag, openPost, openUserProfile } from "./navigation.js";
 import { cacheGet } from "./cache.js";
 import { downloadPostCard } from "./post-capture.js";
+import { EDIT_MIN_TIER, EDIT_WINDOW_MS } from "./tiers.js";
 
 function isBirthdayToday(profile) {
   if (!profile?.birthday_day || !profile?.birthday_month) return false;
@@ -78,13 +79,15 @@ export function postCardHTML(post) {
     : post.is_mine && !post.is_repost;
 
   const hasStats = isContentOwner && !anonymous;
-  const hasMenu = post.is_mine || hasStats || Boolean(content.text_content);
+  const hasMenu = post.is_mine || hasStats;
   const signature = [
     post.like_count,
     post.comment_count,
     post.repost_count,
     post.liked_by_me,
     post.reposted_by_me,
+    content.text_content,
+    content.edited_at,
     author.display_name,
     author.avatar_url,
   ].join("|");
@@ -98,7 +101,7 @@ export function postCardHTML(post) {
       : "";
 
   return `
-    <article class="post-card fade-in" data-post-id="${escapeHTML(post.id)}" data-sig="${escapeHTML(signature)}" data-is-repost="${post.is_repost}" data-anonymous="${anonymous}" data-mine="${Boolean(post.is_mine)}" data-stats="${hasStats}">
+    <article class="post-card fade-in" data-post-id="${escapeHTML(post.id)}" data-sig="${escapeHTML(signature)}" data-created="${escapeHTML(post.created_at)}" data-is-repost="${post.is_repost}" data-anonymous="${anonymous}" data-mine="${Boolean(post.is_mine)}" data-stats="${hasStats}">
       ${birthdayPill}
       ${anonymousPill}
       ${repostPill}
@@ -106,7 +109,7 @@ export function postCardHTML(post) {
         <img class="avatar${profileAttr ? " tappable" : ""}" ${profileAttr} src="${escapeHTML(avatarSrc(author))}" alt="" loading="lazy" decoding="async" />
         <div>
           <p class="post-author${profileAttr ? " tappable" : ""}" ${profileAttr}>${escapeHTML(author.display_name)}${verifiedBadgeHTML(author)}</p>
-          <p class="post-time">${formatPostTime(post.created_at)}</p>
+          <p class="post-time">${formatPostTime(post.created_at)}${content.edited_at ? " · editado" : ""}</p>
         </div>
         ${hasMenu ? `<button class="post-menu-btn" aria-label="Más opciones">${icon("dots-three", "bold")}</button>` : ""}
       </header>
@@ -191,18 +194,18 @@ function handleDelete(card, postId) {
   });
 }
 
-function copyText(text) {
-  navigator.clipboard?.writeText(text).then(
-    () => showToast("Texto copiado"),
-    () => showToast("No se pudo copiar", "error"),
-  );
-}
-
 function openPostMenu(card, postId) {
   const items = [];
-  const text = card.querySelector(".post-text")?.textContent.trim();
 
-  if (text) items.push({ label: "Copiar texto", onClick: () => copyText(text) });
+  // Topaz tier and up can fix the text of their own post during the first minutes.
+  const tier = cacheGet("profile")?.profile?.verified_tier ?? 0;
+  const recent = Date.now() - new Date(card.dataset.created).getTime() < EDIT_WINDOW_MS;
+  if (card.dataset.mine === "true" && card.dataset.isRepost !== "true" && tier >= EDIT_MIN_TIER && recent) {
+    items.push({
+      label: "Editar texto",
+      onClick: () => import("./post-editor.js").then(({ openPostEditor }) => openPostEditor(card)),
+    });
+  }
   if (card.dataset.stats === "true") {
     items.push({
       label: "Ver interacciones",

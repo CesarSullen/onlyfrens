@@ -138,7 +138,7 @@ function changePhone(profile, onDone) {
 
       try {
         await updateProfile({ phone: newPhone });
-        showToast(newPhone ? "Teléfono actualizado" : "Teléfono quitado. Ya no podrás entrar con él", "success", 5000);
+        showToast(newPhone ? "Teléfono actualizado" : "Teléfono quitado", "success", 5000);
         onDone();
       } catch (err) {
         showToast(err.message, "error");

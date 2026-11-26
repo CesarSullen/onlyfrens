@@ -15,7 +15,7 @@ function postsHTML(posts) {
       <div class="empty-state">
         <div class="empty-state-icon">${icon("hash", "regular")}</div>
         <p class="empty-state-title">Aún no hay nada por aquí</p>
-        <p class="empty-state-text">Las publicaciones con este hashtag aparecerán aquí durante 24 horas.</p>
+        <p class="empty-state-text">Las publicaciones con este hashtag aparecerán aquí mientras estén activas.</p>
       </div>`;
   }
   return `<div class="feed-list">${posts.map(postCardHTML).join("")}</div>`;

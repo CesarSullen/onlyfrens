@@ -32,7 +32,7 @@ function commentRowHTML(comment, { className = "", delay = 0 } = {}) {
 
 function unavailableHTML(err) {
   if (err.status === 404) {
-    return emptyStateHTML("chat-circle", "Esta publicación ya no está disponible", "Las publicaciones duran 24 horas.");
+    return emptyStateHTML("chat-circle", "Esta publicación ya no está disponible", "Las publicaciones duran 24 horas, o hasta 72 con los niveles topacio y amatista.");
   }
   return emptyLabelHTML(escapeHTML(err.message), "error");
 }

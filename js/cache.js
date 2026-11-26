@@ -1,5 +1,5 @@
 const PREFIX = "onlyfrens_cache:";
-const POST_LIFETIME_MS = 24 * 60 * 60 * 1000;
+const HOUR_MS = 60 * 60 * 1000;
 
 function read(key) {
   try {
@@ -60,9 +60,13 @@ export function clearCache() {
     .forEach((key) => localStorage.removeItem(key));
 }
 
+// Posts last 24, 48 or 72 hours depending on what the author chose; reposts always last 24.
 export function livePosts(posts) {
-  const limit = Date.now() - POST_LIFETIME_MS;
-  return posts.filter((post) => new Date(post.created_at).getTime() > limit);
+  const now = Date.now();
+  return posts.filter((post) => {
+    const hours = post.is_repost ? 24 : post.post_content?.lifetime_hours ?? 24;
+    return new Date(post.created_at).getTime() > now - hours * HOUR_MS;
+  });
 }
 
 // Two callers asking for the same key at once share one request.

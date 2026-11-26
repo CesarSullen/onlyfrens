@@ -245,6 +245,14 @@ function createPost(body) {
   );
 }
 
+function editPost(postId, text) {
+  return mutate(
+    `/posts/${postId}`,
+    { method: "PUT", body: JSON.stringify({ text_content: text }) },
+    { drop: ["feed", "ownPosts"], stale: ["user:*"] },
+  );
+}
+
 function getFriends() {
   return apiFetch("/friends", { method: "GET" });
 }
@@ -420,6 +428,7 @@ export {
   getFeed,
   getPost,
   createPost,
+  editPost,
   deletePost,
   getFriends,
   addFriend,

@@ -11,6 +11,9 @@ const REWARD_META = {
   verified_blue: { title: "Insignia zafiro de verificado", text: "Aparece junto a tu nombre en todas partes." },
   long_posts: { title: "Publicaciones largas", text: "Escribe hasta 500 caracteres en vez de 200." },
   very_long_posts: { title: "Publicaciones muy largas", text: "Escribe hasta 1000 caracteres." },
+  long_lifetime_48h: { title: "Publicaciones de 48 horas", text: "Elige que una publicación dure 48 horas en vez de 24." },
+  long_lifetime_72h: { title: "Publicaciones de 72 horas", text: "Elige que una publicación dure hasta 72 horas." },
+  edit_posts: { title: "Editar publicaciones", text: "Corrige el texto de una publicación durante 10 minutos." },
   photo_downloads: { title: "Descargar fotos", text: "Guarda como imagen las publicaciones con foto que lo permitan." },
   anonymous_hashtags: { title: "Publicar en hashtags", text: "Comparte de forma anónima en los hashtags." },
   hide_friends: { title: "Ocultar publicaciones", text: "Elige amigos que no verán una publicación." },
@@ -94,7 +97,7 @@ function rewardRowHTML(reward, friendCount, index, claimed = []) {
 }
 
 function tierHTML({ tier, name, badge }, rewards, friendCount, order, claimed) {
-  const items = rewards.filter((r) => r.tier === tier);
+  const items = rewards.filter((r) => r.tier === tier && REWARD_META[r.id]);
   const threshold = rewards.find((r) => r.id === badge).friends;
   const unlocked = friendCount >= threshold;
 

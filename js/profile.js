@@ -166,7 +166,7 @@ function showProfile(cardEl, profile) {
 const EMPTY_OWN_POSTS_HTML = emptyStateHTML(
   "package",
   "Aún no tienes publicaciones activas",
-  "Aquí aparecerán tus publicaciones de las últimas 24 horas.",
+  "Aquí aparecerán tus publicaciones mientras estén activas.",
   "",
   `<button class="text-btn primary" id="own-publish">Publicar algo</button>`,
 );

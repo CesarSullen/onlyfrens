@@ -1916,6 +1916,23 @@ button:focus-visible {
   padding: 14px 0 4px;
 }
 
+.edit-textarea {
+  width: 100%;
+  min-height: 160px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  line-height: 1.5;
+  resize: none;
+}
+
+.edit-textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
 .comment-row {
   display: flex;
   gap: 14px;
@@ -2177,7 +2194,7 @@ button:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   border-top: 1px solid var(--line);
   padding-top: 12px;
 }
@@ -2185,12 +2202,42 @@ button:focus-visible {
 .composer-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
 }
 
 .composer-footer .icon-btn {
+  width: 28px;
+  height: 28px;
   color: var(--primary-ink);
   margin: 0;
+}
+
+.composer-footer .icon-btn .icon {
+  width: 20px;
+  height: 20px;
+}
+
+.composer-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin-left: auto;
+}
+
+.composer-chips .option-chip {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  height: 32px;
+  padding: 0 8px;
+  gap: 4px;
+  font-size: var(--fs-sm);
+}
+
+.composer-chips .option-chip .icon {
+  width: 16px;
+  height: 16px;
 }
 
 .composer-footer .option-chip {
@@ -3292,6 +3339,10 @@ html:has(.sheet-overlay, #modal-ui.active) {
   background: var(--surface);
   color: var(--text);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.segment.locked {
+  opacity: 0.6;
 }
 
 .segment:disabled {

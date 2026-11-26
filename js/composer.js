@@ -6,10 +6,10 @@ import { setupHashtagSuggest } from "./hashtag-suggest.js";
 import { icon } from "./icons.js";
 import { extractHashtags, highlightHashtags } from "./hashtags.js";
 import { openAudiencePicker, HIDE_MIN_FRIENDS } from "./audience-picker.js";
+import { openDurationPicker, lifetimeLabel, showLifetimeHint } from "./duration-picker.js";
+import { TEXT_LIMIT_BY_TIER, maxLifetimeFor } from "./tiers.js";
 
 const MAX_TEXT_LENGTH = 200;
-// Longest text per verified tier: none and blue 200, gold 500, purple 1000.
-const TEXT_LIMIT_BY_TIER = [200, 200, 500, 1000];
 const MAX_IMAGES = 2;
 const MAX_ANONYMOUS_TAGS = 5;
 
@@ -25,6 +25,9 @@ let audience = null;
 let anonymous = false;
 let friendCount = 0;
 let isVerified = false;
+// Hours the post stays up and the verified tier that limits the choice.
+let lifetime = 24;
+let tier = 0;
 
 function composerHTML() {
   return `
@@ -73,7 +76,10 @@ function composerHTML() {
               ${icon("hash", "regular")}
             </button>
           </div>
-          <button class="option-chip" id="composer-audience" type="button"></button>
+          <div class="composer-chips">
+            <button class="option-chip" id="composer-lifetime" type="button"></button>
+            <button class="option-chip" id="composer-audience" type="button"></button>
+          </div>
         </div>
 
         <input type="file" id="composer-file-input" accept="image/*" multiple hidden />
@@ -184,6 +190,7 @@ function closeComposer() {
   releasePreviews();
   audience = null;
   anonymous = false;
+  lifetime = 24;
 }
 
 function onComposerKey(e) {
@@ -208,6 +215,11 @@ function updateOptions() {
   chip.classList.toggle("locked", friendCount < HIDE_MIN_FRIENDS);
   chip.classList.toggle("active", !!audience);
   chip.hidden = anonymous;
+
+  const lifetimeChip = document.getElementById("composer-lifetime");
+  lifetimeChip.innerHTML = `${icon("clock", "regular")}${lifetimeLabel(lifetime)}`;
+  lifetimeChip.classList.toggle("locked", maxLifetimeFor(tier) === 24);
+  lifetimeChip.classList.toggle("active", lifetime !== 24);
 
   document.getElementById("composer-anonymous").hidden = !isVerified;
   document.getElementById("composer-note").hidden = !anonymous;
@@ -243,6 +255,22 @@ async function handleAudience() {
   }
 }
 
+function handleLifetime() {
+  if (maxLifetimeFor(tier) === 24) {
+    showLifetimeHint(tier);
+    return;
+  }
+
+  openDurationPicker({
+    tier,
+    current: lifetime,
+    onDone: (hours) => {
+      lifetime = hours;
+      updateOptions();
+    },
+  });
+}
+
 async function handlePublish() {
   const textEl = document.getElementById("composer-text");
   const repostable = document.getElementById("composer-repostable").getAttribute("aria-pressed") === "true";
@@ -270,6 +298,7 @@ async function handlePublish() {
       allow_download: downloadable,
       audience: audience && !anonymous ? { mode: audience.mode, user_ids: audience.ids } : undefined,
       anonymous: anonymous || undefined,
+      lifetime_hours: lifetime === 24 ? undefined : lifetime,
     });
 
     haptic("success");
@@ -291,6 +320,8 @@ export function openComposer(onPublished, { text = "", files = [], anonymous: st
   anonymous = false;
   friendCount = 0;
   isVerified = false;
+  lifetime = 24;
+  tier = 0;
   selectedFiles = files.slice(0, MAX_IMAGES);
   pending = new Set();
   uploads = new Map();
@@ -337,7 +368,8 @@ export function openComposer(onPublished, { text = "", files = [], anonymous: st
 
   // Starts at the normal limit and rises to the one of the user's tier as soon as the profile says so.
   loadWithCache("profile", getProfile, ({ profile }) => {
-    textLimit = TEXT_LIMIT_BY_TIER[profile.verified_tier ?? 0] ?? MAX_TEXT_LENGTH;
+    tier = profile.verified_tier ?? 0;
+    textLimit = TEXT_LIMIT_BY_TIER[tier] ?? MAX_TEXT_LENGTH;
     textEl.maxLength = textLimit;
     friendCount = profile.friend_count ?? 0;
     isVerified = !!profile.verified;
@@ -377,6 +409,11 @@ export function openComposer(onPublished, { text = "", files = [], anonymous: st
   downloadableEl.addEventListener("click", () => {
     haptic();
     showToast(flip(downloadableEl) ? "Descarga de la publicación permitida" : "Descarga de la publicación desactivada");
+  });
+
+  document.getElementById("composer-lifetime").addEventListener("click", () => {
+    haptic();
+    handleLifetime();
   });
 
   document.getElementById("composer-audience").addEventListener("click", () => {
