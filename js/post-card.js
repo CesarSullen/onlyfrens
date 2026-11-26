@@ -6,7 +6,7 @@ import { avatarSrc } from "./avatar.js";
 import { linkifyHashtags } from "./hashtags.js";
 import { openHashtag, openPost, openUserProfile } from "./navigation.js";
 import { cacheGet } from "./cache.js";
-import { downloadPostCard } from "./post-capture.js";
+import { sharePostCard } from "./post-capture.js";
 import { EDIT_MIN_TIER, EDIT_WINDOW_MS } from "./tiers.js";
 
 function isBirthdayToday(profile) {
@@ -60,7 +60,7 @@ export function postCardHTML(post) {
   const repostButton = content.is_repostable && !anonymous
     ? actionButtonHTML({
         cls: "repost-btn",
-        label: "Compartir",
+        label: "Repostear",
         name: "arrows-clockwise",
         active: post.reposted_by_me,
         count: post.repost_count,
@@ -68,10 +68,10 @@ export function postCardHTML(post) {
       })
     : "";
 
-  // Only verified accounts (blue tier or higher) can download, and only when the author allows it.
-  const canDownload = content.allow_download !== false && (cacheGet("profile")?.profile?.verified_tier ?? 0) >= 1;
-  const downloadButton = canDownload
-    ? `<button class="action-btn download-btn" aria-label="Descargar publicación"><span class="action-icon">${icon("download-simple", "regular")}</span></button>`
+  // Any account can share the post as an image, as long as the author allows it.
+  const downloadable = content.allow_download !== false;
+  const shareButton = downloadable
+    ? `<button class="action-btn share-btn" aria-label="Compartir como imagen"><span class="action-icon">${icon("export", "regular")}</span></button>`
     : "";
 
   const isContentOwner = content.author_id
@@ -101,7 +101,7 @@ export function postCardHTML(post) {
       : "";
 
   return `
-    <article class="post-card fade-in" data-post-id="${escapeHTML(post.id)}" data-sig="${escapeHTML(signature)}" data-created="${escapeHTML(post.created_at)}" data-is-repost="${post.is_repost}" data-anonymous="${anonymous}" data-mine="${Boolean(post.is_mine)}" data-stats="${hasStats}">
+    <article class="post-card fade-in" data-post-id="${escapeHTML(post.id)}" data-sig="${escapeHTML(signature)}" data-created="${escapeHTML(post.created_at)}" data-is-repost="${post.is_repost}" data-anonymous="${anonymous}" data-downloadable="${downloadable}" data-mine="${Boolean(post.is_mine)}" data-stats="${hasStats}">
       ${birthdayPill}
       ${anonymousPill}
       ${repostPill}
@@ -119,7 +119,7 @@ export function postCardHTML(post) {
         ${actionButtonHTML({ cls: "like-btn", label: "Me gusta", name: "heart", active: post.liked_by_me, count: post.like_count })}
         ${actionButtonHTML({ cls: "comment-btn", label: "Respuestas", name: "chat-circle", active: false, count: post.comment_count })}
         ${repostButton}
-        ${downloadButton}
+        ${shareButton}
       </div>
     </article>
   `;
@@ -238,8 +238,8 @@ function onCardClick(e) {
     const pageEl = card.closest("[data-post-page]");
     if (pageEl) pageEl.querySelector(".reply-input")?.focus();
     else openPost(postId);
-  } else if (hit(".download-btn")) {
-    downloadPostCard(card);
+  } else if (hit(".share-btn")) {
+    sharePostCard(card);
   } else if (hit(".post-menu-btn")) {
     haptic();
     openPostMenu(card, postId);
@@ -250,7 +250,9 @@ function onCardClick(e) {
     haptic();
     openHashtag(el.dataset.tag);
   } else if ((el = hit(".post-image"))) {
-    import("./image-viewer.js").then(({ openImageViewer }) => openImageViewer(el.currentSrc || el.src));
+    // Saving a photo needs the photo downloads reward (blue tier or higher) and the author's permission.
+    const download = card.dataset.downloadable === "true" && (cacheGet("profile")?.profile?.verified_tier ?? 0) >= 1;
+    import("./image-viewer.js").then(({ openImageViewer }) => openImageViewer(el.currentSrc || el.src, { download }));
   } else if (!card.closest("[data-post-page]") && !window.getSelection()?.toString()) {
     haptic();
     openPost(postId);

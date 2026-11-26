@@ -1004,7 +1004,7 @@ button:focus-visible {
   transform: scale(0.85);
 }
 
-.download-btn {
+.share-btn {
   margin-left: auto;
 }
 
@@ -2194,7 +2194,7 @@ button:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 4px;
   border-top: 1px solid var(--line);
   padding-top: 12px;
 }
@@ -2202,25 +2202,25 @@ button:focus-visible {
 .composer-actions {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 0;
 }
 
 .composer-footer .icon-btn {
-  width: 28px;
-  height: 28px;
+  width: 34px;
+  height: 34px;
   color: var(--primary-ink);
   margin: 0;
 }
 
 .composer-footer .icon-btn .icon {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
 }
 
 .composer-chips {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
   margin-left: auto;
 }
@@ -2230,7 +2230,7 @@ button:focus-visible {
   min-width: 0;
   overflow: hidden;
   height: 32px;
-  padding: 0 8px;
+  padding: 0 6px;
   gap: 4px;
   font-size: var(--fs-sm);
 }
@@ -3582,7 +3582,8 @@ html:has(.sheet-overlay, #modal-ui.active) {
   transition: transform var(--dur-slow) var(--ease-settle);
 }
 
-.image-viewer-close {
+.image-viewer-close,
+.image-viewer-download {
   position: absolute;
   top: calc(env(safe-area-inset-top) + 12px);
   color: #fff;
@@ -3593,6 +3594,10 @@ html:has(.sheet-overlay, #modal-ui.active) {
 
 .image-viewer-close {
   right: 12px;
+}
+
+.image-viewer-download {
+  left: 12px;
 }
 
 @keyframes viewerIn {

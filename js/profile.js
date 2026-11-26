@@ -105,7 +105,7 @@ function handleEditProfile(profile) {
       try {
         await updateProfile(updates);
         if (updates.phone === "" && profile.phone) {
-          showToast("Perfil actualizado. Ya no podrás entrar con ese teléfono", "success", 5000);
+          showToast("Perfil actualizado. Teléfono quitado", "success", 5000);
         } else {
           showToast("Perfil actualizado");
         }

@@ -1,9 +1,26 @@
 import { icon } from "./icons.js";
+import { haptic, showToast } from "./utils.js";
 
 const CLOSE_DISTANCE = 100;
 
-// Full-screen photo: tap or drag down to close.
-export function openImageViewer(src) {
+async function downloadImage(src) {
+  try {
+    const response = await fetch(src);
+    if (!response.ok) throw new Error("download failed");
+    const blob = await response.blob();
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `onlyfrens-${Date.now()}.${blob.type.split("/")[1] || "webp"}`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    showToast("Foto descargada");
+  } catch {
+    showToast("No se pudo descargar la foto", "error");
+  }
+}
+
+// Full-screen photo: tap or drag down to close. The download button only shows when it is allowed.
+export function openImageViewer(src, { download = false } = {}) {
   const opener = document.activeElement;
   const viewer = document.createElement("div");
   viewer.className = "image-viewer";
@@ -22,6 +39,18 @@ export function openImageViewer(src) {
   closeBtn.innerHTML = icon("x", "bold");
 
   viewer.append(image, closeBtn);
+
+  if (download) {
+    const downloadBtn = document.createElement("button");
+    downloadBtn.className = "icon-btn image-viewer-download";
+    downloadBtn.setAttribute("aria-label", "Descargar foto");
+    downloadBtn.innerHTML = icon("download-simple", "regular");
+    downloadBtn.addEventListener("click", () => {
+      haptic();
+      downloadImage(src);
+    });
+    viewer.append(downloadBtn);
+  }
 
   document.body.append(viewer);
   closeBtn.focus({ preventScroll: true });

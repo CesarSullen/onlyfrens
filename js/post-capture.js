@@ -95,7 +95,7 @@ function drawContained(ctx, bitmap, x, y, w, h, theme) {
 }
 
 function readCard(card) {
-  const buttons = [...card.querySelectorAll(".post-actions .action-btn:not(.download-btn)")].map((btn) => {
+  const buttons = [...card.querySelectorAll(".post-actions .action-btn:not(.share-btn)")].map((btn) => {
     const active = btn.classList.contains("active");
     return {
       svg: btn.querySelector(active ? ".icon-filled" : ".icon-outline"),
@@ -222,7 +222,7 @@ async function renderCard(card) {
     x += ACTION_ICON + 9 + Math.max(14, ctx.measureText(data.buttons[i].count).width) + 38;
   });
 
-  // Watermark where the download button sits
+  // Watermark where the share button sits
   const markFont = `600 ${theme.rem}px Jost, sans-serif`;
   ctx.font = markFont;
   ctx.fillStyle = theme.primary;
@@ -242,19 +242,29 @@ async function renderCard(card) {
   return canvas;
 }
 
-export async function downloadPostCard(card) {
+// Shares the card as an image through the system sheet; browsers without file sharing get a download.
+export async function sharePostCard(card) {
   haptic();
   try {
     const canvas = await renderCard(card);
     const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
     if (!blob) throw new Error("capture failed");
+    const file = new File([blob], `onlyfrens-${Date.now()}.png`, { type: "image/png" });
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file] });
+      } catch (error) {
+        if (error.name !== "AbortError") throw error;
+      }
+      return;
+    }
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = `onlyfrens-${Date.now()}.png`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-    showToast("Publicación descargada");
+    showToast("Imagen guardada");
   } catch {
-    showToast("No se pudo descargar la publicación", "error");
+    showToast("No se pudo compartir la publicación", "error");
   }
 }

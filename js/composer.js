@@ -69,7 +69,7 @@ function composerHTML() {
             <button class="icon-btn toggle-btn" id="composer-repostable" type="button" aria-label="Permitir reposts" aria-pressed="true">
               ${icon("arrows-clockwise", "regular")}
             </button>
-            <button class="icon-btn toggle-btn" id="composer-downloadable" type="button" aria-label="Permitir descargar la publicación" aria-pressed="true">
+            <button class="icon-btn toggle-btn" id="composer-downloadable" type="button" aria-label="Permitir compartir y descargar la publicación" aria-pressed="true">
               ${icon("download-simple", "regular")}
             </button>
             <button class="icon-btn toggle-btn" id="composer-anonymous" type="button" aria-label="Publicar en hashtags" aria-pressed="false" hidden>
@@ -408,7 +408,7 @@ export function openComposer(onPublished, { text = "", files = [], anonymous: st
 
   downloadableEl.addEventListener("click", () => {
     haptic();
-    showToast(flip(downloadableEl) ? "Descarga de la publicación permitida" : "Descarga de la publicación desactivada");
+    showToast(flip(downloadableEl) ? "Compartir y descargar permitido" : "Compartir y descargar desactivado");
   });
 
   document.getElementById("composer-lifetime").addEventListener("click", () => {
