@@ -2206,15 +2206,15 @@ button:focus-visible {
 }
 
 .composer-footer .icon-btn {
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   color: var(--primary-ink);
   margin: 0;
 }
 
 .composer-footer .icon-btn .icon {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
 }
 
 .composer-chips {
@@ -3136,6 +3136,11 @@ html:has(.sheet-overlay, #modal-ui.active) {
   color: var(--primary-ink);
 }
 
+.tag-search span {
+  display: flex;
+  align-items: center;
+}
+
 .tag-search input {
   flex: 1;
   height: 100%;
@@ -3428,6 +3433,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
 
 .audience-footer {
   gap: 12px;
+  padding-bottom: 28px;
 }
 
 .audience-footer .solid-btn {

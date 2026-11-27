@@ -1,31 +1,31 @@
 # OnlyFrens
 
-Una red social que dura un día.
+Una red social para tus amigos cercanos, donde lo que publicas dura poco.
 
 ## Qué es
 
-OnlyFrens es para los amigos cercanos, no para el mundo entero. Publicas texto e imágenes, y a las 24 horas desaparece — sin archivo, sin "recuerdos de hace 3 años", sin nada que te persiga después. Solo lo de hoy, con la gente que realmente conoces.
+OnlyFrens es para la gente que de verdad conoces. Publicas texto e imágenes y, por defecto, a las 24 horas desaparecen. No queda archivo, ni "recuerdos de hace 3 años", ni nada que te siga después.
 
-No hay anuncios. No hay algoritmo decidiendo qué ves. No hay forma de buscar a desconocidos. Es, a propósito, lo contrario a una red social pensada para crecer sin límite.
+No tiene anuncios ni un algoritmo que decida qué ves. Tampoco hay listas de gente por descubrir: la app no está pensada para crecer sin límite.
 
-## Por qué es distinta
+## Cómo funciona
 
-- **Todo es efímero.** Cada publicación vive 24 horas y se borra de verdad — del feed, de la base de datos, y del almacenamiento de imágenes. No hay papelera ni forma de recuperarlo.
-- **Solo se entra por invitación mutua.** No existe un buscador de usuarios. Para conectar con alguien hace falta que esa persona acepte tu solicitud — así nadie puede ver tu contenido sin que tú lo hayas permitido explícitamente.
-- **Los likes son públicos, pero el detalle no.** Todos ven cuántos likes tiene algo; solo el autor ve quién los dio.
-- **Las respuestas son privadas entre amigos.** Solo lees los comentarios de las personas que también tú has agregado, aunque el número total de respuestas sea visible para cualquiera.
-- **Compartir sin exponer al autor.** Puedes compartir la publicación de alguien con tus propios amigos sin revelar de quién la sacaste — y si el autor desactivó esa opción al publicar, no se puede compartir en absoluto.
-- **El cumpleaños de un amigo se nota.** El día que alguien cumple años, sus publicaciones llevan una pequeña insignia para que no se te pase.
+- **Todo dura poco.** Cada publicación vive 24 horas. Con las recompensas puedes elegir que la tuya dure 48 o 72 horas al publicarla. Es opcional y los demás no notan la diferencia. Al terminar el tiempo se borra del feed, de la base de datos y del almacenamiento de imágenes, y no se puede recuperar.
+- **Hace falta que el otro acepte.** Para encontrar a alguien escribes al menos 3 letras de su username, de su Instagram o de su X. El resultado solo muestra nombre y foto, sin bio, cumpleaños ni publicaciones. Nadie ve tu contenido hasta que acepta tu solicitud.
+- **Los likes se cuentan en público, pero no se sabe quién los dio.** Solo el autor ve quién fue.
+- **Las respuestas son entre amigos.** Lees los comentarios de las personas que tú también has agregado. El número total de respuestas lo ve cualquiera.
+- **Puedes compartir sin decir de quién es.** Compartes la publicación de alguien con tus amigos sin revelar quién la escribió. Si el autor desactivó esa opción al publicar, no se puede compartir.
+- **Los cumpleaños se notan.** El día que alguien cumple años, sus publicaciones llevan una insignia pequeña.
 
-## Privacidad que se puede comprobar
+## Privacidad
 
-El código de este repositorio es público a propósito: cualquiera puede revisarlo y confirmar que no hay nada escondido.
+El código de este repositorio es público para que cualquiera pueda revisarlo.
 
-- Sin rastreadores ni scripts de terceros.
-- Sin CDNs externas — la tipografía y los íconos están incluidos en el repositorio.
-- El dispositivo solo guarda el token de tu sesión, nunca tu contraseña.
-- Las reglas de quién puede ver qué las aplica el servidor, no esta app — revisarlas en el frontend no sirve para saltárselas.
+- No hay rastreadores ni scripts de terceros.
+- No se carga nada de CDNs externas. La tipografía y los iconos están en el repositorio.
+- El dispositivo solo guarda el token de la sesión, nunca la contraseña.
+- Las reglas de quién ve qué las aplica el servidor. Cambiar algo en el frontend no sirve para saltárselas.
 
 ## Stack
 
-HTML, CSS y JavaScript sin frameworks. PWA instalable. El backend vive en un repositorio aparte.
+HTML, CSS y JavaScript sin frameworks. PWA instalable. El backend está en otro repositorio.

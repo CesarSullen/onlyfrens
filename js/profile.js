@@ -1,7 +1,6 @@
 import { getProfile, updateProfile, getOwnPosts } from "./api.js";
 import { showToast, showForm, haptic, profileFieldsError, emptyStateHTML, loadModule } from "./utils.js";
 import { renderPosts } from "./post-card.js";
-import { normalizePhone, PHONE_HINT } from "./contact.js";
 import { icon } from "./icons.js";
 import { uploadAvatar } from "./avatar.js";
 import { loaderHTML, removeLoader } from "./loader.js";
@@ -52,14 +51,6 @@ function handleEditProfile(profile) {
         value: currentBirthday,
       },
       {
-        name: "phone",
-        label: "Teléfono para que te escriban (con código de país)",
-        placeholder: "+34 600 000 000",
-        value: profile.phone ?? "",
-        type: "tel",
-        autocomplete: "tel",
-      },
-      {
         name: "instagram",
         label: "Instagram (usuario)",
         placeholder: "tu_usuario",
@@ -72,14 +63,13 @@ function handleEditProfile(profile) {
         value: profile.x_username ?? "",
       },
     ],
-    validate: ({ name, username, birthday, phone, instagram, x }) =>
+    validate: ({ name, username, birthday, instagram, x }) =>
       profileFieldsError(cleanUsername(username), name.trim() || profile.display_name) ||
       (birthday.trim() && !parseBirthday(birthday)
         ? "Usa el formato día/mes, por ejemplo 15/5"
         : null) ||
-      (phone.trim() && !normalizePhone(phone) ? PHONE_HINT : null) ||
       socialsError({ instagram: cleanHandle(instagram), x_username: cleanHandle(x) }),
-    onConfirm: async ({ name, username, bio, birthday, phone, instagram, x }) => {
+    onConfirm: async ({ name, username, bio, birthday, instagram, x }) => {
       const updates = { bio: bio.trim() };
 
       if (name.trim()) updates.display_name = name.trim();
@@ -98,17 +88,9 @@ function handleEditProfile(profile) {
         if (handle !== (profile[field] ?? "")) updates[field] = handle;
       });
 
-      // An empty value removes the phone.
-      const newPhone = phone.trim() ? normalizePhone(phone) : "";
-      if (newPhone !== (profile.phone ?? "")) updates.phone = newPhone;
-
       try {
         await updateProfile(updates);
-        if (updates.phone === "" && profile.phone) {
-          showToast("Perfil actualizado. Teléfono quitado", "success", 5000);
-        } else {
-          showToast("Perfil actualizado");
-        }
+        showToast("Perfil actualizado");
         reloadProfile();
       } catch (err) {
         showToast(err.message, "error");
