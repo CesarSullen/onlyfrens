@@ -2902,6 +2902,13 @@ html:has(.sheet-overlay, #modal-ui.active) {
   margin-top: 12px;
 }
 
+.settings-version {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  text-align: center;
+}
+
 .setting-list {
   display: flex;
   flex-direction: column;

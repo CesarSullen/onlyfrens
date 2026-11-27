@@ -16,7 +16,8 @@ export function linkifyHashtags(text) {
   for (const match of text.matchAll(HASHTAG_REGEX)) {
     html += escapeHTML(text.slice(last, match.index));
     const tag = match[1].normalize("NFC").toLowerCase();
-    html += `<button type="button" class="hashtag" data-tag="${escapeHTML(tag)}">${escapeHTML(match[0])}</button>`;
+    // Shown in lowercase, the same way it is indexed.
+    html += `<button type="button" class="hashtag" data-tag="${escapeHTML(tag)}">#${escapeHTML(tag)}</button>`;
     last = match.index + match[0].length;
   }
 

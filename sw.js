@@ -1,4 +1,4 @@
-const CACHE_NAME = "onlyfrens-v0.0.42";
+const CACHE_NAME = "onlyfrens-v0.0.43";
 const IMAGE_CACHE = "onlyfrens-images";
 const SHARE_CACHE = "onlyfrens-share";
 const MAX_IMAGES = 150;

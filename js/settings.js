@@ -9,6 +9,17 @@ import { disablePush } from "./push.js";
 import { cacheDelete } from "./cache.js";
 import { API_BASE_URL } from "./config.js";
 
+// The version is the one in the service worker cache name, so there is a single number to bump.
+async function loadVersion(el) {
+  try {
+    const key = (await caches.keys()).find((name) => /^onlyfrens-v\d/.test(name));
+    if (!key) return;
+    el.textContent = `OnlyFrens ${key.replace("onlyfrens-", "")}`;
+  } catch {
+    // The line stays empty.
+  }
+}
+
 const ABOUT_LINKS = [
   { label: "Acerca de la app", url: `${API_BASE_URL}/` },
   { label: "Política de privacidad", url: `${API_BASE_URL}/privacy` },
@@ -212,7 +223,10 @@ export async function renderSettings(appEl) {
       <h2 class="settings-title settings-section">Acerca de</h2>
       <div class="setting-list">${aboutHTML()}</div>
       <button class="outline-btn danger large settings-logout" id="logout-btn">Cerrar sesión</button>
+      <p class="settings-version" id="app-version"></p>
     `;
+
+    loadVersion(document.getElementById("app-version"));
 
     const accountEl = document.getElementById("account-list");
 
