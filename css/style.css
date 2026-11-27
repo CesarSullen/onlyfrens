@@ -511,6 +511,7 @@ button:focus-visible {
   -webkit-backdrop-filter: blur(18px) saturate(1.5);
   backdrop-filter: blur(18px) saturate(1.5);
   border-top: 1px solid var(--line);
+  touch-action: none;
 }
 
 @media (min-width: 768px) {
