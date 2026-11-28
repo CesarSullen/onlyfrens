@@ -15,6 +15,7 @@ No tiene anuncios ni un algoritmo que decida qué ves. Tampoco hay listas de gen
 - **Los likes se cuentan en público, pero no se sabe quién los dio.** Solo el autor ve quién fue.
 - **Las respuestas son entre amigos.** Lees los comentarios de las personas que tú también has agregado. El número total de respuestas lo ve cualquiera.
 - **Puedes compartir sin decir de quién es.** Compartes la publicación de alguien con tus amigos sin revelar quién la escribió. Si el autor desactivó esa opción al publicar, no se puede compartir.
+- **Un pensamiento por persona.** Puedes dejar una frase corta, de hasta 60 caracteres, que aparece como una nube junto a tu foto de perfil. No desaparece sola: se queda hasta que la cambies o la quites. Con el nivel topacio puedes añadirle una canción de Apple Music: suena una vista previa de 30 segundos cuando alguien abre el pensamiento o tu perfil, y la nube toma los colores de la portada. Tus amigos la ven en su feed y al tocarla abren la publicación.
 - **Los cumpleaños se notan.** El día que alguien cumple años, sus publicaciones llevan una insignia pequeña.
 
 ## Privacidad

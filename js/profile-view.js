@@ -3,6 +3,7 @@ import { escapeHTML, showToast } from "./utils.js";
 import { verifiedBadgeHTML } from "./verified.js";
 import { avatarSrc } from "./avatar.js";
 import { rewardStripHTML } from "./rewards.js";
+import { profileCloudHTML, musicCreditHTML } from "./thought.js";
 
 const MONTH_NAMES = [
   "enero",
@@ -103,7 +104,6 @@ export function profileCardHTML(profile, { actionsHTML, topActionHTML = "", avat
     ? `
       <button class="profile-avatar-btn" id="avatar-btn" aria-label="Cambiar foto de perfil">
         <img class="profile-avatar" src="${avatarUrl}" alt="" />
-        <span class="avatar-edit-badge">${icon("camera", "fill")}</span>
       </button>
       <input type="file" id="avatar-input" accept="image/*" hidden />`
     : `
@@ -112,6 +112,7 @@ export function profileCardHTML(profile, { actionsHTML, topActionHTML = "", avat
       </div>`;
 
   return `
+    ${profileCloudHTML(profile, avatarEditable)}
     <div class="profile-top">
       ${avatarHTML}
       <div class="profile-identity">
@@ -120,6 +121,7 @@ export function profileCardHTML(profile, { actionsHTML, topActionHTML = "", avat
       </div>
       ${topActionHTML}
     </div>
+    ${musicCreditHTML(profile.thought?.music)}
     ${rewardStripHTML(profile.reward_ids, { own: avatarEditable })}
     ${profile.bio ? `<p class="profile-bio post-text">${escapeHTML(profile.bio)}</p>` : ""}
     <div class="profile-details">

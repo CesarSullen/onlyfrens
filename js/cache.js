@@ -64,6 +64,7 @@ export function clearCache() {
 export function livePosts(posts) {
   const now = Date.now();
   return posts.filter((post) => {
+    if (post.post_content?.is_thought && !post.is_repost) return true;
     const hours = post.is_repost ? 24 : post.post_content?.lifetime_hours ?? 24;
     return new Date(post.created_at).getTime() > now - hours * HOUR_MS;
   });

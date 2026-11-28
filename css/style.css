@@ -1201,6 +1201,30 @@ button:focus-visible {
   border-radius: var(--radius-full);
 }
 
+.edit-avatar {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0 8px;
+}
+
+.edit-avatar-btn {
+  position: relative;
+  width: 112px;
+  height: 112px;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: var(--radius-full);
+}
+
+.edit-avatar-img {
+  width: 112px;
+  height: 112px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  background: var(--line);
+}
+
 .avatar-edit-badge {
   position: absolute;
   right: 0;
@@ -3643,3 +3667,333 @@ html:has(.sheet-overlay, #modal-ui.active) {
   transform: scale(0.97);
 }
 
+/* THOUGHTS */
+.thought-cloud {
+  --cloud: color-mix(in srgb, var(--cloud-tint, var(--primary)) 14%, #fff);
+  --cloud-light: rgba(255, 255, 255, 0.95);
+  --cloud-shade: color-mix(in srgb, var(--cloud-tint, var(--primary)) 20%, transparent);
+  position: relative;
+  isolation: isolate;
+  display: inline-block;
+  max-width: 100%;
+  padding: 11px 18px;
+  border: 0;
+  border-radius: 26px;
+  background: var(--cloud);
+  box-shadow:
+    inset 0 3px 4px var(--cloud-light),
+    inset 0 -6px 9px var(--cloud-shade);
+  filter: drop-shadow(0 4px 5px color-mix(in srgb, var(--cloud-tint, var(--primary)) 14%, rgba(0, 0, 0, 0.08)));
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-md);
+  line-height: 1.3;
+  text-align: left;
+  overflow-wrap: anywhere;
+  animation: thought-float 4.5s ease-in-out infinite;
+}
+
+@media (prefers-color-scheme: dark) {
+  .thought-cloud {
+    --cloud: color-mix(in srgb, var(--cloud-tint, var(--primary)) 30%, #1a1c21);
+    --cloud-light: rgba(255, 255, 255, 0.16);
+    --cloud-shade: rgba(0, 0, 0, 0.3);
+    filter: drop-shadow(0 5px 6px rgba(0, 0, 0, 0.35));
+  }
+}
+
+.thought-text {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.thought-dot {
+  position: absolute;
+  z-index: -1;
+  border-radius: var(--radius-full);
+  background: var(--cloud);
+  box-shadow: inset 0 2px 2px var(--cloud-light);
+  animation: thought-pop 3s ease-in-out infinite;
+}
+
+.thought-dot:first-of-type {
+  width: 11px;
+  height: 11px;
+}
+
+.thought-dot:last-of-type {
+  width: 7px;
+  height: 7px;
+  animation-delay: 0.5s;
+}
+
+.thought-cloud.up .thought-dot:first-of-type {
+  left: -2px;
+  top: -9px;
+}
+
+.thought-cloud.up .thought-dot:last-of-type {
+  left: -11px;
+  top: -21px;
+}
+
+.thought-cloud:active {
+  transform: scale(0.97);
+}
+
+.thought-cloud.add {
+  padding: 8px 18px;
+  color: var(--primary-ink);
+}
+
+.thought-cloud.add .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.profile-cloud {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  margin-bottom: -22px;
+  padding: 0 44px 0 96px;
+}
+
+.profile-cloud .thought-dot:first-of-type {
+  left: -9px;
+  bottom: -6px;
+}
+
+.post-card > .thought-cloud {
+  align-self: flex-start;
+  margin: -8px 0 0 56px;
+}
+
+.post-card > .thought-cloud .thought-dot:first-of-type {
+  left: -8px;
+  top: -4px;
+}
+
+.post-card > .thought-cloud .thought-dot:last-of-type {
+  left: -18px;
+  top: -12px;
+}
+
+@keyframes thought-float {
+  50% {
+    translate: 0 -4px;
+  }
+}
+
+@keyframes thought-pop {
+  50% {
+    scale: 1.25;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thought-cloud,
+  .thought-dot,
+  .vinyl {
+    animation: none;
+  }
+}
+
+.thought-row {
+  display: flex;
+  gap: 14px;
+  padding: 26px var(--page-padding) 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--line);
+}
+
+.thought-row::-webkit-scrollbar {
+  display: none;
+}
+
+.thought-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex-shrink: 0;
+  gap: 2px;
+  width: 112px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+}
+
+.thought-item .thought-cloud {
+  margin: 0 0 -12px 34px;
+}
+
+.thought-item .avatar {
+  position: relative;
+  margin-left: 6px;
+}
+
+.thought-item-name {
+  width: 62px;
+  text-align: center;
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: var(--fs-2xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.thought-cloud.mini {
+  padding: 7px 12px;
+  border-radius: 18px;
+  font-size: var(--fs-2xs);
+  line-height: 1.25;
+  max-width: 78px;
+}
+
+.thought-cloud.mini .thought-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  text-align: center;
+}
+
+.thought-cloud.mini.add {
+  padding: 6px 14px;
+}
+
+.thought-item .thought-dot:first-of-type {
+  left: -9px;
+  bottom: -6px;
+}
+
+.thought-music {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 7px;
+}
+
+.vinyl {
+  position: relative;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-full);
+  background:
+    radial-gradient(circle, var(--cloud) 0 4%, transparent 5%),
+    var(--art) center / 46% no-repeat,
+    repeating-radial-gradient(circle, #1b1b1f 0 2px, #2c2c32 2px 3px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  animation: vinyl-spin 6s linear infinite;
+}
+
+.thought-cloud.playing .vinyl {
+  box-shadow:
+    0 0 0 2px var(--cloud),
+    0 0 0 4px color-mix(in srgb, var(--cloud-tint, var(--primary)) 55%, transparent);
+}
+
+.thought-song {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: var(--fs-2xs);
+  line-height: 1.25;
+  color: var(--text-soft);
+}
+
+.thought-song b {
+  overflow: hidden;
+  color: var(--text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.thought-credit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  margin: 8px 0 0 56px;
+  color: var(--muted);
+  font-size: var(--fs-2xs);
+  text-decoration: none;
+}
+
+.thought-credit .icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.profile-screen > .thought-credit {
+  margin: 0;
+}
+
+.composer-song,
+.song-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.composer-song {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--tint);
+}
+
+.composer-song[hidden] {
+  display: none;
+}
+
+.song-info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.song-name,
+.song-artist {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.song-artist {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+
+.song-art {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-xs);
+  object-fit: cover;
+  background: var(--line);
+}
+
+.song-row {
+  width: 100%;
+  padding: 8px 0;
+  border: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+}
+
+@keyframes vinyl-spin {
+  to {
+    rotate: 360deg;
+  }
+}

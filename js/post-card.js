@@ -1,5 +1,5 @@
-import { likePost, unlikePost, repost, undoRepost, deletePost, getUserId } from "./api.js";
-import { showToast, showActions, undoable, formatPostTime, haptic, replay, escapeHTML } from "./utils.js";
+import { likePost, unlikePost, repost, undoRepost, deletePost, setThought, getUserId } from "./api.js";
+import { showToast, showConfirm, showActions, undoable, formatPostTime, haptic, replay, escapeHTML } from "./utils.js";
 import { icon } from "./icons.js";
 import { verifiedBadgeHTML } from "./verified.js";
 import { avatarSrc } from "./avatar.js";
@@ -7,7 +7,9 @@ import { linkifyHashtags } from "./hashtags.js";
 import { openHashtag, openPost, openUserProfile } from "./navigation.js";
 import { cacheGet } from "./cache.js";
 import { sharePostCard } from "./post-capture.js";
-import { EDIT_MIN_TIER, EDIT_WINDOW_MS } from "./tiers.js";
+import { EDIT_MIN_FRIENDS, EDIT_WINDOW_MS } from "./tiers.js";
+import { cloudHTML, musicCreditHTML, tintClouds, THOUGHT_LIMIT } from "./thought.js";
+import { toggleMusic } from "./music-player.js";
 
 function isBirthdayToday(profile) {
   if (!profile?.birthday_day || !profile?.birthday_month) return false;
@@ -46,7 +48,11 @@ export function postCardHTML(post) {
     ? `<div class="pill pill-repost">${icon("arrows-clockwise", "regular")}Compartido</div>`
     : "";
 
-  const textHTML = content.text_content
+  const isThought = content.is_thought === true && !post.is_repost;
+
+  const textHTML = isThought
+    ? cloudHTML(content.text_content ?? "", { tail: "up", music: content.music }) + musicCreditHTML(content.music)
+    : content.text_content
     ? `<p class="post-text">${linkifyHashtags(content.text_content)}</p>`
     : "";
 
@@ -69,7 +75,7 @@ export function postCardHTML(post) {
     : "";
 
   // Any account can share the post as an image, as long as the author allows it.
-  const downloadable = content.allow_download !== false;
+  const downloadable = content.allow_download !== false && !isThought;
   const shareButton = downloadable
     ? `<button class="action-btn share-btn" aria-label="Compartir como imagen"><span class="action-icon">${icon("export", "regular")}</span></button>`
     : "";
@@ -78,6 +84,8 @@ export function postCardHTML(post) {
     ? content.author_id === getUserId()
     : post.is_mine && !post.is_repost;
 
+  const canThought =
+    isContentOwner && !post.is_repost && !anonymous && images.length === 0 && !!content.text_content && content.text_content.length <= THOUGHT_LIMIT;
   const hasStats = isContentOwner && !anonymous;
   const hasMenu = post.is_mine || hasStats;
   const signature = [
@@ -88,6 +96,8 @@ export function postCardHTML(post) {
     post.reposted_by_me,
     content.text_content,
     content.edited_at,
+    isThought,
+    content.music?.id,
     author.display_name,
     author.avatar_url,
   ].join("|");
@@ -101,7 +111,7 @@ export function postCardHTML(post) {
       : "";
 
   return `
-    <article class="post-card fade-in" data-post-id="${escapeHTML(post.id)}" data-sig="${escapeHTML(signature)}" data-created="${escapeHTML(post.created_at)}" data-is-repost="${post.is_repost}" data-anonymous="${anonymous}" data-downloadable="${downloadable}" data-mine="${Boolean(post.is_mine)}" data-stats="${hasStats}">
+    <article class="post-card fade-in" data-post-id="${escapeHTML(post.id)}" data-sig="${escapeHTML(signature)}" data-created="${escapeHTML(post.created_at)}" data-is-repost="${post.is_repost}" data-anonymous="${anonymous}" data-downloadable="${downloadable}" data-mine="${Boolean(post.is_mine)}" data-thought="${isThought}" data-can-thought="${canThought}" data-lifetime="${content.lifetime_hours ?? 24}" data-stats="${hasStats}">
       ${birthdayPill}
       ${anonymousPill}
       ${repostPill}
@@ -194,16 +204,39 @@ function handleDelete(card, postId) {
   });
 }
 
+async function changeThought(card, postId, mark) {
+  try {
+    await setThought(postId, mark);
+    showToast(mark ? "Ahora es tu pensamiento" : "Ya no es tu pensamiento");
+  } catch (err) {
+    showToast(err.message, "error");
+  }
+}
+
 function openPostMenu(card, postId) {
   const items = [];
+  const isThought = card.dataset.thought === "true";
 
-  // Topaz tier and up can fix the text of their own post during the first minutes.
-  const tier = cacheGet("profile")?.profile?.verified_tier ?? 0;
+  // From 30 friends the author can fix the text of their own post during the first minutes.
+  const friendCount = cacheGet("profile")?.profile?.friend_count ?? 0;
   const recent = Date.now() - new Date(card.dataset.created).getTime() < EDIT_WINDOW_MS;
-  if (card.dataset.mine === "true" && card.dataset.isRepost !== "true" && tier >= EDIT_MIN_TIER && recent) {
+  if (card.dataset.mine === "true" && card.dataset.isRepost !== "true" && friendCount >= EDIT_MIN_FRIENDS && recent && !isThought) {
     items.push({
       label: "Editar texto",
       onClick: () => import("./post-editor.js").then(({ openPostEditor }) => openPostEditor(card)),
+    });
+  }
+  if (card.dataset.canThought === "true") {
+    items.push({
+      label: isThought ? "Quitar como pensamiento" : "Marcar como pensamiento",
+      onClick: () => {
+        const expired = Date.now() - new Date(card.dataset.created).getTime() > Number(card.dataset.lifetime) * 3_600_000;
+        if (isThought && expired) {
+          showConfirm("Esta publicación ya pasó su duración y desaparecerá al quitarla de tus pensamientos. ¿Continuar?", () => changeThought(card, postId, false), true);
+        } else {
+          changeThought(card, postId, !isThought);
+        }
+      },
     });
   }
   if (card.dataset.stats === "true") {
@@ -230,7 +263,12 @@ function onCardClick(e) {
   const hit = (selector) => e.target.closest(selector);
   let el;
 
-  if ((el = hit(".like-btn"))) {
+  if (hit(".thought-credit")) {
+    return;
+  } else if ((el = hit(".vinyl"))) {
+    haptic();
+    toggleMusic(el.closest(".thought-cloud"));
+  } else if ((el = hit(".like-btn"))) {
     handleToggle(el, postId, { add: likePost, remove: unlikePost });
   } else if ((el = hit(".repost-btn"))) {
     handleToggle(el, postId, { add: repost, remove: undoRepost });
@@ -261,6 +299,7 @@ function onCardClick(e) {
 
 // One click listener per container; cards can be swapped without binding again.
 export function attachPostCardListeners(container) {
+  tintClouds(container);
   if (!container.dataset.postListeners) {
     container.dataset.postListeners = "true";
     container.addEventListener("click", onCardClick);

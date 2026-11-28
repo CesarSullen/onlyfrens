@@ -1,4 +1,4 @@
-const CACHE_NAME = "onlyfrens-v0.0.44";
+const CACHE_NAME = "onlyfrens-v0.0.45";
 const IMAGE_CACHE = "onlyfrens-images";
 const SHARE_CACHE = "onlyfrens-share";
 const MAX_IMAGES = 150;
@@ -53,6 +53,9 @@ const ASSETS = [
   "./js/duration-picker.js",
   "./js/post-editor.js",
   "./js/share.js",
+  "./js/thought.js",
+  "./js/music-player.js",
+  "./js/music-picker.js",
   "./js/utils.js",
   "./assets/opengraph/logo-blue.svg",
   "./assets/rewards/verified_blue.svg",

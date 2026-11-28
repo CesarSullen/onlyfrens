@@ -195,12 +195,13 @@ function showActions(items) {
   openModal({ sheet: true, dismissible: true });
 }
 
-function showForm({ title, fields, validate, onConfirm }) {
+function showForm({ title, fields, validate, onConfirm, header }) {
   resetModal();
   modalMessage.textContent = title;
 
   const fieldsEl = document.createElement("div");
   fieldsEl.className = "modal-ui-fields";
+  if (header) fieldsEl.appendChild(header);
 
   const inputs = fields.map((field) => {
     const label = document.createElement("label");

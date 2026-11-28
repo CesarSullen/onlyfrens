@@ -6,6 +6,7 @@ import { loaderHTML, removeLoader } from "./loader.js";
 import { verifiedBadgeHTML } from "./verified.js";
 import { avatarSrc } from "./avatar.js";
 import { postCardHTML, attachPostCardListeners, adjustCount } from "./post-card.js";
+import { playMusic } from "./music-player.js";
 
 function commentRowHTML(comment, { className = "", delay = 0 } = {}) {
   const likes = comment.like_count ?? 0;
@@ -71,6 +72,8 @@ export async function renderPostPage(appEl, postId) {
     <div class="comments-list">${loaderHTML()}</div>
   `;
   attachPostCardListeners(pageEl);
+  const songCloud = pageEl.querySelector(".thought-cloud[data-preview]");
+  if (songCloud) playMusic(songCloud);
 
   const listEl = pageEl.querySelector(".comments-list");
   const inputEl = pageEl.querySelector(".reply-input");

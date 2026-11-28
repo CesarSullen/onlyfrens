@@ -8,6 +8,10 @@ import { extractHashtags, highlightHashtags } from "./hashtags.js";
 import { openAudiencePicker, HIDE_MIN_FRIENDS } from "./audience-picker.js";
 import { openDurationPicker, lifetimeLabel, showLifetimeHint } from "./duration-picker.js";
 import { TEXT_LIMIT_BY_TIER, maxLifetimeFor } from "./tiers.js";
+import { THOUGHT_LIMIT } from "./thought.js";
+import { MUSIC_MIN_TIER } from "./tiers.js";
+import { openMusicPicker } from "./music-picker.js";
+import { escapeHTML } from "./utils.js";
 
 const MAX_TEXT_LENGTH = 200;
 const MAX_IMAGES = 2;
@@ -23,6 +27,10 @@ let onPublishedCallback = null;
 // Who may see the post ({ mode: "hide" | "only", ids }) and whether it is an anonymous hashtag post.
 let audience = null;
 let anonymous = false;
+// A thought is a short text post that stays on the profile until it is changed.
+let thought = false;
+// The song of the thought (topaz tier): { id, name, artist, artwork, preview, url }.
+let music = null;
 let friendCount = 0;
 let isVerified = false;
 // Hours the post stays up and the verified tier that limits the choice.
@@ -52,6 +60,7 @@ function composerHTML() {
         <div class="tag-suggest" id="composer-tag-suggest" hidden></div>
 
         <div class="composer-images" id="composer-images"></div>
+        <div class="composer-song" id="composer-song" hidden></div>
 
         <p class="composer-note" id="composer-note" hidden>
           Siempre es anónimo: sin tu nombre ni tu foto. Escribe de 1 a 5 #hashtags.
@@ -71,6 +80,12 @@ function composerHTML() {
             </button>
             <button class="icon-btn toggle-btn" id="composer-downloadable" type="button" aria-label="Permitir compartir y descargar la publicación" aria-pressed="true">
               ${icon("download-simple", "regular")}
+            </button>
+            <button class="icon-btn toggle-btn" id="composer-thought" type="button" aria-label="Publicar como pensamiento" aria-pressed="false">
+              ${icon("cloud", "regular")}
+            </button>
+            <button class="icon-btn toggle-btn" id="composer-music" type="button" aria-label="Añadir una canción" aria-pressed="false" hidden>
+              ${icon("vinyl-record", "regular")}
             </button>
             <button class="icon-btn toggle-btn" id="composer-anonymous" type="button" aria-label="Publicar en hashtags" aria-pressed="false" hidden>
               ${icon("hash", "regular")}
@@ -172,7 +187,7 @@ function updatePublishState() {
   // Anonymous posts need at least one hashtag in the text; images are optional.
   const hasContent = anonymous
     ? extractHashtags(text).length > 0
-    : text.length > 0 || selectedFiles.length > 0;
+    : text.length > 0 || (!thought && selectedFiles.length > 0);
   publishBtn.disabled = !hasContent || pending.size > 0;
 
   // Regular posts with hashtags also show up in those hashtags, except when meant only for chosen friends.
@@ -190,6 +205,8 @@ function closeComposer() {
   releasePreviews();
   audience = null;
   anonymous = false;
+  thought = false;
+  music = null;
   lifetime = 24;
 }
 
@@ -214,18 +231,32 @@ function updateOptions() {
   chip.innerHTML = audienceChipHTML();
   chip.classList.toggle("locked", friendCount < HIDE_MIN_FRIENDS);
   chip.classList.toggle("active", !!audience);
-  chip.hidden = anonymous;
+  chip.hidden = anonymous || thought;
 
   const lifetimeChip = document.getElementById("composer-lifetime");
   lifetimeChip.innerHTML = `${icon("clock", "regular")}${lifetimeLabel(lifetime)}`;
-  lifetimeChip.classList.toggle("locked", maxLifetimeFor(tier) === 24);
+  lifetimeChip.classList.toggle("locked", maxLifetimeFor(tier, friendCount) === 24);
   lifetimeChip.classList.toggle("active", lifetime !== 24);
+  lifetimeChip.hidden = thought;
 
-  document.getElementById("composer-anonymous").hidden = !isVerified;
+  document.getElementById("composer-anonymous").hidden = !isVerified || thought;
   document.getElementById("composer-note").hidden = !anonymous;
-  document.getElementById("composer-repostable").hidden = anonymous;
+  document.getElementById("composer-repostable").hidden = anonymous || thought;
+  document.getElementById("composer-downloadable").hidden = thought;
+  document.getElementById("composer-add-image").hidden = thought;
+  document.getElementById("composer-images").hidden = thought;
+  document.getElementById("composer-music").hidden = !thought;
+  document.getElementById("composer-music").setAttribute("aria-pressed", String(!!music));
+  const songEl = document.getElementById("composer-song");
+  songEl.hidden = !thought || !music;
+  songEl.innerHTML = music
+    ? `<img class="song-art" src="${escapeHTML(music.artwork)}" alt="" /><span class="song-info"><span class="song-name">${escapeHTML(music.name)}</span><span class="song-artist">${escapeHTML(music.artist)}</span></span><button class="icon-btn" id="composer-song-remove" type="button" aria-label="Quitar canción">${icon("x", "bold")}</button>`
+    : "";
+  document.getElementById("composer-thought").setAttribute("aria-pressed", String(thought));
   document.getElementById("composer-text").placeholder = anonymous
     ? "Escribe algo con #hashtags"
+    : thought
+    ? "¿Qué estás pensando?"
     : "¿Qué está pasando?";
   updatePublishState();
 }
@@ -256,13 +287,14 @@ async function handleAudience() {
 }
 
 function handleLifetime() {
-  if (maxLifetimeFor(tier) === 24) {
-    showLifetimeHint(tier);
+  if (maxLifetimeFor(tier, friendCount) === 24) {
+    showLifetimeHint(tier, friendCount);
     return;
   }
 
   openDurationPicker({
     tier,
+    friendCount,
     current: lifetime,
     onDone: (hours) => {
       lifetime = hours;
@@ -292,11 +324,13 @@ async function handlePublish() {
 
     await createPost({
       text_content: text || undefined,
-      image_url: uploadedUrls[0],
-      image_url_2: uploadedUrls[1],
-      is_repostable: anonymous ? false : repostable,
+      image_url: thought ? undefined : uploadedUrls[0],
+      image_url_2: thought ? undefined : uploadedUrls[1],
+      is_thought: thought || undefined,
+      music: thought && music ? music : undefined,
+      is_repostable: anonymous || thought ? false : repostable,
       allow_download: downloadable,
-      audience: audience && !anonymous ? { mode: audience.mode, user_ids: audience.ids } : undefined,
+      audience: audience && !anonymous && !thought ? { mode: audience.mode, user_ids: audience.ids } : undefined,
       anonymous: anonymous || undefined,
       lifetime_hours: lifetime === 24 ? undefined : lifetime,
     });
@@ -314,10 +348,12 @@ async function handlePublish() {
   }
 }
 
-export function openComposer(onPublished, { text = "", files = [], anonymous: startAnonymous = false } = {}) {
+export function openComposer(onPublished, { text = "", files = [], anonymous: startAnonymous = false, thought: startThought = false } = {}) {
   onPublishedCallback = onPublished;
   audience = null;
   anonymous = false;
+  thought = false;
+  music = null;
   friendCount = 0;
   isVerified = false;
   lifetime = 24;
@@ -342,6 +378,7 @@ export function openComposer(onPublished, { text = "", files = [], anonymous: st
   const repostableEl = document.getElementById("composer-repostable");
   const downloadableEl = document.getElementById("composer-downloadable");
 
+  let tierLimit = MAX_TEXT_LENGTH;
   let textLimit = MAX_TEXT_LENGTH;
 
   function updateCounter() {
@@ -369,8 +406,8 @@ export function openComposer(onPublished, { text = "", files = [], anonymous: st
   // Starts at the normal limit and rises to the one of the user's tier as soon as the profile says so.
   loadWithCache("profile", getProfile, ({ profile }) => {
     tier = profile.verified_tier ?? 0;
-    textLimit = TEXT_LIMIT_BY_TIER[tier] ?? MAX_TEXT_LENGTH;
-    textEl.maxLength = textLimit;
+    tierLimit = TEXT_LIMIT_BY_TIER[tier] ?? MAX_TEXT_LENGTH;
+    applyLimit();
     friendCount = profile.friend_count ?? 0;
     isVerified = !!profile.verified;
     if (startAnonymous && isVerified && !anonymous) {
@@ -380,6 +417,59 @@ export function openComposer(onPublished, { text = "", files = [], anonymous: st
     updateCounter();
     updateOptions();
   }).catch(() => {});
+
+  // A thought is short text only, so it has its own limit and drops the options that need more.
+  function applyLimit() {
+    textLimit = thought ? THOUGHT_LIMIT : tierLimit;
+    textEl.maxLength = textLimit;
+    textEl.value = textEl.value.slice(0, textLimit);
+    renderMirror();
+    updateCounter();
+  }
+
+  function setThoughtMode(value) {
+    if (value && selectedFiles.length > 0) {
+      showToast("Un pensamiento no lleva fotos");
+      return false;
+    }
+    thought = value;
+    if (!value) music = null;
+    if (value) {
+      audience = null;
+      if (anonymous) {
+        anonymousEl.setAttribute("aria-pressed", "false");
+        anonymous = false;
+      }
+    }
+    applyLimit();
+    updateOptions();
+    return true;
+  }
+
+  document.getElementById("composer-thought").addEventListener("click", () => {
+    haptic();
+    const on = !thought;
+    if (setThoughtMode(on)) showToast(on ? "Se publicará como pensamiento" : "Publicación normal");
+  });
+
+  document.getElementById("composer-music").addEventListener("click", () => {
+    haptic();
+    if (tier < MUSIC_MIN_TIER) {
+      showToast("La música se desbloquea con el nivel topacio");
+      return;
+    }
+    openMusicPicker((song) => {
+      music = song;
+      updateOptions();
+    });
+  });
+
+  document.getElementById("composer-song").addEventListener("click", (e) => {
+    if (!e.target.closest("#composer-song-remove")) return;
+    haptic();
+    music = null;
+    updateOptions();
+  });
 
   function setAnonymous(value) {
     anonymous = value;
@@ -439,6 +529,7 @@ export function openComposer(onPublished, { text = "", files = [], anonymous: st
     fileInput.value = "";
   });
 
+  if (startThought) setThoughtMode(true);
   textEl.value = text.slice(0, textLimit);
   renderMirror();
   selectedFiles.forEach((file) => compressInBackground(file, imagesContainer));

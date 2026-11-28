@@ -233,7 +233,7 @@ function deletePost(postId, options = {}) {
   return mutate(
     `/posts/${postId}`,
     { method: "DELETE", ...options },
-    { drop: ["feed", "ownPosts"], stale: ["user:*"] },
+    { drop: ["feed", "ownPosts", "profile", "thoughts"], stale: ["user:*"] },
   );
 }
 
@@ -241,15 +241,32 @@ function createPost(body) {
   return mutate(
     "/posts",
     { method: "POST", body: JSON.stringify(body) },
-    { drop: ["feed", "ownPosts"], stale: ["user:*"] },
+    { drop: body.is_thought ? ["feed", "ownPosts", "profile", "thoughts"] : ["feed", "ownPosts"], stale: ["user:*"] },
   );
+}
+
+// Marks one of the user's own text posts as their thought, or unmarks it.
+function setThought(postId, isThought) {
+  return mutate(
+    `/posts/${postId}/thought`,
+    { method: "PUT", body: JSON.stringify({ is_thought: isThought }) },
+    { drop: ["feed", "ownPosts", "profile", "thoughts"], stale: ["user:*"] },
+  );
+}
+
+function searchMusic(query) {
+  return apiFetch(`/music/search?q=${encodeURIComponent(query)}`, { method: "GET" });
+}
+
+function getThoughts() {
+  return apiFetch("/thoughts", { method: "GET" });
 }
 
 function editPost(postId, text) {
   return mutate(
     `/posts/${postId}`,
     { method: "PUT", body: JSON.stringify({ text_content: text }) },
-    { drop: ["feed", "ownPosts"], stale: ["user:*"] },
+    { drop: ["feed", "ownPosts", "profile", "thoughts"], stale: ["user:*"] },
   );
 }
 
@@ -428,6 +445,9 @@ export {
   getFeed,
   getPost,
   createPost,
+  setThought,
+  getThoughts,
+  searchMusic,
   editPost,
   deletePost,
   getFriends,

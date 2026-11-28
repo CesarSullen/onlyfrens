@@ -1,12 +1,13 @@
 import { getProfile, updateProfile, getOwnPosts } from "./api.js";
-import { showToast, showForm, haptic, profileFieldsError, emptyStateHTML, loadModule } from "./utils.js";
+import { showToast, showForm, haptic, profileFieldsError, emptyStateHTML, loadModule, escapeHTML } from "./utils.js";
 import { renderPosts } from "./post-card.js";
 import { icon } from "./icons.js";
-import { uploadAvatar } from "./avatar.js";
+import { uploadAvatar, avatarSrc } from "./avatar.js";
 import { loaderHTML, removeLoader } from "./loader.js";
 import { loadWithCache, livePosts } from "./cache.js";
 import { bindRewardStrip } from "./rewards.js";
 import { openSettings } from "./navigation.js";
+import { bindProfileCloud } from "./thought.js";
 import {
   profileCardHTML,
   shareProfile,
@@ -16,6 +17,31 @@ import {
   socialsError,
 } from "./profile-view.js";
 
+// Larger photo at the top of the edit form, with the camera to change it.
+function editAvatarHTML(profile) {
+  const wrap = document.createElement("div");
+  wrap.className = "edit-avatar";
+  wrap.innerHTML = `
+    <button class="edit-avatar-btn" type="button" aria-label="Cambiar foto de perfil">
+      <img class="edit-avatar-img" src="${escapeHTML(avatarSrc(profile))}" alt="" />
+      <span class="avatar-edit-badge">${icon("camera", "fill")}</span>
+    </button>
+    <input type="file" accept="image/*" hidden />`;
+  const input = wrap.querySelector("input");
+  const img = wrap.querySelector("img");
+  wrap.querySelector("button").addEventListener("click", () => {
+    haptic();
+    input.click();
+  });
+  input.addEventListener("change", async () => {
+    const file = input.files[0];
+    if (!file) return;
+    img.src = URL.createObjectURL(file);
+    await handleAvatarChange(file);
+  });
+  return wrap;
+}
+
 function handleEditProfile(profile) {
   const currentBirthday =
     profile.birthday_day && profile.birthday_month
@@ -23,6 +49,7 @@ function handleEditProfile(profile) {
       : "";
   showForm({
     title: "Editar perfil",
+    header: editAvatarHTML(profile),
     fields: [
       {
         name: "name",
@@ -127,6 +154,16 @@ function showProfile(cardEl, profile) {
   });
   avatarInput.addEventListener("change", () => {
     if (avatarInput.files[0]) handleAvatarChange(avatarInput.files[0]);
+  });
+
+  bindProfileCloud(cardEl);
+
+  document.getElementById("thought-add")?.addEventListener("click", () => {
+    haptic();
+    loadModule(
+      () => import("./composer.js"),
+      ({ openComposer }) => openComposer(reloadProfile, { thought: true }),
+    );
   });
 
   document.getElementById("edit-profile-btn").addEventListener("click", () => {

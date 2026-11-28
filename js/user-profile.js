@@ -5,6 +5,8 @@ import { loaderHTML, removeLoader } from "./loader.js";
 import { loadWithCache, livePosts } from "./cache.js";
 import { renderPosts } from "./post-card.js";
 import { profileCardHTML, shareProfile } from "./profile-view.js";
+import { bindProfileCloud } from "./thought.js";
+import { playMusic, playingUrl } from "./music-player.js";
 
 function actionsHTML(relation) {
   const share = `<button class="outline-btn large" id="share-btn">Compartir</button>`;
@@ -60,6 +62,8 @@ function showUserProfile(cardEl, { profile, relation, friendship_id }, refresh) 
     divider: relation === "friend",
   });
 
+  bindProfileCloud(cardEl);
+
   document.getElementById("share-btn")?.addEventListener("click", () => {
     haptic();
     shareProfile(profile);
@@ -106,6 +110,7 @@ export async function renderUserProfile(appEl, username, { onSelf }) {
   const cardEl = document.getElementById("user-profile-card");
   const postsEl = document.getElementById("user-posts");
   let postsStarted = false;
+  let autoplayed = false;
 
   document.getElementById("back-btn").addEventListener("click", () => {
     haptic();
@@ -120,6 +125,13 @@ export async function renderUserProfile(appEl, username, { onSelf }) {
       return;
     }
     showUserProfile(cardEl, data, refresh);
+
+    // Entering a friend's profile plays their song; if the browser blocks it, the vinyl can be tapped.
+    const cloud = cardEl.querySelector(".thought-cloud[data-preview]");
+    if (cloud && (!autoplayed || cloud.dataset.preview === playingUrl())) {
+      autoplayed = true;
+      playMusic(cloud);
+    }
 
     if (data.relation === "friend") {
       if (!postsStarted) {

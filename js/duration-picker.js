@@ -3,7 +3,7 @@ import { icon } from "./icons.js";
 import { POST_LIFETIMES, maxLifetimeFor } from "./tiers.js";
 
 const UNLOCK_HINTS = {
-  48: "Con el nivel topacio (25 amigos) tus publicaciones pueden durar 48 h",
+  48: "Con 35 amigos tus publicaciones pueden durar 48 h",
   72: "Con el nivel amatista (50 amigos) tus publicaciones pueden durar 72 h",
 };
 
@@ -12,14 +12,14 @@ export function lifetimeLabel(hours) {
 }
 
 // Tells a locked chip what unlocks the next duration.
-export function showLifetimeHint(tier) {
-  showToast(UNLOCK_HINTS[maxLifetimeFor(tier) === 24 ? 48 : 72]);
+export function showLifetimeHint(tier, friendCount) {
+  showToast(UNLOCK_HINTS[maxLifetimeFor(tier, friendCount) === 24 ? 48 : 72]);
 }
 
 // current: hours chosen so far. onDone receives the new number of hours.
-export function openDurationPicker({ tier, current, onDone }) {
+export function openDurationPicker({ tier, friendCount, current, onDone }) {
   let hours = current;
-  const allowed = maxLifetimeFor(tier);
+  const allowed = maxLifetimeFor(tier, friendCount);
 
   const { overlay, body, footer, close } = openSheet({
     title: "Duración",
