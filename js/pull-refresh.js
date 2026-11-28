@@ -15,6 +15,8 @@ export function initPullToRefresh({ content, canPull, onRefresh }) {
 
   const rings = indicator.querySelectorAll(".loader-ring");
   let startY = null;
+  let startX = 0;
+  let locked = false;
   let pull = 0;
   let busy = false;
   let armed = false;
@@ -44,6 +46,8 @@ export function initPullToRefresh({ content, canPull, onRefresh }) {
     (e) => {
       if (busy || e.touches.length !== 1 || window.scrollY > 0 || !canPull()) return;
       startY = e.touches[0].clientY;
+      startX = e.touches[0].clientX;
+      locked = false;
       // The blocking listener only exists while a pull is possible, so normal scrolling stays on the fast path.
       document.addEventListener("touchmove", onMove, { passive: false });
     },
@@ -53,6 +57,13 @@ export function initPullToRefresh({ content, canPull, onRefresh }) {
   function onMove(e) {
     if (startY === null) return;
     const dy = e.touches[0].clientY - startY;
+    // A mostly sideways swipe belongs to horizontal lists such as the thoughts row.
+    if (!locked && Math.abs(e.touches[0].clientX - startX) > Math.abs(dy)) {
+      startY = null;
+      document.removeEventListener("touchmove", onMove);
+      return;
+    }
+    locked = true;
     if (dy <= 0) {
       startY = null;
       document.removeEventListener("touchmove", onMove);
