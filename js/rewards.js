@@ -13,6 +13,7 @@ const REWARD_META = {
   very_long_posts: { title: "Publicaciones muy largas", text: "Escribe hasta 1000 caracteres." },
   long_lifetime_48h: { title: "Publicaciones de 48 horas", text: "Extiende la duración de tus posts." },
   long_lifetime_72h: { title: "Publicaciones de 72 horas", text: "Extiende la duración de tus posts." },
+  thought_music: { title: "Música en pensamientos", text: "Añade una canción a tu pensamiento." },
   edit_posts: { title: "Editar publicaciones", text: "Corrige el texto de un post." },
   photo_downloads: { title: "Descargar fotos", text: "Guarda imágenes de los posts." },
   anonymous_hashtags: { title: "Publicar en hashtags", text: "Comparte de forma anónima en los hashtags." },

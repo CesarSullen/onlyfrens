@@ -1,4 +1,4 @@
-const CACHE_NAME = "onlyfrens-v0.0.45";
+const CACHE_NAME = "onlyfrens-v0.0.46";
 const IMAGE_CACHE = "onlyfrens-images";
 const SHARE_CACHE = "onlyfrens-share";
 const MAX_IMAGES = 150;
@@ -62,6 +62,7 @@ const ASSETS = [
   "./assets/rewards/verified_gold.svg",
   "./assets/rewards/verified_purple.svg",
   "./assets/rewards/stox_mac.svg",
+  "./assets/rewards/thought_music.svg",
   "./assets/rewards/photo_downloads.svg",
   "./assets/rewards/anonymous_hashtags.svg",
   "./assets/rewards/hide_friends.svg",

@@ -7,9 +7,9 @@ import { haptic } from "./utils.js";
 
 export const THOUGHT_LIMIT = 60;
 
-// Clouds above a photo to the side get one bubble; the ones in feed cards rise with two.
-function dotsHTML(tail) {
-  return tail === "up" ? `<i class="thought-dot"></i><i class="thought-dot"></i>` : `<i class="thought-dot"></i>`;
+// A single bubble hints at the photo the cloud belongs to.
+function dotsHTML() {
+  return `<i class="thought-dot"></i>`;
 }
 
 // "tail" says where the little bubbles go: "down" toward a profile photo below, "up" toward a photo above.
