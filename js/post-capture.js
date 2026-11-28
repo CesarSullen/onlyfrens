@@ -22,10 +22,18 @@ const LOGO_BASE_COLOR = "#0b8afe";
 
 const token = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
+// Browsers can't turn an SVG blob into a bitmap (the generated avatars are SVG), so those go through an image element.
 async function loadBitmap(url) {
   const response = await fetch(url);
   if (!response.ok) throw new Error("image failed");
-  return createImageBitmap(await response.blob());
+  const blob = await response.blob();
+  if (blob.type !== "image/svg+xml") return createImageBitmap(blob);
+
+  const image = await loadImage(URL.createObjectURL(blob));
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 256;
+  canvas.getContext("2d").drawImage(image, 0, 0, 256, 256);
+  return canvas;
 }
 
 function loadImage(url) {
