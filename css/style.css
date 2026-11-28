@@ -2592,6 +2592,16 @@ html:has(.sheet-overlay, #modal-ui.active) {
   color: var(--tier-gold);
 }
 
+.verified-badge.tier-2 .icon {
+  fill: url(#gold-sheen);
+}
+
+.svg-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
 .verified-badge.tier-3 {
   color: var(--tier-purple);
   filter: drop-shadow(0 0 3px color-mix(in srgb, var(--tier-purple) 55%, transparent));
@@ -2601,7 +2611,9 @@ html:has(.sheet-overlay, #modal-ui.active) {
   display: flex;
   align-items: center;
   gap: 2px;
+  flex-wrap: wrap;
   width: fit-content;
+  max-width: 100%;
   margin-top: 12px;
   padding: 4px 12px 4px 4px;
   border: 1px solid var(--line);
@@ -2636,10 +2648,6 @@ html:has(.sheet-overlay, #modal-ui.active) {
   height: 22px;
   animation: chip-pop var(--dur-long) var(--ease-spring) both;
   animation-delay: calc(var(--i, 0) * 50ms + 120ms);
-}
-
-.reward-strip-label {
-  margin-left: 6px;
 }
 
 .reward-strip-caret {
@@ -3669,9 +3677,9 @@ html:has(.sheet-overlay, #modal-ui.active) {
 
 /* THOUGHTS */
 .thought-cloud {
-  --cloud: color-mix(in srgb, var(--cloud-tint, var(--primary)) 14%, #fff);
-  --cloud-light: rgba(255, 255, 255, 0.95);
-  --cloud-shade: color-mix(in srgb, var(--cloud-tint, var(--primary)) 20%, transparent);
+  --cloud: color-mix(in srgb, var(--cloud-tint, var(--primary)) 30%, #fff);
+  --cloud-light: rgba(255, 255, 255, 0.9);
+  --cloud-shade: color-mix(in srgb, var(--cloud-tint, var(--primary)) 34%, transparent);
   position: relative;
   isolation: isolate;
   display: inline-block;
@@ -3681,9 +3689,10 @@ html:has(.sheet-overlay, #modal-ui.active) {
   border-radius: 26px;
   background: var(--cloud);
   box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--cloud-tint, var(--primary)) 26%, transparent),
     inset 0 3px 4px var(--cloud-light),
     inset 0 -6px 9px var(--cloud-shade);
-  filter: drop-shadow(0 4px 5px color-mix(in srgb, var(--cloud-tint, var(--primary)) 14%, rgba(0, 0, 0, 0.08)));
+  filter: drop-shadow(0 4px 5px color-mix(in srgb, var(--cloud-tint, var(--primary)) 22%, rgba(0, 0, 0, 0.1)));
   color: var(--text);
   font: inherit;
   font-size: var(--fs-md);
@@ -3695,9 +3704,9 @@ html:has(.sheet-overlay, #modal-ui.active) {
 
 @media (prefers-color-scheme: dark) {
   .thought-cloud {
-    --cloud: color-mix(in srgb, var(--cloud-tint, var(--primary)) 30%, #1a1c21);
-    --cloud-light: rgba(255, 255, 255, 0.16);
-    --cloud-shade: rgba(0, 0, 0, 0.3);
+    --cloud: color-mix(in srgb, var(--cloud-tint, var(--primary)) 52%, #262a33);
+    --cloud-light: rgba(255, 255, 255, 0.3);
+    --cloud-shade: rgba(0, 0, 0, 0.22);
     filter: drop-shadow(0 5px 6px rgba(0, 0, 0, 0.35));
   }
 }
@@ -3771,6 +3780,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
 
 @media (prefers-reduced-motion: reduce) {
   .thought-cloud,
+  .thought-item,
   .thought-dot,
   .vinyl {
     animation: none;
@@ -3804,8 +3814,23 @@ html:has(.sheet-overlay, #modal-ui.active) {
   font: inherit;
 }
 
+.thought-item {
+  animation: thought-float 4.5s ease-in-out infinite;
+}
+
+.thought-item:nth-child(2n) {
+  animation-duration: 5.3s;
+  animation-delay: -1.4s;
+}
+
+.thought-item:nth-child(3n) {
+  animation-duration: 3.9s;
+  animation-delay: -2.6s;
+}
+
 .thought-item .thought-cloud {
   z-index: 1;
+  animation: none;
   margin: 0 0 -12px 34px;
 }
 
@@ -3907,14 +3932,24 @@ html:has(.sheet-overlay, #modal-ui.active) {
 }
 
 .thought-credit {
-  display: flex;
+  display: none;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  align-self: flex-start;
-  margin: 8px 0 0 56px;
+  align-self: stretch;
+  margin: 10px 0 0;
+  padding: 9px 12px;
+  border-radius: var(--radius-md);
+  background: var(--tint);
   color: var(--muted);
   font-size: var(--fs-2xs);
+  text-align: center;
   text-decoration: none;
+}
+
+.post-page .thought-credit,
+.profile-screen > .thought-credit {
+  display: flex;
 }
 
 .thought-credit .icon {
@@ -3924,7 +3959,7 @@ html:has(.sheet-overlay, #modal-ui.active) {
 }
 
 .profile-screen > .thought-credit {
-  margin: 0;
+  margin: 0 0 22px;
 }
 
 .composer-song,

@@ -73,7 +73,7 @@ export async function renderPostPage(appEl, postId) {
   `;
   attachPostCardListeners(pageEl);
   const songCloud = pageEl.querySelector(".thought-cloud[data-preview]");
-  if (songCloud) playMusic(songCloud);
+  if (songCloud) playMusic(songCloud, { auto: true });
 
   const listEl = pageEl.querySelector(".comments-list");
   const inputEl = pageEl.querySelector(".reply-input");

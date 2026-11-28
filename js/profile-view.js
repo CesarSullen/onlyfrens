@@ -112,6 +112,7 @@ export function profileCardHTML(profile, { actionsHTML, topActionHTML = "", avat
       </div>`;
 
   return `
+    ${musicCreditHTML(profile.thought?.music)}
     ${profileCloudHTML(profile, avatarEditable)}
     <div class="profile-top">
       ${avatarHTML}
@@ -121,7 +122,6 @@ export function profileCardHTML(profile, { actionsHTML, topActionHTML = "", avat
       </div>
       ${topActionHTML}
     </div>
-    ${musicCreditHTML(profile.thought?.music)}
     ${rewardStripHTML(profile.reward_ids, { own: avatarEditable })}
     ${profile.bio ? `<p class="profile-bio post-text">${escapeHTML(profile.bio)}</p>` : ""}
     <div class="profile-details">

@@ -57,6 +57,8 @@ export function openMusicPicker(onPick) {
     const row = e.target.closest(".song-row");
     if (!row) return;
     haptic();
+    // Dropping the focus first keeps iOS from leaving the keyboard's space behind.
+    inputEl.blur();
     onPick(songs[Number(row.dataset.index)]);
     close();
   });

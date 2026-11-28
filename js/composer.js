@@ -195,6 +195,7 @@ function updatePublishState() {
 }
 
 function closeComposer() {
+  document.activeElement?.blur();
   closeSheet(document.getElementById("composer-overlay"));
   document.removeEventListener("keydown", onComposerKey);
   document.getElementById("composer-fab")?.classList.remove("open");

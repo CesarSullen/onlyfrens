@@ -37,7 +37,7 @@ const TIERS = [
 const STOX_URL = "https://cesarsullen.github.io/getstox/";
 
 // Small icons shown on the profile; the verified badge already sits next to the name.
-const STRIP_IDS = ["long_posts", "anonymous_hashtags", "photo_downloads", "hide_friends", "only_friends"];
+const STRIP_IDS = Object.keys(REWARD_META).filter((id) => !id.startsWith("verified_"));
 
 function badgeHTML(id) {
   return `<img class="reward-badge" src="assets/rewards/${id}.svg" alt="" />`;
@@ -54,7 +54,6 @@ export function rewardStripHTML(rewardIds = [], { own = false } = {}) {
     return `
       <button class="reward-strip tappable" id="rewards-btn" aria-label="Ver recompensas">
         ${content}
-        <span class="reward-strip-label">Recompensas</span>
         <span class="reward-strip-caret">${icon("caret-left", "regular")}</span>
       </button>`;
   }

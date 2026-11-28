@@ -1,6 +1,11 @@
 // One preview at a time, streamed from Apple and never stored.
 let audio = null;
 let anchor = null;
+const PAUSE_MEMORY_MS = 4000;
+
+// The song the user paused by hand, so a refresh of the profile doesn't start it again.
+let pausedUrl = null;
+let pausedAt = 0;
 
 function mark(on) {
   document.querySelectorAll(".thought-cloud.playing").forEach((el) => el.classList.remove("playing"));
@@ -17,9 +22,19 @@ export function stopMusic() {
   mark(false);
 }
 
+// Autoplay is often blocked by the browser; the next tap anywhere then starts the song.
+function playOnNextTap(el) {
+  const start = () => {
+    if (el.isConnected && !audio) playMusic(el);
+  };
+  document.addEventListener("pointerup", start, { once: true });
+}
+
 // Resolves false when the browser blocks autoplay; the vinyl can then be tapped to play.
-export async function playMusic(el) {
+export async function playMusic(el, { auto = false } = {}) {
   const url = el.dataset.preview;
+  if (auto && url === pausedUrl && Date.now() - pausedAt < PAUSE_MEMORY_MS) return false;
+  pausedUrl = null;
   if (audio && audio.src === url && !audio.paused) {
     anchor = el;
     mark(true);
@@ -42,6 +57,7 @@ export async function playMusic(el) {
     await current.play();
   } catch {
     if (audio === current) stopMusic();
+    if (auto) playOnNextTap(el);
     return false;
   }
   if (audio === current) mark(true);
@@ -50,6 +66,8 @@ export async function playMusic(el) {
 
 export function toggleMusic(el) {
   if (anchor === el && audio && !audio.paused) {
+    pausedUrl = el.dataset.preview;
+    pausedAt = Date.now();
     stopMusic();
     return Promise.resolve(false);
   }
@@ -60,6 +78,3 @@ document.addEventListener("visibilitychange", () => {
   if (document.hidden) stopMusic();
 });
 
-export function playingUrl() {
-  return audio && !audio.paused ? audio.src : null;
-}

@@ -2,7 +2,7 @@ import { escapeHTML } from "./utils.js";
 import { icon } from "./icons.js";
 import { avatarSrc } from "./avatar.js";
 import { openPost } from "./navigation.js";
-import { toggleMusic } from "./music-player.js";
+import { playMusic, toggleMusic } from "./music-player.js";
 import { haptic } from "./utils.js";
 
 export const THOUGHT_LIMIT = 60;
@@ -119,6 +119,8 @@ function thoughtItemHTML({ post_id, text, is_mine, author, music }) {
 // Tapping the cloud opens its post; tapping the vinyl plays or pauses the song. Also colors the cloud.
 export function bindProfileCloud(cardEl) {
   tintClouds(cardEl);
+  const song = cardEl.querySelector(".thought-cloud[data-preview]");
+  if (song) playMusic(song, { auto: true });
   cardEl.querySelector("[data-thought-post]")?.addEventListener("click", (e) => {
     haptic();
     if (e.target.closest(".vinyl")) toggleMusic(e.currentTarget);
